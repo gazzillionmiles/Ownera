@@ -1,0 +1,117 @@
+'use client';
+
+import React, { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
+import { DesktopShell } from '@/src/shared/components/DesktopShell';
+import { HomeView } from '@/src/shared/components/HomeView';
+import { UserRole, Society } from '@/src/types/ownera';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+
+export default function SocietyBookingsPage({
+  params,
+}: {
+  params: Promise<{ society_slug: string }>;
+}) {
+  const resolvedParams = use(params);
+  const router = useRouter();
+  const { uiUser } = useAuth();
+  const [activeRole, setActiveRole] = useState<UserRole>('resident');
+  const [society, setSociety] = useState<Society | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function loadSociety() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/societies');
+        if (!res.ok) throw new Error('Failed to load user societies');
+        const data = await res.json();
+        const userSocieties: Society[] = data.societies || [];
+
+        const targetSoc = userSocieties.find(
+          (s) => s.slug.toLowerCase() === resolvedParams.society_slug.toLowerCase()
+        );
+
+        if (targetSoc) {
+          setSociety(targetSoc);
+          const roleInThisSociety = targetSoc.user_role || 'resident';
+          if (roleInThisSociety === 'secretary' || roleInThisSociety === 'organizer' || roleInThisSociety === 'committee') {
+            setActiveRole('organizer');
+          } else {
+            setActiveRole('resident');
+          }
+        } else {
+          setError(`You are not a registered active member of "${resolvedParams.society_slug}".`);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to verify society membership');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (uiUser.isLoggedIn) {
+      loadSociety();
+    }
+  }, [resolvedParams.society_slug, uiUser.isLoggedIn]);
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-[#121316] flex flex-col items-center justify-center p-4">
+          <Loader2 className="w-8 h-8 text-[#2CB7A5] animate-spin mb-2" />
+          <p className="text-xs text-zinc-400">Loading society bookings...</p>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error || !society) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-[#121316] text-white flex flex-col items-center justify-center p-6 text-center">
+          <AlertTriangle className="w-8 h-8 text-amber-400 mb-2" />
+          <h1 className="text-xl font-bold mb-2">Access Restricted</h1>
+          <p className="text-xs text-zinc-400 max-w-md mb-6">{error}</p>
+          <Link href="/home" className="px-5 py-2.5 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs">
+            Back to Home
+          </Link>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
+      <DesktopShell
+        activeTab="bookings"
+        onTabChange={(tab) => {
+          if (tab === 'bookings') router.push(`/s/${society.slug}/bookings`);
+          else if (tab === 'campaigns') router.push(`/s/${society.slug}/campaigns`);
+        }}
+        activeRole={activeRole}
+        activeSociety={society}
+        onJoinSocietyClick={() => setIsJoinModalOpen(true)}
+        user={uiUser}
+      >
+        <HomeView
+          user={uiUser}
+          activeRole={activeRole}
+          activeTab="bookings"
+          activeSociety={society}
+          onSocietyChange={(soc) => {
+            setSociety(soc);
+            router.push(`/s/${soc.slug}`);
+          }}
+          isJoinModalOpen={isJoinModalOpen}
+          setIsJoinModalOpen={setIsJoinModalOpen}
+        />
+      </DesktopShell>
+    </ProtectedRoute>
+  );
+}
