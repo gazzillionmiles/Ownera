@@ -122,7 +122,7 @@ export async function POST(
           user_id: provider.user_id,
           title: 'New Service Campaign Invitation! 🎯',
           message: `You've been invited to submit a quote for "${poll.title}" at ${poll.society?.name || 'Society'}.`,
-          link: `/home`,
+          link: `/partner`,
           type: 'bid',
         });
       }
@@ -149,11 +149,20 @@ export async function POST(
         );
       }
 
+      const cleanPhone = phone.replace(/[\s\-\(\)]/g, '').slice(-10);
+
+      // Check if this phone number belongs to a registered service provider
+      const { data: matchedProvider } = await serviceSupabase
+        .from('providers')
+        .select('id, user_id, company_name')
+        .or(`phone.ilike.%${cleanPhone}%`)
+        .maybeSingle();
+
       const { data: invite, error: invErr } = await serviceSupabase
         .from('campaign_vendor_invites')
         .insert({
           campaign_id: id,
-          provider_id: null,
+          provider_id: matchedProvider?.id || null,
           business_name: businessName.trim(),
           phone: phone.trim(),
           whatsapp_number: whatsappNumber ? whatsappNumber.trim() : phone.trim(),
@@ -167,6 +176,30 @@ export async function POST(
       if (invErr) {
         console.error('[API/polls/[id]/invite-vendor] Custom vendor insert error:', invErr);
         return NextResponse.json({ error: 'Failed to create vendor invitation' }, { status: 500 });
+      }
+
+      // If matched existing provider, also populate campaign_provider_invites and notify
+      if (matchedProvider) {
+        await serviceSupabase
+          .from('campaign_provider_invites')
+          .upsert(
+            {
+              campaign_id: id,
+              provider_id: matchedProvider.id,
+              status: 'invited',
+            },
+            { onConflict: 'campaign_id,provider_id' }
+          );
+
+        if (matchedProvider.user_id) {
+          await serviceSupabase.from('notifications').insert({
+            user_id: matchedProvider.user_id,
+            title: 'New Service Campaign Invitation! 🎯',
+            message: `You've been invited to submit a quote for "${poll.title}" at ${poll.society?.name || 'Society'}.`,
+            link: `/partner`,
+            type: 'bid',
+          });
+        }
       }
 
       // Update campaign status

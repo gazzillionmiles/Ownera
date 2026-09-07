@@ -48,6 +48,25 @@ export const acceptInvitationSchema = z.object({
   propertyType: propertyTypeSchema.default('apartment'),
 });
 
+export const getInviteLinkQuerySchema = z.object({
+  societyId: z.string().min(1, 'Society ID is required'),
+});
+
+export const rotateInviteLinkSchema = z.object({
+  societyId: z.string().min(1, 'Society ID is required'),
+});
+
+export const validateInviteTokenQuerySchema = z.object({
+  token: z.string().min(10, 'Invalid invite token').max(128, 'Invalid invite token'),
+});
+
+export const joinByInviteTokenSchema = z.object({
+  token: z.string().min(10, 'Invalid invite token').max(128, 'Invalid invite token'),
+  flatNumber: z.string().max(50).optional().nullable(),
+  unitNumber: z.string().max(50).optional().nullable(),
+  propertyType: propertyTypeSchema.default('apartment'),
+});
+
 export const transferSecretarySchema = z.object({
   societyId: z.string().min(1),
   newSecretaryUserId: z.string().min(1),
@@ -197,4 +216,36 @@ export const createCampaignSchema = createPollSchema.extend({
 export const submitBidSchema = submitVendorQuoteSchema.extend({
   maxCapacity: z.coerce.number().int().positive().optional(),
   serviceDurationMinutes: z.coerce.number().int().positive().optional(),
+});
+
+export const registerProviderSchema = z.object({
+  companyName: z
+    .string()
+    .trim()
+    .min(2, 'Company name must be at least 2 characters')
+    .max(100, 'Company name cannot exceed 100 characters'),
+  contactPerson: z
+    .string()
+    .trim()
+    .min(2, 'Contact person name must be at least 2 characters')
+    .max(60, 'Contact person name cannot exceed 60 characters'),
+  phone: z
+    .string()
+    .trim()
+    .transform((val) => val.replace(/[\s\-\(\)]/g, ''))
+    .refine(
+      (val) => /^(\+91|0)?[6-9]\d{9}$/.test(val),
+      'Please enter a valid 10-digit Indian mobile number'
+    ),
+  email: z
+    .string()
+    .trim()
+    .email('Please enter a valid email address'),
+  servicesOffered: z
+    .array(z.string().trim().min(2).max(60))
+    .min(1, 'Please select or add at least one service category'),
+  operatingCities: z
+    .array(z.string().trim().min(2).max(60))
+    .min(1, 'Please select at least one operating city'),
+  bio: z.string().max(1000).optional().nullable(),
 });

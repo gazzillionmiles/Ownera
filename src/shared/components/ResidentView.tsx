@@ -22,9 +22,17 @@ import {
   Copy,
   Plus,
   Vote,
+  ArrowRight,
+  TrendingUp,
+  Tag,
+  UserCheck,
+  Snowflake,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PollCard } from './PollCard';
+import { FeaturedDealCard } from './FeaturedDealCard';
 import { CreatePollModal } from './CreatePollModal';
 import { QuoteComparisonModal } from './QuoteComparisonModal';
 import { InviteVendorModal } from './InviteVendorModal';
@@ -77,6 +85,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
   const [selectedSlotId, setSelectedSlotId] = useState<string>('');
   const [bookingNotes, setBookingNotes] = useState('');
   const [isBooking, setIsBooking] = useState(false);
+  const [confirmedBookingData, setConfirmedBookingData] = useState<any | null>(null);
 
   // Rating and Issue Modals State
   const [ratingBooking, setRatingBooking] = useState<Booking | null>(null);
@@ -130,6 +139,14 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       if (!bookRes.ok) throw new Error(bookData.error || 'Failed to create booking');
 
       toast.success(bookData.message || `Booking Confirmed for ${bookingFlat}! Settle payment directly with provider on service day.`);
+      setConfirmedBookingData({
+        ...bookData.booking,
+        campaign: bookingCampaign,
+        flatNumber: bookingFlat,
+        serviceDate: bookingCampaign.event_date,
+        providerName: bookingCampaign.selected_provider?.company_name || 'Assigned Provider',
+        price: `₹${bookingCampaign.current_price * bookingQuantity}`,
+      });
       setBookingCampaign(null);
       onRefresh();
     } catch (err: any) {
@@ -214,63 +231,116 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
     return sum;
   }, 0);
 
+  // Top featured campaign for the Hero Deal Card
+  const featuredCampaign =
+    upcomingServices.find((c) => c.status === 'booking_open' || c.status === 'scheduled') ||
+    activePolls[0] ||
+    polls[0];
+
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-16">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* ------------------------------------------------------------- */}
       {/* TAB 1: CAMPAIGNS & POLLS FEED */}
       {/* ------------------------------------------------------------- */}
       {(activeTab === 'campaigns' || activeTab === 'home') && (
         <div className="space-y-8">
-          {/* Society Hero Banner with Create Poll CTA */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#18191D] via-[#16171A] to-[#121316] border border-white/10 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2CB7A5]/10 border border-[#2CB7A5]/20 text-[#2CB7A5] text-xs font-semibold">
-                <Building2 className="w-3.5 h-3.5" />
-                <span>{activeSociety?.name || 'Society Hub'}</span>
-                <span className="text-zinc-500">•</span>
-                <span className="text-zinc-400">
-                  {activeSociety?.member_count !== undefined
-                    ? `${activeSociety.member_count} ${activeSociety.member_count === 1 ? 'Member' : 'Members'}`
-                    : activeSociety?.total_homes
-                    ? `${activeSociety.total_homes} Homes`
-                    : '0 Members'}
-                </span>
+          {/* Welcome Banner with Society Overview matching Ownera HomeScreen */}
+          <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+            <div className="absolute -right-12 -top-12 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute right-32 -bottom-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-400 text-xs font-bold border border-white/10">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>{activeSociety?.name || 'Society Hub'}</span>
+                  <span className="text-slate-400">•</span>
+                  <span>{activeSociety?.city || 'Community'}</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
+                  Good day, {user.name ? user.name.split(' ')[0] : 'Neighbor'} <span className="text-2xl sm:text-3xl">👋</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+                  Pool society demand with neighbors to unlock negotiated group discounts for AC servicing, deep cleaning, and home maintenance.
+                </p>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Demand Polls &amp; Service Camps
-              </h1>
-              <p className="text-xs text-zinc-400 max-w-md leading-relaxed">
-                Vote on upcoming community service polls to aggregate volume and invite discounted vendor quotes.
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsCreatePollOpen(true)}
-                className="px-5 py-3 rounded-2xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center gap-2 shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Poll</span>
-              </button>
+              {/* Quick Metrics Cluster */}
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-3 sm:p-4 text-center min-w-[90px]">
+                  <span className="text-xl sm:text-2xl font-black text-white block">
+                    {activeSociety?.member_count !== undefined ? activeSociety.member_count : (activeSociety?.total_homes || 0)}
+                  </span>
+                  <span className="text-[11px] text-slate-300 font-medium">Members</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-3 sm:p-4 text-center min-w-[90px]">
+                  <span className="text-xl sm:text-2xl font-black text-emerald-400 block">
+                    {activePolls.length}
+                  </span>
+                  <span className="text-[11px] text-slate-300 font-medium">Active Drives</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatePollOpen(true)}
+                  className="px-5 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Propose Service</span>
+                </button>
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Feed Section 1: Active Society Polls */}
-          <div className="space-y-4">
+          {/* Featured Hero Deal Card */}
+          {featuredCampaign && (
+            <section aria-labelledby="featured-deal-heading" className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 id="featured-deal-heading" className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                    Active Group Drive
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                    Pre-negotiated bulk campaign for {activeSociety?.name || 'your society'}
+                  </p>
+                </div>
+              </div>
+
+              <FeaturedDealCard
+                campaign={featuredCampaign}
+                onOpenBooking={(c) => handleStartBooking(c)}
+                onOpenCompareQuotes={(c) => setQuoteComparisonCamp(c)}
+                onVote={onVote}
+              />
+            </section>
+          )}
+
+          {/* Active Society Polls Grid */}
+          <section aria-labelledby="polls-heading" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Vote className="w-4 h-4 text-[#2CB7A5]" />
-                <span>Active Community Polls ({activePolls.length})</span>
-              </h2>
+              <div>
+                <h2 id="polls-heading" className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Vote className="w-5 h-5 text-blue-600" />
+                  <span>Community Proposals ({activePolls.length})</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  Vote to express interest and aggregate quorum for vendor bidding
+                </p>
+              </div>
             </div>
 
             {activePolls.length === 0 ? (
-              <div className="p-8 text-center rounded-2xl bg-[#16171B] border border-white/5 text-xs text-zinc-400 space-y-2">
-                <p className="font-semibold text-white">No active society polls right now</p>
-                <p className="text-[11px] text-zinc-500">
-                  Be the first to create a poll for AC servicing, cleaning, or pest control!
+              <div className="p-10 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+                <p className="font-bold text-slate-800 text-sm">No active society proposals right now</p>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Be the first to propose a collective drive for AC servicing, home deep cleaning, or pest control!
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatePollOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition cursor-pointer"
+                >
+                  + Propose a Service
+                </button>
               </div>
             ) : (
               <div className="grid gap-5">
@@ -288,17 +358,15 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Feed Section 2: My Polls (if user created any) */}
+          {/* My Created Polls Section */}
           {myPolls.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>My Created Polls &amp; Requests ({myPolls.length})</span>
-                </h2>
-              </div>
+            <section aria-labelledby="my-polls-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
+              <h2 id="my-polls-heading" className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>My Created Proposals ({myPolls.length})</span>
+              </h2>
 
               <div className="grid gap-4">
                 {myPolls.map((p) => (
@@ -314,18 +382,16 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                   />
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
-          {/* Feed Section 3: Upcoming Service Camps */}
+          {/* Upcoming Service Days */}
           {upcomingServices.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-emerald-400" />
-                  <span>Upcoming Service Days &amp; Camps</span>
-                </h2>
-              </div>
+            <section aria-labelledby="upcoming-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
+              <h2 id="upcoming-heading" className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span>Upcoming Scheduled Service Days</span>
+              </h2>
 
               <div className="grid gap-4">
                 {upcomingServices.map((p) => (
@@ -341,7 +407,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                   />
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </div>
       )}
@@ -351,35 +417,35 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === 'bookings' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 My Service Bookings
               </h1>
-              <p className="text-xs text-zinc-400 mt-1">
-                Track upcoming service day slots, completion confirmations, and technician ratings.
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                Confirmed bulk service visits and scheduled maintenance appointments for your unit.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setIsCreatePollOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center gap-1.5 shadow-md"
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Create Poll</span>
+              <span>Propose Service</span>
             </button>
           </div>
 
           {userBookings.length === 0 ? (
-            <div className="p-12 text-center rounded-3xl border border-dashed border-white/10 bg-[#16171B] space-y-3">
-              <Calendar className="w-10 h-10 text-zinc-500 mx-auto" />
-              <div className="text-base font-bold text-white">No bookings yet</div>
-              <p className="text-xs text-zinc-400 max-w-xs mx-auto">
-                You haven&apos;t booked a slot in any service camp yet. Check out active polls in your society!
+            <div className="p-12 text-center rounded-3xl border border-slate-200/80 bg-white shadow-xs space-y-3">
+              <Calendar className="w-10 h-10 text-slate-400 mx-auto" />
+              <div className="text-base font-bold text-slate-900">No active bookings yet</div>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                You haven&apos;t reserved a time slot in any service camp yet. Explore active deals in your society!
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userBookings.map((b) => {
                 const isCompleted = b.status === 'completed';
                 const isDisputed = b.status === 'disputed';
@@ -388,100 +454,100 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 return (
                   <div
                     key={b.id}
-                    className="p-6 rounded-3xl border border-white/10 bg-[#18191D] shadow-xl space-y-4"
+                    className="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all p-6 space-y-4 flex flex-col justify-between"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/5">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#2CB7A5]/10 text-[#2CB7A5] uppercase">
-                            Flat {b.flat_number}
-                          </span>
-                          <span className="text-xs text-zinc-400 font-mono">
-                            {b.campaign?.event_date}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-lg text-white">
-                          {b.campaign?.title || 'Service Camp'}
-                        </h3>
-                      </div>
-
-                      <span
-                        className={`text-xs font-bold px-3 py-1 rounded-full uppercase font-mono self-start sm:self-auto ${
-                          isCompleted
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : isDisputed
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                            : 'bg-[#2CB7A5]/20 text-[#2CB7A5] border border-[#2CB7A5]/30'
-                        }`}
-                      >
-                        {b.status}
-                      </span>
-                    </div>
-
-                    <div className="grid sm:grid-cols-3 gap-3 text-xs">
-                      <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5">
-                        <div className="text-zinc-500 text-[11px]">Time Slot</div>
-                        <div className="font-semibold text-zinc-200 mt-0.5">
-                          {b.slot?.slot_time || 'Coordinated on service day'}
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5">
-                        <div className="text-zinc-500 text-[11px]">Assigned Provider</div>
-                        <div className="font-semibold text-zinc-200 mt-0.5">
-                          {providerName}
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5">
-                        <div className="text-zinc-500 text-[11px]">Amount Due on Service Day</div>
-                        <div className="font-semibold text-[#2CB7A5] mt-0.5 font-mono">
-                          ₹{b.total_amount} (Direct to Provider)
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Completion Prompt if provider marked finished */}
-                    {b.status === 'completed' && !b.service_rating && (
-                      <div className="p-4 rounded-2xl bg-[#2CB7A5]/10 border border-[#2CB7A5]/30 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
-                        <div className="flex items-center gap-2.5 text-xs text-white">
-                          <Star className="w-5 h-5 text-amber-400 fill-amber-400 shrink-0" />
+                    <div className="space-y-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-2xs border border-emerald-100 shrink-0">
+                            <Snowflake className="w-6 h-6" />
+                          </div>
                           <div>
-                            <div className="font-bold">Service Completed! Rate your technician</div>
-                            <div className="text-zinc-400 text-[11px]">Help maintain high quality standards in your society</div>
+                            <h3 className="font-extrabold text-slate-900 text-base leading-snug">
+                              {b.campaign?.title || 'Service Camp'}
+                            </h3>
+                            <p className="text-xs text-slate-500 font-semibold">Unit: {b.flat_number}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span
+                          className={`text-xs font-bold px-3 py-1 rounded-full uppercase shrink-0 ${
+                            isCompleted
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              : isDisputed
+                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                              : 'bg-blue-50 text-blue-800 border border-blue-200'
+                          }`}
+                        >
+                          {b.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                        <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{b.campaign?.event_date || 'Service Day'}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate">
+                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{b.slot?.slot_time || 'Coordinated'}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <UserCheck className="w-4 h-4 text-slate-400" />
+                            Partner:
+                          </span>
+                          <strong className="text-slate-900">{providerName}</strong>
+                        </div>
+
+                        <div className="flex items-center justify-between text-slate-600 pt-1 border-t border-slate-100">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <Tag className="w-4 h-4 text-slate-400" />
+                            Payable:
+                          </span>
+                          <span className="text-emerald-600 font-black text-base">₹{b.total_amount}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Completion / Rating / Issue Prompts */}
+                    <div className="pt-2 border-t border-slate-100 space-y-2">
+                      {b.status === 'completed' && !b.service_rating && (
+                        <div className="space-y-2">
                           <button
                             type="button"
                             onClick={() => setRatingBooking(b)}
-                            className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs"
+                            className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition cursor-pointer"
                           >
-                            Submit Rating
+                            ★ Rate Service &amp; Technician
                           </button>
                           <button
                             type="button"
                             onClick={() => setIssueBooking(b)}
-                            className="px-3 py-2 rounded-xl bg-zinc-900 border border-white/10 text-zinc-400 hover:text-red-400 text-xs"
+                            className="w-full py-2 text-slate-500 hover:text-rose-600 text-xs font-semibold transition cursor-pointer"
                           >
                             Report Problem
                           </button>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {b.service_rating && (
-                      <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 flex items-center gap-2 text-xs text-zinc-400">
-                        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                        <span>You rated this service {b.service_rating.rating}★: &ldquo;{b.service_rating.review || 'Great service'}&rdquo;</span>
-                      </div>
-                    )}
+                      {b.service_rating && (
+                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                          <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+                          <span>Rated {b.service_rating.rating}★: {b.service_rating.review || 'Completed'}</span>
+                        </div>
+                      )}
 
-                    {b.service_issue && (
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <span>Issue Reported: {b.service_issue.description} ({b.service_issue.status})</span>
-                      </div>
-                    )}
+                      {b.service_issue && (
+                        <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-semibold flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Issue: {b.service_issue.description}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -495,52 +561,51 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === 'society' && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-[#18191D] border border-white/10 shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2CB7A5]/10 text-[#2CB7A5] text-xs font-semibold mb-2">
-                  <Building2 className="w-3.5 h-3.5" /> Residential Community
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-2">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Residential Community Hub</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   {activeSociety?.name || 'Society Hub'}
                 </h1>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
                   {activeSociety?.address ? `${activeSociety.address} • ` : ''}
                   {activeSociety?.member_count !== undefined
-                    ? `${activeSociety.member_count} ${activeSociety.member_count === 1 ? 'Registered Member' : 'Registered Members'}`
-                    : activeSociety?.total_homes
-                    ? `${activeSociety.total_homes} Households`
-                    : 'Active Society'}
+                    ? `${activeSociety.member_count} Registered Members`
+                    : `${activeSociety?.total_homes || 0} Households`}
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-zinc-900/90 border border-white/10 text-center">
-                <div className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Society Code</div>
-                <div className="text-xl font-mono font-bold text-[#2CB7A5]">{activeSociety?.invite_code || '—'}</div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                <div className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider">Society Invite Code</div>
+                <div className="text-2xl font-mono font-black text-blue-600">{activeSociety?.invite_code || '—'}</div>
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl bg-zinc-900/50 border border-white/5 text-center">
-                <div className="text-2xl font-bold text-white font-mono">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
                   {activeSociety?.member_count !== undefined ? activeSociety.member_count : (activeSociety?.total_homes || 0)}
                 </div>
-                <div className="text-xs text-zinc-400">Society Members</div>
+                <div className="text-xs font-bold text-slate-500 mt-1">Society Members</div>
               </div>
-              <div className="p-4 rounded-2xl bg-zinc-900/50 border border-white/5 text-center">
-                <div className="text-2xl font-bold text-[#2CB7A5] font-mono">{polls.length}</div>
-                <div className="text-xs text-zinc-400">Active Service Polls</div>
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                <div className="text-2xl sm:text-3xl font-black text-blue-600 font-mono">{polls.length}</div>
+                <div className="text-xs font-bold text-slate-500 mt-1">Service Drives Initiated</div>
               </div>
-              <div className="p-4 rounded-2xl bg-zinc-900/50 border border-white/5 text-center">
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
                 {realResidentSavings > 0 ? (
                   <>
-                    <div className="text-2xl font-bold text-emerald-400 font-mono">₹{realResidentSavings.toLocaleString()}</div>
-                    <div className="text-xs text-zinc-400">Total Savings Earned</div>
+                    <div className="text-2xl sm:text-3xl font-black text-emerald-600 font-mono">₹{realResidentSavings.toLocaleString()}</div>
+                    <div className="text-xs font-bold text-slate-500 mt-1">Total Savings Earned</div>
                   </>
                 ) : (
                   <>
-                    <div className="text-sm font-semibold text-zinc-400 font-mono py-1">No completed camps yet</div>
-                    <div className="text-xs text-zinc-500">Savings calculated after service</div>
+                    <div className="text-sm font-bold text-slate-700 font-mono py-1">Direct Vendor Savings</div>
+                    <div className="text-xs text-slate-400">Calculated upon drive completion</div>
                   </>
                 )}
               </div>
@@ -555,7 +620,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                     navigator.clipboard.writeText(text);
                     toast.success('Society invite message copied!');
                   }}
-                  className="px-6 py-3 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center justify-center gap-2"
+                  className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20"
                 >
                   <Copy className="w-4 h-4" />
                   <span>Copy Society Invite Code</span>
@@ -565,7 +630,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenJoinModal}
-                className="px-6 py-3 rounded-xl bg-zinc-900 border border-white/10 text-zinc-300 font-semibold text-xs hover:bg-zinc-800 transition"
+                className="px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition cursor-pointer"
               >
                 Switch / Join Another Society
               </button>
@@ -575,7 +640,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* MODALS - ALWAYS MOUNTED FOR ALL TABS */}
+      {/* MODALS */}
       {/* ------------------------------------------------------------- */}
       <CreatePollModal
         isOpen={isCreatePollOpen}
@@ -610,22 +675,24 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
       {/* Booking Modal with Capacity Slots (Zero Payments in MVP) */}
       {bookingCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-[#18191D] p-6 sm:p-8 shadow-2xl space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               onClick={() => setBookingCampaign(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white"
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 stroke-[2.2]" />
             </button>
 
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2CB7A5]/10 text-[#2CB7A5] text-xs font-semibold mb-1">
-                <Calendar className="w-3.5 h-3.5" /> Select Service Slot
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-1">
+                <Calendar className="w-3.5 h-3.5 text-blue-600" /> Select Service Slot
               </div>
-              <h2 className="text-xl font-bold text-white">{bookingCampaign.title}</h2>
-              <p className="text-xs text-zinc-400">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                {bookingCampaign.title}
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
                 {bookingCampaign.society?.name || 'Society'} • Service Date: {bookingCampaign.event_date}
               </p>
             </div>
@@ -633,7 +700,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
             <form onSubmit={handleConfirmBooking} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Flat / Unit Number
                   </label>
                   <input
@@ -642,17 +709,17 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                     onChange={(e) => setBookingFlat(e.target.value)}
                     required
                     placeholder="e.g. A-402"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Quantity (Units)
                   </label>
                   <select
                     value={bookingQuantity}
                     onChange={(e) => setBookingQuantity(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   >
                     {[1, 2, 3, 4, 5].map((q) => (
                       <option key={q} value={q}>
@@ -665,11 +732,11 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
               {/* Capacity-Based Time Slot Picker */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                  Select Available Service Slot
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Select Preferred Arrival Window
                 </label>
                 {(!bookingCampaign.slots || bookingCampaign.slots.length === 0) ? (
-                  <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5 text-center text-xs text-zinc-400">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 font-medium">
                     Standard service timing will be coordinated on service day.
                   </div>
                 ) : (
@@ -686,21 +753,21 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                           key={slot.id}
                           disabled={isFull}
                           onClick={() => setSelectedSlotId(slot.id)}
-                          className={`p-2.5 rounded-xl border text-xs font-medium transition text-center ${
+                          className={`p-3 rounded-2xl border text-xs transition text-center cursor-pointer ${
                             isSelected
-                              ? 'border-[#2CB7A5] bg-[#2CB7A5]/10 text-[#2CB7A5] font-bold'
+                              ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-extrabold ring-2 ring-blue-600/20'
                               : isFull
-                              ? 'border-white/5 bg-zinc-900/20 text-zinc-600 cursor-not-allowed opacity-40'
-                              : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:bg-zinc-800'
+                              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                           }`}
                         >
                           <Clock className="w-3.5 h-3.5 mx-auto mb-1 opacity-70" />
-                          <div className="font-semibold">{slot.slot_time}</div>
-                          <div className="text-[10px] mt-0.5 font-mono">
+                          <div className="font-extrabold">{slot.slot_time}</div>
+                          <div className="text-[10px] mt-0.5 font-bold">
                             {isFull ? (
-                              <span className="text-red-400 font-bold">FULL</span>
+                              <span className="text-rose-500">FULL</span>
                             ) : (
-                              <span className="text-[#2CB7A5]">{max - booked} / {max} available</span>
+                              <span className="text-blue-600">{max - booked} / {max} slots left</span>
                             )}
                           </div>
                         </button>
@@ -710,51 +777,97 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 )}
               </div>
 
-              {/* Direct Settlement Summary (Zero Payments in MVP) */}
-              <div className="p-4 rounded-2xl bg-zinc-900/90 border border-white/5 space-y-2 text-xs">
-                <div className="flex justify-between text-zinc-400">
-                  <span>Agreed Bulk Rate:</span>
-                  <span className="font-mono text-white">₹{bookingCampaign.current_price} / unit</span>
+              {/* Direct Settlement Summary */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+                <div className="flex justify-between text-slate-500 font-medium">
+                  <span>Agreed Group Rate:</span>
+                  <span className="font-bold text-slate-900">₹{bookingCampaign.current_price} / unit</span>
                 </div>
-                <div className="flex justify-between text-white font-semibold">
-                  <span>Total Service Amount:</span>
-                  <span className="font-mono font-bold text-sm text-[#2CB7A5]">
+                <div className="flex justify-between text-slate-900 font-bold">
+                  <span>Total Payable:</span>
+                  <span className="font-black text-base text-emerald-600">
                     ₹{bookingCampaign.current_price * bookingQuantity}
                   </span>
                 </div>
-                <div className="pt-2 border-t border-white/5 text-[11px] text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>Zero upfront payment. Pay ₹{bookingCampaign.current_price * bookingQuantity} directly to provider on service day.</span>
+                <div className="pt-2 border-t border-slate-200 text-[11px] text-emerald-700 font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>Pay ₹{bookingCampaign.current_price * bookingQuantity} directly to provider on service day after work is done.</span>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isBooking}
-                className="w-full py-3.5 rounded-2xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-300 text-white font-black text-sm sm:text-base shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                {isBooking ? 'Confirming...' : 'Confirm Slot Booking'}
+                {isBooking ? 'Confirming...' : 'Confirm Slot Reservation'}
               </button>
             </form>
           </div>
         </div>
       )}
 
+      {/* Booking Confirmed Voucher Modal matching Ownera BookingConfirmedScreen */}
+      {confirmedBookingData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-2xl space-y-6 text-center">
+            <div className="w-16 h-16 rounded-3xl bg-emerald-600 text-white flex items-center justify-center shadow-xl shadow-emerald-600/30 mx-auto">
+              <Check className="w-8 h-8 stroke-[3]" />
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                Service slot confirmed! 🎉
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                Appointment reserved for Unit {confirmedBookingData.flatNumber}.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-left space-y-2.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Service</span>
+                <span className="font-extrabold text-slate-900">{confirmedBookingData.campaign?.title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Service Date</span>
+                <span className="font-extrabold text-slate-900">{confirmedBookingData.serviceDate}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Partner</span>
+                <span className="font-extrabold text-blue-600">{confirmedBookingData.providerName}</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-slate-200">
+                <span className="text-slate-700 font-bold">Amount Payable on Completion</span>
+                <span className="font-black text-sm text-emerald-600">{confirmedBookingData.price}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setConfirmedBookingData(null)}
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-sm transition cursor-pointer"
+            >
+              Done &amp; Return to Hub
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Rating Modal */}
       {ratingBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#18191D] p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => setRatingBooking(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white"
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="space-y-1">
-              <h3 className="font-bold text-lg text-white">Rate Completed Service</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="font-extrabold text-lg text-slate-900">Rate Completed Service</h3>
+              <p className="text-xs text-slate-500 font-medium">
                 {ratingBooking.campaign?.title} • {ratingBooking.provider?.company_name || 'Provider'}
               </p>
             </div>
@@ -766,13 +879,13 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                     type="button"
                     key={star}
                     onClick={() => setRatingScore(star)}
-                    className="p-2 transition hover:scale-110"
+                    className="p-2 transition hover:scale-110 cursor-pointer"
                   >
                     <Star
                       className={`w-8 h-8 ${
                         star <= ratingScore
                           ? 'text-amber-400 fill-amber-400'
-                          : 'text-zinc-600'
+                          : 'text-slate-200'
                       }`}
                     />
                   </button>
@@ -780,7 +893,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Feedback / Review (Optional)
                 </label>
                 <textarea
@@ -788,16 +901,16 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                   value={ratingReview}
                   onChange={(e) => setRatingReview(e.target.value)}
                   placeholder="Describe punctuality, quality, and technician behavior..."
-                  className="w-full p-3 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5] resize-none"
+                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmittingRating}
-                className="w-full py-3 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition"
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition cursor-pointer"
               >
-                {isSubmittingRating ? 'Submitting...' : 'Submit 5-Star Rating'}
+                {isSubmittingRating ? 'Submitting...' : 'Submit Rating'}
               </button>
             </form>
           </div>
@@ -806,35 +919,35 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
       {/* Issue Report Modal */}
       {issueBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#18191D] p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => setIssueBooking(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white"
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-semibold">
-                <AlertTriangle className="w-3.5 h-3.5" /> Report a Service Problem
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-bold">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Report a Service Problem
               </div>
-              <h3 className="font-bold text-lg text-white">We&apos;re here to resolve it</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="font-extrabold text-lg text-slate-900">We&apos;re here to resolve it</h3>
+              <p className="text-xs text-slate-500 font-medium">
                 Organizer and provider will immediately receive this report.
               </p>
             </div>
 
             <form onSubmit={handleSubmitIssue} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Problem Category
                 </label>
                 <select
                   value={issueCategory}
                   onChange={(e) => setIssueCategory(e.target.value as any)}
-                  className="w-full p-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 >
                   <option value="quality">Service Quality Issue / Incomplete checklist</option>
                   <option value="no_show">Technician did not arrive on time</option>
@@ -845,7 +958,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Describe the Issue (Minimum 10 characters)
                 </label>
                 <textarea
@@ -855,14 +968,14 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                   required
                   minLength={10}
                   placeholder="Explain what went wrong during the service..."
-                  className="w-full p-3 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-red-400 resize-none"
+                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmittingIssue}
-                className="w-full py-3 rounded-xl bg-red-500 text-white font-bold text-xs uppercase tracking-wider hover:bg-red-600 transition"
+                className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition cursor-pointer"
               >
                 {isSubmittingIssue ? 'Submitting Report...' : 'Submit Issue to Society Organizer'}
               </button>

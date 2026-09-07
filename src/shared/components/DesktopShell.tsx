@@ -27,6 +27,7 @@ interface DesktopShellProps {
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
   user?: BaseUserProfile;
+  onOpenCreate?: () => void;
 }
 
 export const DesktopShell: React.FC<DesktopShellProps> = ({
@@ -36,7 +37,8 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
   activeRole = 'resident',
   activeSociety = null,
   onJoinSocietyClick = () => {},
-  theme = 'dark',
+  theme = 'light',
+  onOpenCreate,
 }) => {
   // Determine desktop secondary tabs matching active role
   let navItems: { id: string; label: string; icon: React.FC<{ className?: string }> }[] = [];
@@ -64,20 +66,21 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#121316] text-[#FAF8F5]">
+    <div className="min-h-screen flex flex-col bg-slate-50/70 text-slate-900 font-sans">
       <Header
         theme={theme}
         activeRole={activeRole}
         activeSociety={activeSociety}
         onJoinSocietyClick={onJoinSocietyClick}
+        onOpenCreate={onOpenCreate}
       />
 
-      <main className="flex-1 relative z-10 pb-20 md:pb-10 pt-4 sm:pt-6">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+      <main className="flex-1 relative z-10 pb-20 md:pb-12 pt-4 sm:pt-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Desktop Secondary Navigation Bar */}
           {activeSociety && navItems.length > 0 && (
-            <div className="hidden md:flex items-center justify-between border-b border-white/[0.08] pb-3 mb-6">
-              <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-white/5 shadow-inner">
+            <div className="hidden md:flex items-center justify-between border-b border-slate-200/80 pb-3 mb-6">
+              <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200/80 shadow-2xs">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -85,10 +88,10 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
                     <button
                       key={item.id}
                       onClick={() => onTabChange(item.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-[#2CB7A5] text-zinc-950 font-bold shadow-md'
-                          : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                          ? 'bg-blue-50 text-blue-600 shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -98,8 +101,8 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
                 })}
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
-                <span className="w-2 h-2 rounded-full bg-[#2CB7A5]" />
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span className="capitalize">{activeRole === 'organizer' ? 'Secretary' : activeRole}</span>
               </div>
             </div>
@@ -113,6 +116,7 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
         activeTab={activeTab}
         onTabChange={onTabChange}
         activeRole={activeRole}
+        onOpenCreate={onOpenCreate}
       />
     </div>
   );

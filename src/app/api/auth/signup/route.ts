@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/service';
 import { z } from 'zod';
-import { insertTermsConsentEvent } from '@/lib/consent';
+import { insertTermsConsentEvent, getSafePostAuthRedirect } from '@/lib/consent';
 import { checkAndGrantWelcomeCredits } from '@/lib/welcome-credits';
 import { recordAndCheckFingerprint } from '@/lib/fingerprint/server';
 import { getClientIp, checkSignupRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
@@ -14,6 +14,7 @@ const signupSchema = z.object({
   fingerprint: z.string().optional(),
   client_id: z.string().optional(),
   invite_code: z.string().optional(),
+  next: z.string().optional(),
 });
 
 function createAnonSupabaseClient() {
@@ -49,7 +50,8 @@ export async function POST(request: Request) {
 
   const supabase = createAnonSupabaseClient();
   const origin = new URL(request.url).origin;
-  const emailRedirectTo = `${origin}/auth/callback?next=/home`;
+  const safeNext = getSafePostAuthRedirect(parsedBody.next || null);
+  const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 
   const { data, error } = await supabase.auth.signUp({
     email: parsedBody.email,

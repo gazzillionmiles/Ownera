@@ -121,10 +121,21 @@ export async function insertTermsConsentEvent(params: {
   }
 }
 
-export function getSafePostAuthRedirect(next: string | null): string {
-  if (!next || !next.startsWith('/')) {
+export function getSafePostAuthRedirect(next: string | null | undefined): string {
+  if (!next || typeof next !== 'string') {
     return '/home';
   }
 
-  return next;
+  const trimmed = next.trim();
+  // Must start with single slash, not protocol-relative (//) or backslash (/\ or \..)
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.includes('\\')) {
+    return '/home';
+  }
+
+  // Ensure it is a valid relative path containing URL-safe characters only
+  if (!/^\/[a-zA-Z0-9_\-.~%!$&'()*+,;=:@/?#[\]]*$/.test(trimmed)) {
+    return '/home';
+  }
+
+  return trimmed;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
@@ -63,13 +64,22 @@ export default function OnboardingPage() {
   React.useEffect(() => {
     async function checkExistingSocieties() {
       try {
+        if (uiUser.activeRole === 'provider') {
+          const provRes = await fetch('/api/providers?self=true');
+          const provData = await provRes.json().catch(() => ({}));
+          if (provData?.provider) {
+            router.replace('/partner');
+            return;
+          }
+        }
+
         const res = await fetch('/api/societies');
         if (res.ok) {
           const data = await res.json();
           if (data.societies && data.societies.length > 0) {
             await refreshProfile();
             const targetSoc = data.societies.find((s: any) => s.id === uiUser.primarySocietyId) || data.societies[0];
-            window.location.href = `/s/${targetSoc.slug}`;
+            router.replace(`/s/${targetSoc.slug}`);
           }
         }
       } catch (err) {

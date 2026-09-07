@@ -14,9 +14,11 @@ import {
   Loader2,
   Check,
   Wrench,
+  Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ServiceCatalogItem, Society, PollScope } from '@/src/types/ownera';
+import { SERVICE_CATEGORIES, STANDARDIZED_SERVICES_CATALOG } from '@/src/constants/serviceCategories';
 
 interface CreatePollModalProps {
   isOpen: boolean;
@@ -35,7 +37,19 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 }) => {
   const [mounted, setMounted] = useState(false);
   const [scope, setScope] = useState<PollScope>('society');
-  const [selectedServiceId, setSelectedServiceId] = useState<string>(services[0]?.id || '');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+
+  // Filter out any legacy chimney, mattress, or sofa services
+  const baseCatalog: ServiceCatalogItem[] = (
+    services && services.length > 0 ? services : STANDARDIZED_SERVICES_CATALOG
+  ).filter((s) => {
+    const n = s.name.toLowerCase();
+    const sl = (s.slug || '').toLowerCase();
+    return !n.includes('chimney') && !n.includes('mattress') && !n.includes('sofa') &&
+           !sl.includes('chimney') && !sl.includes('mattress') && !sl.includes('sofa');
+  });
+
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(baseCatalog[0]?.id || '');
   const [isCustomService, setIsCustomService] = useState(false);
   const [customServiceName, setCustomServiceName] = useState('');
   const [targetPropertyUnit, setTargetPropertyUnit] = useState('');
@@ -57,17 +71,24 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!selectedServiceId && services.length > 0) {
-      const firstServ = services[0];
+    if (!selectedServiceId && baseCatalog.length > 0) {
+      const firstServ = baseCatalog[0];
       setSelectedServiceId(firstServ.id);
       if (!isCustomService) {
         setTitle(`${firstServ.name} ${scope === 'society' ? 'Camp' : 'for my home'}`);
         setPollQuestion(scope === 'society' ? `Who wants ${firstServ.name.toLowerCase()} this Sunday?` : `I need ${firstServ.name.toLowerCase()} for my house`);
       }
     }
-  }, [services, selectedServiceId, isCustomService, scope]);
+  }, [baseCatalog, selectedServiceId, isCustomService, scope]);
 
   if (!isOpen || !mounted) return null;
+
+  const filteredServices = selectedCategoryId === 'all'
+    ? baseCatalog
+    : baseCatalog.filter((s) => {
+        const cat = SERVICE_CATEGORIES.find((c) => c.id === selectedCategoryId);
+        return cat && (s.category?.toLowerCase() === cat.name.toLowerCase() || s.name.toLowerCase().includes(cat.name.toLowerCase().split(' ')[0]));
+      });
 
   const handleScopeChange = (newScope: PollScope) => {
     setScope(newScope);
@@ -173,51 +194,52 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl rounded-3xl border border-white/10 bg-[#18191D] p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5"
+          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5 stroke-[2.2]" />
         </button>
 
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2CB7A5]/10 text-[#2CB7A5] text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> Create Service Poll &amp; Campaign
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span>Create Service Poll &amp; Campaign</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Start a Demand Poll in {activeSociety?.name || 'Your Society'}
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            Propose Service in {activeSociety?.name || 'Society'}
           </h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Collect resident demand or post a request for your home to invite top provider quotes.
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Collect resident demand to unlock group vendor discounts across standard service categories.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 1. Scope Selector */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
               1. Choose Scope
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleScopeChange('society')}
-                className={`p-3.5 rounded-2xl border text-left transition flex items-start gap-3 ${
+                className={`p-4 rounded-2xl border text-left transition flex items-start gap-3 cursor-pointer ${
                   scope === 'society'
-                    ? 'border-[#2CB7A5] bg-[#2CB7A5]/10 text-white shadow-sm'
-                    : 'border-white/5 bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800'
+                    ? 'border-blue-600 bg-blue-50/70 text-slate-900 shadow-sm ring-2 ring-blue-600/20'
+                    : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <div className="p-2 rounded-xl bg-zinc-800 text-[#2CB7A5] shrink-0 mt-0.5">
-                  <Building2 className="w-4 h-4" />
+                <div className="p-2.5 rounded-xl bg-blue-100 text-blue-700 shrink-0 mt-0.5">
+                  <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-xs text-white">Society-Wide Camp</div>
-                  <div className="text-[11px] text-zinc-400 mt-0.5">
-                    Visible to all neighbors. Secretary signs off for bulk vendor outreach.
+                  <div className="font-extrabold text-sm text-slate-900">Society-Wide Camp</div>
+                  <div className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                    Visible to all neighbors. Quorum gathered before inviting vendor quotes.
                   </div>
                 </div>
               </button>
@@ -225,47 +247,83 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleScopeChange('my_house')}
-                className={`p-3.5 rounded-2xl border text-left transition flex items-start gap-3 ${
+                className={`p-4 rounded-2xl border text-left transition flex items-start gap-3 cursor-pointer ${
                   scope === 'my_house'
-                    ? 'border-[#2CB7A5] bg-[#2CB7A5]/10 text-white shadow-sm'
-                    : 'border-white/5 bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800'
+                    ? 'border-blue-600 bg-blue-50/70 text-slate-900 shadow-sm ring-2 ring-blue-600/20'
+                    : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <div className="p-2 rounded-xl bg-zinc-800 text-amber-400 shrink-0 mt-0.5">
-                  <Home className="w-4 h-4" />
+                <div className="p-2.5 rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+                  <Home className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-xs text-white">My House Only</div>
-                  <div className="text-[11px] text-zinc-400 mt-0.5">
-                    Individual request for your unit. Instant vendor invite without secretary gating.
+                  <div className="font-extrabold text-sm text-slate-900">Personal Request</div>
+                  <div className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                    Individual request for your flat/unit with direct vendor invites.
                   </div>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* 2. Service Selection */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-              2. Select Service
-            </label>
+          {/* 2. Category Filter & Service Selection */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                2. Select Service Category
+              </label>
+              <span className="text-[11px] font-semibold text-slate-400">
+                12 Standard Categories
+              </span>
+            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {services.map((s) => {
+            {/* Category horizontal scroll pills */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryId('all')}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${
+                  selectedCategoryId === 'all'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All Services
+              </button>
+              {SERVICE_CATEGORIES.map((cat) => (
+                <button
+                  type="button"
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${
+                    selectedCategoryId === cat.id
+                      ? 'bg-blue-600 text-white shadow-2xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Service options grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {filteredServices.map((s) => {
                 const isSelected = !isCustomService && selectedServiceId === s.id;
                 return (
                   <button
                     type="button"
                     key={s.id}
                     onClick={() => handleServiceSelect(s)}
-                    className={`p-2.5 rounded-xl border text-left transition ${
+                    className={`p-3 rounded-2xl border text-left transition cursor-pointer ${
                       isSelected
-                        ? 'border-[#2CB7A5] bg-[#2CB7A5]/10 text-white font-bold'
-                        : 'border-white/5 bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800'
+                        ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold shadow-2xs ring-2 ring-blue-600/20'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <div className="text-xs font-semibold truncate">{s.name}</div>
-                    <div className="text-[10px] text-zinc-500 font-mono">~₹{s.base_price_estimate}</div>
+                    <div className="text-xs font-extrabold truncate text-slate-900">{s.name}</div>
+                    <div className="text-[10px] text-slate-500 font-medium truncate mt-0.5">{s.category}</div>
+                    <div className="text-[11px] text-emerald-600 font-bold font-mono mt-1">~₹{s.base_price_estimate}</div>
                   </button>
                 );
               })}
@@ -277,16 +335,16 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   setTitle('Custom Service Request');
                   setPollQuestion('Who wants this service?');
                 }}
-                className={`p-2.5 rounded-xl border text-left transition ${
+                className={`p-3 rounded-2xl border text-left transition cursor-pointer ${
                   isCustomService
-                    ? 'border-[#2CB7A5] bg-[#2CB7A5]/10 text-white font-bold'
-                    : 'border-white/5 bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800'
+                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold shadow-2xs'
+                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                <div className="text-xs font-semibold text-[#2CB7A5] flex items-center gap-1">
-                  <Plus className="w-3 h-3" /> Custom
+                <div className="text-xs font-bold text-blue-600 flex items-center gap-1">
+                  <Plus className="w-3.5 h-3.5" /> Custom
                 </div>
-                <div className="text-[10px] text-zinc-500">Other service</div>
+                <div className="text-[10px] text-slate-400">Other community requirement</div>
               </button>
             </div>
 
@@ -296,139 +354,147 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   type="text"
                   value={customServiceName}
                   onChange={(e) => setCustomServiceName(e.target.value)}
-                  placeholder="e.g. Balcony Pigeon Netting or Curtain Cleaning"
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#2CB7A5]/40 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                  placeholder="e.g. Balcony Mosquito Netting or Anti-Termite Treatment"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-semibold"
                 />
               </div>
             )}
           </div>
 
-          {/* 3. Poll Question & Configurable Options */}
-          <div className="space-y-3 p-4 rounded-2xl bg-zinc-900/60 border border-white/5">
-            <div className="text-xs font-bold text-white flex items-center justify-between">
-              <span>3. Poll Question &amp; Options</span>
-              <div className="flex gap-1.5 text-[10px]">
+          {/* 3. Campaign Title & Question */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Campaign Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Poll Question for Society
+              </label>
+              <input
+                type="text"
+                value={pollQuestion}
+                onChange={(e) => setPollQuestion(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          {/* 4. Event Date */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Proposed Service Date
+              </label>
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Poll Duration (Days)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                value={pollDeadlineDays}
+                onChange={(e) => setPollDeadlineDays(parseInt(e.target.value, 10) || 5)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          {/* 5. Voting Options */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700">
+                Poll Options
+              </label>
+              <div className="flex gap-1.5 text-[11px]">
                 <button
                   type="button"
                   onClick={() => handlePresetOptions('yes_no')}
-                  className="px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                  className="px-2 py-0.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
                 >
-                  Yes/No
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePresetOptions('service_types')}
-                  className="px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-                >
-                  Tiers
+                  Yes / No
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePresetOptions('weekend_days')}
-                  className="px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                  className="px-2 py-0.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
                 >
                   Days
                 </button>
               </div>
             </div>
 
-            <div>
-              <label className="block text-[11px] text-zinc-400 mb-1">Poll Question</label>
-              <input
-                type="text"
-                value={pollQuestion}
-                onChange={(e) => setPollQuestion(e.target.value)}
-                required
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-zinc-800 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] text-zinc-400 mb-1.5">Configured Vote Choices</label>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {pollOptions.map((opt, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-800 border border-white/10 text-xs text-white"
-                  >
-                    <span>{opt}</span>
+            <div className="space-y-1.5">
+              {pollOptions.map((opt, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+                    {opt}
+                  </div>
+                  {pollOptions.length > 1 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveOption(idx)}
-                      className="text-zinc-500 hover:text-red-400"
+                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                     >
-                      <X className="w-3 h-3" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customOptionInput}
-                  onChange={(e) => setCustomOptionInput(e.target.value)}
-                  placeholder="Add custom choice (e.g. Deep Clean)..."
-                  className="flex-1 px-3 py-1.5 rounded-xl border border-white/10 bg-zinc-800 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddOption}
-                  className="px-3 py-1.5 rounded-xl bg-zinc-800 border border-white/10 text-xs font-semibold hover:bg-zinc-700 text-zinc-200"
-                >
-                  Add
-                </button>
-              </div>
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
 
-          {/* 4. Scheduling & Dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                Target Service Date
-              </label>
+            <div className="flex gap-2 pt-1">
               <input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                type="text"
+                value={customOptionInput}
+                onChange={(e) => setCustomOptionInput(e.target.value)}
+                placeholder="Add custom option..."
+                className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                Poll Duration (Days)
-              </label>
-              <select
-                value={pollDeadlineDays}
-                onChange={(e) => setPollDeadlineDays(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+              <button
+                type="button"
+                onClick={handleAddOption}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition cursor-pointer"
               >
-                <option value={3}>3 Days</option>
-                <option value={5}>5 Days (Recommended)</option>
-                <option value={7}>7 Days</option>
-                <option value={10}>10 Days</option>
-              </select>
+                + Add
+              </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3.5 rounded-2xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <span>Publish Poll &amp; Open Demand Voting</span>
-                <Check className="w-4 h-4" />
-              </>
-            )}
-          </button>
+          {/* Submit Button */}
+          <div className="pt-3">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-300 text-white font-black text-sm sm:text-base shadow-md shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Submitting proposal...</span>
+                </>
+              ) : (
+                <span>Publish Poll to Society</span>
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>,

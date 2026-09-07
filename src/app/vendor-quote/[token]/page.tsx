@@ -119,22 +119,22 @@ export default function VendorQuotePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#121316] text-white flex flex-col items-center justify-center p-4 space-y-3">
-        <Loader2 className="w-8 h-8 text-[#2CB7A5] animate-spin" />
-        <p className="text-xs text-zinc-400">Loading campaign invitation...</p>
+      <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col items-center justify-center p-4 space-y-3">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <p className="text-xs font-semibold text-slate-500">Loading campaign invitation...</p>
       </div>
     );
   }
 
   if (error || !inviteData) {
     return (
-      <div className="min-h-screen bg-[#121316] text-white flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+      <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
           <Briefcase className="w-6 h-6" />
         </div>
-        <h1 className="text-xl font-bold">Invitation Not Found</h1>
-        <p className="text-xs text-zinc-400 max-w-sm">{error}</p>
-        <Link href="/" className="px-5 py-2.5 rounded-xl bg-zinc-900 border border-white/10 text-xs font-semibold">
+        <h1 className="text-xl font-black text-slate-900">Invitation Not Found</h1>
+        <p className="text-xs text-slate-500 max-w-sm">{error}</p>
+        <Link href="/" className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition">
           Return to {APP_NAME} Home
         </Link>
       </div>
@@ -145,56 +145,56 @@ export default function VendorQuotePage({
   const invite = inviteData.invite;
 
   return (
-    <div className="min-h-screen bg-[#121316] text-white flex flex-col">
-      <header className="border-b border-white/[0.08] bg-[#121316]/95 backdrop-blur-xl">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#2CB7A5] to-emerald-400 flex items-center justify-center text-zinc-950 font-bold">
-              <Layers className="w-4 h-4" />
+    <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col font-sans">
+      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-black">
+              O
             </div>
-            <span className="font-bold text-base text-white">{APP_NAME} Vendor Portal</span>
+            <span className="font-extrabold text-base text-slate-900">{APP_NAME.toLowerCase()} Vendor Portal</span>
           </Link>
-          <div className="text-[11px] font-mono text-zinc-400">
-            Invited: <strong className="text-white">{invite.business_name}</strong>
+          <div className="text-xs font-medium text-slate-500">
+            Invited: <strong className="text-slate-900 font-bold">{invite.business_name}</strong>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 space-y-6">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 space-y-6">
         {/* Campaign Opportunity Card */}
-        <div className="p-6 rounded-3xl bg-gradient-to-br from-[#18191D] to-[#141518] border border-[#2CB7A5]/30 shadow-2xl space-y-4">
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2CB7A5]/10 text-[#2CB7A5] text-xs font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">
               <Building2 className="w-3.5 h-3.5" /> {campaign.society?.name || 'Society Camp'}
             </div>
-            <span className="text-xs text-zinc-400 flex items-center gap-1 font-mono">
-              <Calendar className="w-3.5 h-3.5" /> Service Date: {campaign.event_date}
+            <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" /> Service Date: {campaign.event_date || 'Upcoming Weekend'}
             </span>
           </div>
 
           <div>
-            <h1 className="text-2xl font-extrabold text-white">{campaign.title}</h1>
-            <p className="text-xs text-zinc-400 mt-1">
-              {campaign.description || 'Residential society looking for verified service providers for high-density bulk camp.'}
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{campaign.title}</h1>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+              {campaign.description || 'Residential society looking for service partners for high-density bulk camp.'}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-zinc-900/80 border border-white/5 text-center text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center text-xs">
             <div>
-              <div className="text-zinc-400 text-[11px]">Society Demand</div>
-              <div className="text-xl font-bold font-mono text-[#2CB7A5] mt-0.5">
-                {campaign.target_customers || 30}+ Homes
+              <div className="text-slate-400 text-[11px] font-bold uppercase">Society Demand</div>
+              <div className="text-xl font-black font-mono text-blue-600 mt-0.5">
+                {campaign.target_customers || 30}+ Units
               </div>
             </div>
             <div>
-              <div className="text-zinc-400 text-[11px]">Society Location</div>
-              <div className="text-sm font-bold text-zinc-200 mt-1">
+              <div className="text-slate-400 text-[11px] font-bold uppercase">Location</div>
+              <div className="text-sm font-bold text-slate-800 mt-1">
                 {campaign.society?.city || 'Bengaluru'}
               </div>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <div className="text-zinc-400 text-[11px]">Travel Time</div>
-              <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
+              <div className="text-slate-400 text-[11px] font-bold uppercase">Transit Waste</div>
+              <div className="text-xl font-black font-mono text-emerald-600 mt-0.5">
                 0 Hours (1 Gate)
               </div>
             </div>
@@ -203,37 +203,37 @@ export default function VendorQuotePage({
 
         {/* Existing Quote Banner */}
         {submittedQuote && (
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
               <div>
-                <div className="font-bold">Your Offer of ₹{submittedQuote.price_per_unit}/unit is submitted!</div>
-                <div className="text-[11px] text-emerald-400/80">You can update your capacity or price below anytime before acceptance.</div>
+                <div className="font-extrabold">Your Quote of ₹{submittedQuote.price_per_unit}/unit is submitted!</div>
+                <div className="text-[11px] text-emerald-700">You can update your capacity or rate below anytime before committee acceptance.</div>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold uppercase text-[10px]">
+            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-mono font-bold uppercase text-[10px]">
               {submittedQuote.status}
             </span>
           </div>
         )}
 
         {/* Submit Offer Form */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-[#18191D] border border-white/10 shadow-2xl space-y-6">
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-6">
           <div className="space-y-1">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-[#2CB7A5]" />
-              <span>Submit Your Service Offer</span>
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-blue-600" />
+              <span>Submit Commercial Quote</span>
             </h2>
-            <p className="text-xs text-zinc-400">
-              Set your bulk per-unit price and specify how many simultaneous houses your crew can handle.
+            <p className="text-xs text-slate-500 font-medium">
+              Set your bulk per-unit rate and specify how many simultaneous flats your crew can service.
             </p>
           </div>
 
           <form onSubmit={handleSubmitQuote} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Offer Price per Unit (₹)
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Quote Price per Unit (₹)
                 </label>
                 <input
                   type="number"
@@ -241,37 +241,37 @@ export default function VendorQuotePage({
                   onChange={(e) => setPricePerUnit(Number(e.target.value))}
                   required
                   min={100}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white font-mono text-base focus:outline-none focus:border-[#2CB7A5]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Start Time on Service Day
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Start Arrival Time
                 </label>
                 <input
                   type="text"
                   value={availableStartTime}
                   onChange={(e) => setAvailableStartTime(e.target.value)}
                   placeholder="e.g. 10:00 AM"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
               </div>
             </div>
 
             {/* Crew Capacity Config */}
-            <div className="p-4 rounded-2xl bg-zinc-900/70 border border-white/5 space-y-3">
-              <div className="text-xs font-bold text-[#2CB7A5] flex items-center gap-1.5">
-                <Users className="w-4 h-4" />
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+              <div className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-600" />
                 <span>Crew &amp; Simultaneous Capacity</span>
               </div>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-slate-500">
                 This dictates the scheduling slot capacity for residents (e.g. 5 technicians = 5 simultaneous flats per time slot).
               </p>
 
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  <label className="text-[11px] text-zinc-400 block mb-1">Team Size</label>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Crew Size</label>
                   <input
                     type="number"
                     value={techniciansCount}
@@ -282,29 +282,29 @@ export default function VendorQuotePage({
                     }}
                     min={1}
                     max={50}
-                    className="w-full p-2 rounded-xl bg-zinc-800 border border-white/10 font-mono text-xs text-white"
+                    className="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-zinc-400 block mb-1">Simultaneous Flats</label>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Simultaneous Flats</label>
                   <input
                     type="number"
                     value={simultaneousCapacity}
                     onChange={(e) => setSimultaneousCapacity(Number(e.target.value))}
                     min={1}
                     max={50}
-                    className="w-full p-2 rounded-xl bg-zinc-800 border border-white/10 font-mono text-xs text-white"
+                    className="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-zinc-400 block mb-1">Minutes / Unit</label>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Minutes / Unit</label>
                   <input
                     type="number"
                     value={estimatedDurationMinutes}
                     onChange={(e) => setEstimatedDurationMinutes(Number(e.target.value))}
                     min={15}
                     max={180}
-                    className="w-full p-2 rounded-xl bg-zinc-800 border border-white/10 font-mono text-xs text-white"
+                    className="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -312,7 +312,7 @@ export default function VendorQuotePage({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Total Daily Capacity (Units)
                 </label>
                 <input
@@ -320,11 +320,11 @@ export default function VendorQuotePage({
                   value={totalCapacity}
                   onChange={(e) => setTotalCapacity(Number(e.target.value))}
                   min={5}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white font-mono text-xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Service Warranty (Days)
                 </label>
                 <input
@@ -332,27 +332,27 @@ export default function VendorQuotePage({
                   value={warrantyDays}
                   onChange={(e) => setWarrantyDays(Number(e.target.value))}
                   min={0}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white font-mono text-xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Equipment &amp; Technician Notes
               </label>
               <textarea
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full p-3 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5] resize-none"
+                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none"
               />
             </div>
 
             {/* Potential Revenue Callout */}
-            <div className="p-4 rounded-2xl bg-[#2CB7A5]/10 border border-[#2CB7A5]/25 flex items-center justify-between text-xs">
-              <span className="text-zinc-300 font-medium">Potential Day Revenue ({campaign.target_customers || 30} homes):</span>
-              <span className="text-xl font-bold font-mono text-[#2CB7A5]">
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-between text-xs">
+              <span className="text-slate-700 font-bold">Estimated Day Volume ({campaign.target_customers || 30} units):</span>
+              <span className="text-xl font-black font-mono text-blue-600">
                 ₹{(pricePerUnit * (campaign.target_customers || 30)).toLocaleString()}
               </span>
             </div>
@@ -360,14 +360,14 @@ export default function VendorQuotePage({
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-2xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+              className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-md shadow-blue-500/25 disabled:opacity-50 cursor-pointer"
             >
               {submitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>{submittedQuote ? 'Update Submitted Quote' : 'Submit Offer to Society Organizer'}</span>
+                  <span>{submittedQuote ? 'Update Submitted Quote' : 'Submit Quote to Society Committee'}</span>
                 </>
               )}
             </button>

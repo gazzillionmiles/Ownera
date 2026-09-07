@@ -6,23 +6,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/src/shared/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-premium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 active:scale-[0.99] cursor-pointer [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        outline: "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        glass: "btn-glass text-foreground hover:bg-white/10",
+        default: "bg-blue-600 text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-95",
+        success: "bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95",
+        destructive: "bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:scale-95",
+        outline: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 active:scale-95",
+        secondary: "bg-slate-100 text-slate-800 hover:bg-slate-200 active:scale-95",
+        ghost: "hover:bg-slate-100 text-slate-700 hover:text-slate-900",
+        link: "text-blue-600 underline-offset-4 hover:underline font-semibold",
+        glass: "bg-white/80 backdrop-blur-md border border-slate-200/80 text-slate-800 hover:bg-white shadow-xs",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-lg px-3 text-xs",
-        lg: "h-12 rounded-2xl px-8 text-base",
-        icon: "h-10 w-10",
+        default: "h-11 px-5 py-2.5",
+        sm: "h-9 rounded-xl px-3.5 text-xs",
+        lg: "h-13 rounded-2xl px-8 text-base font-extrabold",
+        icon: "h-10 w-10 rounded-xl",
       },
     },
     defaultVariants: {

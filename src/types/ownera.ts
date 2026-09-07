@@ -48,6 +48,18 @@ export interface SocietyInvitation {
   society?: Society;
 }
 
+export interface SocietyInviteLink {
+  id: string;
+  society_id: string;
+  token: string;
+  is_active: boolean;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  rotated_at?: string | null;
+  society?: Society;
+}
+
 export interface Society {
   id: string;
   name: string;

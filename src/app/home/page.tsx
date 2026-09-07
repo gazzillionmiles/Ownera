@@ -22,6 +22,17 @@ export default function HomePage() {
     async function resolveUserSocieties() {
       try {
         setLoading(true);
+        if (uiUser.activeRole === 'provider') {
+          const provRes = await fetch('/api/providers?self=true');
+          const provData = await provRes.json().catch(() => ({}));
+          if (provData?.provider) {
+            router.replace('/partner');
+          } else {
+            router.replace('/partner/register');
+          }
+          return;
+        }
+
         const res = await fetch('/api/societies');
         if (!res.ok) throw new Error('Failed to fetch societies');
         const data = await res.json();
@@ -50,9 +61,9 @@ export default function HomePage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[#121316] flex flex-col items-center justify-center p-4">
-          <Loader2 className="w-8 h-8 text-[#2CB7A5] animate-spin mb-2" />
-          <p className="text-xs text-zinc-400">Loading your society hub...</p>
+        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+          <p className="text-xs font-semibold text-slate-500">Loading your society hub...</p>
         </div>
       </ProtectedRoute>
     );
@@ -69,26 +80,26 @@ export default function HomePage() {
         }}
       >
         <div className="max-w-xl mx-auto py-12 px-4 text-center space-y-6">
-          <div className="w-16 h-16 rounded-3xl bg-[#2CB7A5]/10 border border-[#2CB7A5]/20 flex items-center justify-center text-[#2CB7A5] mx-auto shadow-xl">
+          <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mx-auto shadow-md">
             <Building2 className="w-8 h-8" />
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Welcome to Ownera
             </h1>
-            <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
               Create your residential community to manage campaigns as Secretary, or join an existing apartment complex with an invite code.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl bg-[#18191D] border border-white/10 shadow-2xl space-y-3">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-md space-y-3">
             <button
               onClick={() => {
                 setModalTab('create');
                 setIsJoinModalOpen(true);
               }}
-              className="w-full py-3.5 rounded-2xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center justify-center gap-2 shadow-lg"
+              className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Create New Society (As Secretary)</span>
@@ -100,7 +111,7 @@ export default function HomePage() {
                 setModalTab('join');
                 setIsJoinModalOpen(true);
               }}
-              className="w-full py-3 rounded-2xl bg-zinc-900 border border-white/10 text-white font-semibold text-xs hover:bg-zinc-800 transition flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Join Existing Society with Code</span>
             </button>

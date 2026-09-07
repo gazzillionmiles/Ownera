@@ -16,28 +16,29 @@ import {
   Wind,
   Bug,
   Droplet,
-  Flame,
-  Armchair,
-  Bed,
   Check,
   Calendar,
   Zap,
+  Car,
+  Paintbrush,
+  Hammer,
+  Sun,
 } from 'lucide-react';
 import { APP_NAME, APP_TAGLINE } from '@/src/constants';
 
 const STANDARDIZED_SERVICES = [
   {
-    name: 'AC Servicing',
-    category: 'Cooling & HVAC',
+    name: 'AC Servicing & Jet Cleaning',
+    category: 'AC Maintenance & Repair',
     icon: Wind,
     individualPrice: 699,
     bulkPrice: 499,
     savings: 'Save ₹200 (28% off)',
-    desc: 'Jet-pump filter wash, outdoor unit deep flush & gas pressure diagnostics.',
+    desc: 'High-pressure filter wash, outdoor unit deep flush & gas pressure diagnostics.',
   },
   {
-    name: 'Pest Control',
-    category: 'Pest & Hygiene',
+    name: 'Pest & Cockroach Control',
+    category: 'Cleaning & Pest Control',
     icon: Bug,
     individualPrice: 999,
     bulkPrice: 699,
@@ -45,8 +46,8 @@ const STANDARDIZED_SERVICES = [
     desc: 'Odorless kitchen gel baiting, bathroom drain spray with 30-day retreat warranty.',
   },
   {
-    name: 'Deep Cleaning',
-    category: 'Deep Cleaning',
+    name: 'Home Deep Cleaning',
+    category: 'Cleaning & Pest Control',
     icon: Sparkles,
     individualPrice: 2999,
     bulkPrice: 2199,
@@ -54,17 +55,8 @@ const STANDARDIZED_SERVICES = [
     desc: 'Mechanized single-disc floor scrubbing, kitchen degreasing & bathroom descaling.',
   },
   {
-    name: 'Sofa Cleaning',
-    category: 'Upholstery',
-    icon: Armchair,
-    individualPrice: 799,
-    bulkPrice: 549,
-    savings: 'Save ₹250 (31% off)',
-    desc: 'Deep fabric shampoo extraction, organic stain removal & allergen sanitization.',
-  },
-  {
-    name: 'RO Servicing',
-    category: 'Water & Health',
+    name: 'RO Purifier Health Check',
+    category: 'Water Purifier & Plumbing',
     icon: Droplet,
     individualPrice: 499,
     bulkPrice: 349,
@@ -72,31 +64,76 @@ const STANDARDIZED_SERVICES = [
     desc: 'Pre-filter wash, booster pump test, TDS calibration & internal sanitization.',
   },
   {
-    name: 'Chimney Cleaning',
-    category: 'Kitchen',
-    icon: Flame,
-    individualPrice: 899,
-    bulkPrice: 629,
-    savings: 'Save ₹270 (30% off)',
-    desc: 'Baffle dismantling, ultrasonic caustic degreasing & blower motor surface clean.',
+    name: 'Electrical & Geyser Service',
+    category: 'Electrical & Appliances',
+    icon: Zap,
+    individualPrice: 499,
+    bulkPrice: 349,
+    savings: 'Save ₹150 (30% off)',
+    desc: 'Water heater geyser descaling, thermostat test, MCB diagnostics, and repairs.',
   },
   {
-    name: 'Mattress Cleaning',
-    category: 'Upholstery',
-    icon: Bed,
-    individualPrice: 649,
-    bulkPrice: 449,
-    savings: 'Save ₹200 (31% off)',
-    desc: 'HEPA dust-mite extraction, UV-C sanitization & deodorizing enzyme treatment.',
+    name: 'Car Foam Wash & Polish',
+    category: 'Car & Bike Care',
+    icon: Car,
+    individualPrice: 599,
+    bulkPrice: 399,
+    savings: 'Save ₹200 (33% off)',
+    desc: 'Doorstep basement high-pressure foam wash, interior vacuuming & UV tyre dressing.',
   },
   {
-    name: 'Water-Tank Cleaning',
-    category: 'Community Utilities',
+    name: 'Balcony Waterproofing',
+    category: 'Painting & Waterproofing',
+    icon: Paintbrush,
+    individualPrice: 1499,
+    bulkPrice: 1049,
+    savings: 'Save ₹450 (30% off)',
+    desc: 'Polymer tile joint re-grouting, exterior waterproof elastomeric coat & sealing.',
+  },
+  {
+    name: 'Home Carpentry & Repairs',
+    category: 'Home Repair & Carpentry',
+    icon: Hammer,
+    individualPrice: 449,
+    bulkPrice: 299,
+    savings: 'Save ₹150 (33% off)',
+    desc: 'Door alignments, lock replacement, wall frame drilling, and precision carpentry.',
+  },
+  {
+    name: 'Curtain & Carpet Deep Clean',
+    category: 'Home Deep-Care',
+    icon: Sparkles,
+    individualPrice: 799,
+    bulkPrice: 549,
+    savings: 'Save ₹250 (31% off)',
+    desc: 'High-suction HEPA vacuum dust extraction & fabric enzyme steam sanitization.',
+  },
+  {
+    name: 'Water Tank Mechanical Clean',
+    category: 'Society & Common Areas',
     icon: Building2,
     individualPrice: 1499,
     bulkPrice: 999,
     savings: 'Save ₹500 (33% off)',
-    desc: 'High pressure rotary jet de-sludging, vacuum extraction & UV disinfection.',
+    desc: 'High-pressure rotary jet de-sludging, vacuum extraction & anti-bacterial UV wash.',
+  },
+  {
+    name: 'Pre-Summer AC Drive',
+    category: 'Seasonal Services',
+    icon: Sun,
+    individualPrice: 649,
+    bulkPrice: 449,
+    savings: 'Save ₹200 (31% off)',
+    desc: 'Mass society early-summer AC inspection, coil descaling & filter flushing.',
+  },
+  {
+    name: 'Balcony Mosquito Netting',
+    category: 'Renovation & Home Upgrades',
+    icon: Layers,
+    individualPrice: 1899,
+    bulkPrice: 1399,
+    savings: 'Save ₹500 (26% off)',
+    desc: 'Custom-fitted stainless steel anti-rust mesh netting for windows & balconies.',
   },
 ];
 
@@ -465,6 +502,16 @@ export default function PublicLandingPage() {
                 <span>Predictable high-margin revenue (e.g. ₹15,000+ per day)</span>
               </li>
             </ul>
+
+            <div className="pt-2">
+              <Link
+                href="/partner/register"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition"
+              >
+                <span>Register as Service Partner</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { trackSignupCompleted } from '@/src/shared/lib/analytics';
 import { APP_NAME } from '@/src/constants';
+import { getSafePostAuthRedirect } from '@/lib/consent';
 
 export type AuthMode = 'signin' | 'signup' | 'forgot';
 
@@ -80,9 +81,10 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
 
   useEffect(() => {
     if (user) {
-      router.replace('/home');
+      const targetNext = getSafePostAuthRedirect(searchParams.get('next'));
+      router.replace(targetNext);
     }
-  }, [user, router]);
+  }, [user, router, searchParams]);
 
   const resetFormState = () => {
     setErrorMessage(null);
@@ -105,7 +107,8 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
     resetFormState();
     setLoadingGoogle(true);
     try {
-      const { error } = await signInWithGoogle();
+      const targetNext = getSafePostAuthRedirect(searchParams.get('next'));
+      const { error } = await signInWithGoogle(targetNext);
       if (error) {
         setErrorMessage(error.message);
         toast.error(error.message || 'Google sign-in failed');
@@ -139,7 +142,8 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
         toast.error('Invalid email or password');
       } else {
         toast.success('Signed in successfully!');
-        router.replace('/home');
+        const targetNext = getSafePostAuthRedirect(searchParams.get('next'));
+        router.replace(targetNext);
       }
     } catch {
       setErrorMessage('Invalid email or password');
@@ -173,7 +177,8 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
     resetFormState();
     setLoading(true);
     try {
-      const { data, error } = await signUpWithEmail(email, password);
+      const targetNext = getSafePostAuthRedirect(searchParams.get('next'));
+      const { data, error } = await signUpWithEmail(email, password, undefined, targetNext);
       if (error) {
         const msg = error.message || 'Signup failed';
         setErrorMessage(msg);
@@ -181,7 +186,7 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
       } else if (data?.session) {
         trackSignupCompleted('email');
         toast.success('Account created successfully!');
-        router.replace('/home');
+        router.replace(targetNext);
       } else {
         trackSignupCompleted('email');
         setEmailSentMessage(
@@ -238,7 +243,8 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
     resetFormState();
     setLoading(true);
     try {
-      const { error } = await signInWithEmailOtp(email);
+      const targetNext = getSafePostAuthRedirect(searchParams.get('next'));
+      const { error } = await signInWithEmailOtp(email, targetNext);
       if (error) {
         setErrorMessage(error.message);
         toast.error(error.message || 'Failed to send magic link');

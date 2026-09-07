@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/service';
+import { registerProviderSchema } from '@/src/shared/validations/ownera';
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,37 +64,75 @@ export async function POST(request: NextRequest) {
     }
 
     const json = await request.json();
-    const { companyName, contactPerson, phone, email, servicesOffered, operatingCities, bio } = json;
+    const parsed = registerProviderSchema.safeParse(json);
 
-    if (!companyName || !phone || !email) {
-      return NextResponse.json({ error: 'Company name, phone and email are required' }, { status: 400 });
+    if (!parsed.success) {
+      const errorMsg = parsed.error.issues.map((i) => i.message).join('. ');
+      return NextResponse.json({ error: errorMsg, details: parsed.error.format() }, { status: 400 });
     }
+
+    const { companyName, contactPerson, phone, email, servicesOffered, operatingCities, bio } = parsed.data;
 
     const serviceSupabase = createAdminClient();
 
-    const { data: provider, error } = await serviceSupabase
+    // Check if provider profile already exists for this user to avoid missing constraint error (42P10)
+    const { data: existingProvider, error: selectError } = await serviceSupabase
       .from('providers')
-      .upsert(
-        {
-          user_id: user.id,
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error('[API/providers] Error checking existing provider:', selectError);
+    }
+
+    let provider;
+    if (existingProvider) {
+      const { data, error: updateError } = await serviceSupabase
+        .from('providers')
+        .update({
           company_name: companyName,
-          contact_person: contactPerson || user.user_metadata?.name || 'Provider',
+          contact_person: contactPerson,
           phone,
           email,
-          services_offered: servicesOffered || ['AC Servicing', 'Pest Control', 'Deep Cleaning'],
-          operating_cities: operatingCities || ['Bengaluru'],
+          services_offered: servicesOffered,
+          operating_cities: operatingCities,
           verification_status: 'verified',
-          bio,
+          bio: bio || null,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' }
-      )
-      .select()
-      .single();
+        })
+        .eq('id', existingProvider.id)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('[API/providers] Upsert error:', error);
-      return NextResponse.json({ error: 'Failed to save provider profile' }, { status: 500 });
+      if (updateError) {
+        console.error('[API/providers] Update error:', updateError);
+        return NextResponse.json({ error: 'Failed to update provider profile', details: updateError.message }, { status: 500 });
+      }
+      provider = data;
+    } else {
+      const { data, error: insertError } = await serviceSupabase
+        .from('providers')
+        .insert({
+          user_id: user.id,
+          company_name: companyName,
+          contact_person: contactPerson,
+          phone,
+          email,
+          services_offered: servicesOffered,
+          operating_cities: operatingCities,
+          verification_status: 'verified',
+          bio: bio || null,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[API/providers] Insert error:', insertError);
+        return NextResponse.json({ error: 'Failed to save provider profile', details: insertError.message }, { status: 500 });
+      }
+      provider = data;
     }
 
     // Update active role to provider

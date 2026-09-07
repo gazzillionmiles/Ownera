@@ -63,9 +63,9 @@ export default function SocietyBookingsPage({
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[#121316] flex flex-col items-center justify-center p-4">
-          <Loader2 className="w-8 h-8 text-[#2CB7A5] animate-spin mb-2" />
-          <p className="text-xs text-zinc-400">Loading society bookings...</p>
+        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+          <p className="text-xs font-semibold text-slate-500">Loading society bookings...</p>
         </div>
       </ProtectedRoute>
     );
@@ -74,11 +74,11 @@ export default function SocietyBookingsPage({
   if (error || !society) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[#121316] text-white flex flex-col items-center justify-center p-6 text-center">
-          <AlertTriangle className="w-8 h-8 text-amber-400 mb-2" />
+        <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col items-center justify-center p-6 text-center">
+          <AlertTriangle className="w-8 h-8 text-amber-500 mb-2" />
           <h1 className="text-xl font-bold mb-2">Access Restricted</h1>
-          <p className="text-xs text-zinc-400 max-w-md mb-6">{error}</p>
-          <Link href="/home" className="px-5 py-2.5 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs">
+          <p className="text-xs text-slate-500 max-w-md mb-6">{error}</p>
+          <Link href="/home" className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition">
             Back to Home
           </Link>
         </div>

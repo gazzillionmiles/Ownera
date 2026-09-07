@@ -83,6 +83,9 @@ export async function updateSession(request: NextRequest) {
     '/pricing',
     '/share',
     '/c',
+    '/join',
+    '/partner/register',
+    '/vendor-quote',
   ];
   const isPublicRoute = publicRoutes.some((route) =>
     route === '/' ? pathname === '/' : pathname === route || pathname.startsWith(route + '/')
@@ -104,6 +107,8 @@ export async function updateSession(request: NextRequest) {
     '/api/services',
     '/api/demo/seed',
     '/api/locations',
+    '/api/societies/invite-link/validate',
+    '/api/vendor-quote/',
   ];
   const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
 
@@ -155,7 +160,7 @@ export async function updateSession(request: NextRequest) {
   if (user && !isStatic && !isApiRoute) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('deletion_status, primary_society_id')
+      .select('deletion_status, primary_society_id, active_role')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -167,12 +172,12 @@ export async function updateSession(request: NextRequest) {
 
     if (profile?.deletion_status !== 'pending_deletion' && pathname === '/account-deleted') {
       const url = request.nextUrl.clone();
-      url.pathname = profile?.primary_society_id ? '/home' : '/onboarding';
+      url.pathname = profile?.active_role === 'provider' ? '/partner' : profile?.primary_society_id ? '/home' : '/onboarding';
       return NextResponse.redirect(url);
     }
 
-    // Determine onboarding completion status (has primary society or active society membership)
-    let hasCompletedOnboarding = !!profile?.primary_society_id;
+    // Determine onboarding completion status (has primary society, active society membership, or provider profile)
+    let hasCompletedOnboarding = !!profile?.primary_society_id || profile?.active_role === 'provider';
     if (!hasCompletedOnboarding) {
       const { data: member } = await supabase
         .from('society_members')
@@ -184,26 +189,58 @@ export async function updateSession(request: NextRequest) {
 
       if (member?.society_id) {
         hasCompletedOnboarding = true;
+      } else {
+        const { data: providerRec } = await supabase
+          .from('providers')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (providerRec?.id) {
+          hasCompletedOnboarding = true;
+        }
       }
     }
 
+    const isPartnerPath = pathname.startsWith('/partner');
+
     // Block non-onboarded users from accessing protected pages until onboarding is complete
     if (!hasCompletedOnboarding) {
+      // Partner flow is completely separate and independent from residential society onboarding
+      if (isPartnerPath) {
+        return supabaseResponse;
+      }
+
       if (pathname !== '/onboarding' && !isPublicRoute) {
         const url = request.nextUrl.clone();
         url.pathname = '/onboarding';
         return NextResponse.redirect(url);
       }
       if (pathname === '/login' || pathname === '/signup' || pathname === '/public') {
+        const nextParam = searchParams.get('next');
+        const isSafeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\');
         const url = request.nextUrl.clone();
+        if (isSafeNext && nextParam.startsWith('/join/')) {
+          url.pathname = nextParam;
+          url.search = '';
+          return NextResponse.redirect(url);
+        }
         url.pathname = '/onboarding';
         return NextResponse.redirect(url);
       }
     } else {
-      // Completed onboarding users attempting to visit /onboarding or auth entry pages go directly to /home
+      // Completed onboarding users attempting to visit /onboarding or auth entry pages
       if (pathname === '/onboarding' || pathname === '/login' || pathname === '/signup' || pathname === '/public') {
+        const nextParam = searchParams.get('next');
+        const isSafeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\');
         const url = request.nextUrl.clone();
-        url.pathname = '/home';
+        if (pathname !== '/onboarding' && isSafeNext && nextParam.startsWith('/join/')) {
+          url.pathname = nextParam;
+          url.search = '';
+          return NextResponse.redirect(url);
+        }
+        url.pathname = (profile?.active_role === 'provider' || isPartnerPath) ? '/partner' : '/home';
         return NextResponse.redirect(url);
       }
     }

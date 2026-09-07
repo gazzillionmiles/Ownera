@@ -11,8 +11,9 @@ import {
   ShieldCheck,
   Award,
   Loader2,
-  DollarSign,
   Check,
+  Star,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ServiceCampaign, ProviderBid } from '@/src/types/ownera';
@@ -66,30 +67,32 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-[#18191D] p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative w-full max-w-3xl rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5"
+          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5 stroke-[2.2]" />
         </button>
 
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2CB7A5]/10 text-[#2CB7A5] text-xs font-semibold mb-2">
-            <Briefcase className="w-3.5 h-3.5" /> Vendor Quote Comparison
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-2">
+            <Briefcase className="w-3.5 h-3.5 text-blue-600" />
+            <span>Commercial Bid Comparison</span>
           </div>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">
-            Compare Offers for &ldquo;{campaign.title}&rdquo;
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Compare Quotes for &ldquo;{campaign.title}&rdquo;
           </h2>
-          <p className="text-xs text-zinc-400 mt-1">
-            Review vendor pricing, technician crew sizes, and simultaneous house capacities. Choose the best offer to open booking slots.
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            Review vendor pricing, technician crew sizes, and arrival window capacities. Accept the optimal quote to open booking slots for residents.
           </p>
         </div>
 
         {bids.length === 0 ? (
-          <div className="p-10 text-center rounded-2xl bg-zinc-900/50 border border-white/5 text-xs text-zinc-400">
-            No quotes submitted yet. Invite local vendors or wait for provider offers.
+          <div className="p-12 text-center rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500 space-y-2">
+            <p className="font-bold text-slate-800 text-sm">No quotes submitted yet</p>
+            <p>Invite local service partners or wait for vendors to respond.</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -105,88 +108,84 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
               return (
                 <div
                   key={bid.id}
-                  className={`p-5 rounded-2xl border transition space-y-4 ${
+                  className={`p-6 rounded-2xl border transition-all space-y-4 ${
                     isWinning
-                      ? 'border-[#2CB7A5] bg-[#2CB7A5]/10 shadow-lg'
-                      : 'border-white/10 bg-zinc-900/60 hover:border-white/20'
+                      ? 'border-2 border-emerald-500 bg-emerald-50/40 shadow-sm ring-4 ring-emerald-50'
+                      : 'border-slate-200/80 bg-white hover:border-slate-300 shadow-xs'
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-base text-white">{providerName}</span>
-                        {rating ? (
-                          <span className="text-xs font-bold text-amber-400 flex items-center gap-0.5 font-mono">
-                            ★ {rating}
+                        <span className="font-black text-lg text-slate-900">{providerName}</span>
+                        {rating && rating > 0 ? (
+                          <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {rating}
                           </span>
-                        ) : (
-                          <span className="text-[10px] font-semibold text-zinc-400 px-2 py-0.5 rounded-md bg-zinc-800 border border-white/5">
-                            New Provider
-                          </span>
-                        )}
+                        ) : null}
                         {completedJobs > 0 && (
-                          <span className="text-[10px] text-zinc-500 font-mono">
-                            ({completedJobs}+ jobs done)
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            ({completedJobs}+ completed jobs)
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-zinc-400 mt-0.5">
-                        Available on: <strong className="text-zinc-200">{bid.available_date}</strong>
-                        {bid.available_start_time ? ` (Starts ${bid.available_start_time})` : ''}
+                      <div className="text-xs text-slate-500 font-medium mt-0.5">
+                        Available on: <strong className="text-slate-800">{bid.available_date}</strong>
+                        {bid.available_start_time ? ` (${bid.available_start_time})` : ''}
                       </div>
                     </div>
 
                     <div className="text-right flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-start">
-                      <div className="text-2xl font-extrabold text-[#2CB7A5] font-mono">
+                      <div className="text-3xl font-black text-emerald-600 tracking-tight font-mono">
                         ₹{bid.price_per_unit}
                       </div>
-                      <div className="text-[10px] text-zinc-500">per unit / household</div>
+                      <div className="text-[11px] text-slate-400 font-semibold">per household / unit</div>
                     </div>
                   </div>
 
-                  {/* Capacity & Timing Matrix */}
+                  {/* Operational Details Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-                    <div className="p-2.5 rounded-xl bg-black/30 border border-white/5">
-                      <div className="text-zinc-500 text-[10px]">Team Size</div>
-                      <div className="font-bold font-mono text-white mt-0.5">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="text-slate-400 text-[10px] font-bold uppercase">Crew Size</div>
+                      <div className="font-extrabold text-slate-900 mt-0.5">
                         {teamSize ? `${teamSize} Technicians` : 'Dedicated crew'}
                       </div>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-black/30 border border-white/5">
-                      <div className="text-zinc-500 text-[10px]">Simultaneous Homes</div>
-                      <div className="font-bold font-mono text-emerald-400 mt-0.5">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="text-slate-400 text-[10px] font-bold uppercase">Simultaneous Units</div>
+                      <div className="font-extrabold text-blue-600 mt-0.5">
                         {simultaneous ? `${simultaneous} at once` : 'Standard flow'}
                       </div>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-black/30 border border-white/5">
-                      <div className="text-zinc-500 text-[10px]">Est. Duration</div>
-                      <div className="font-bold font-mono text-white mt-0.5">
-                        {duration ? `${duration} mins / home` : 'Standard duration'}
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="text-slate-400 text-[10px] font-bold uppercase">Est. Duration</div>
+                      <div className="font-extrabold text-slate-900 mt-0.5">
+                        {duration ? `${duration} mins / flat` : 'Standard'}
                       </div>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-black/30 border border-white/5">
-                      <div className="text-zinc-500 text-[10px]">Warranty</div>
-                      <div className="font-bold font-mono text-[#2CB7A5] mt-0.5">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="text-slate-400 text-[10px] font-bold uppercase">Warranty</div>
+                      <div className="font-extrabold text-emerald-600 mt-0.5">
                         {bid.warranty_days ? `${bid.warranty_days} Days` : 'Standard'}
                       </div>
                     </div>
                   </div>
 
                   {bid.notes && (
-                    <p className="text-xs text-zinc-400 italic bg-black/20 p-3 rounded-xl border border-white/5">
+                    <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                       &ldquo;{bid.notes}&rdquo;
                     </p>
                   )}
 
                   {/* Action CTA */}
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-zinc-500">
-                      Payment directly on service day (No platform fee)
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Direct cash / UPI settlement on service day
                     </span>
 
                     {isWinning ? (
-                      <div className="px-5 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center gap-1.5 border border-emerald-500/30">
-                        <Check className="w-4 h-4" />
+                      <div className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 font-extrabold text-xs flex items-center gap-1.5 border border-emerald-200">
+                        <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
                         <span>Accepted Offer</span>
                       </div>
                     ) : (
@@ -194,9 +193,16 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
                         type="button"
                         onClick={() => handleAcceptQuote(bid)}
                         disabled={selectingBidId === bid.id}
-                        className="px-6 py-2.5 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition shadow-md disabled:opacity-50"
+                        className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-sm shadow-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                       >
-                        {selectingBidId === bid.id ? 'Accepting...' : 'Accept Offer & Open Slots'}
+                        {selectingBidId === bid.id ? (
+                          'Accepting...'
+                        ) : (
+                          <>
+                            <span>Accept Offer &amp; Open Slots</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
                       </button>
                     )}
                   </div>

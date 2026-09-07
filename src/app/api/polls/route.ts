@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     let societyId = searchParams.get('societyId');
     const societySlug = searchParams.get('societySlug');
     const scope = searchParams.get('scope');
+    const roleParam = searchParams.get('role');
 
     if (societySlug && !societyId) {
       const soc = await getSocietyBySlug(supabase, societySlug);
@@ -30,6 +31,19 @@ export async function GET(request: NextRequest) {
     }
 
     const serviceSupabase = createAdminClient();
+
+    // 1. Check if user is a registered service provider
+    const { data: providerRecord } = await serviceSupabase
+      .from('providers')
+      .select('id, phone')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const isProvider = Boolean(
+      roleParam === 'provider' ||
+      providerRecord ||
+      user.user_metadata?.active_role === 'provider'
+    );
 
     let query = serviceSupabase
       .from('service_campaigns')
@@ -43,7 +57,74 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false });
 
-    if (societyId) {
+    if (isProvider) {
+      // Find all campaign IDs where provider was invited, submitted a bid, or was selected
+      const providerId = providerRecord?.id;
+      const cleanPhone = providerRecord?.phone
+        ? providerRecord.phone.replace(/[\s\-\(\)]/g, '').slice(-10)
+        : '';
+
+      const invitedCampaignIdsSet = new Set<string>();
+
+      if (providerId) {
+        const [vendorInvitesRes, providerInvitesRes, bidsRes, selectedRes] = await Promise.all([
+          Promise.resolve(
+            serviceSupabase
+              .from('campaign_vendor_invites')
+              .select('campaign_id')
+              .or(`provider_id.eq.${providerId}${cleanPhone ? `,phone.ilike.%${cleanPhone}%` : ''}`)
+          ),
+          Promise.resolve(
+            serviceSupabase
+              .from('campaign_provider_invites')
+              .select('campaign_id')
+              .eq('provider_id', providerId)
+          ),
+          Promise.resolve(
+            serviceSupabase
+              .from('provider_bids')
+              .select('campaign_id')
+              .eq('provider_id', providerId)
+          ),
+          Promise.resolve(
+            serviceSupabase
+              .from('service_campaigns')
+              .select('id')
+              .eq('selected_provider_id', providerId)
+          ),
+        ]);
+
+        (vendorInvitesRes.data || []).forEach((row: any) => row.campaign_id && invitedCampaignIdsSet.add(row.campaign_id));
+        (providerInvitesRes.data || []).forEach((row: any) => row.campaign_id && invitedCampaignIdsSet.add(row.campaign_id));
+        (bidsRes.data || []).forEach((row: any) => row.campaign_id && invitedCampaignIdsSet.add(row.campaign_id));
+        (selectedRes.data || []).forEach((row: any) => row.id && invitedCampaignIdsSet.add(row.id));
+      } else if (cleanPhone) {
+        const { data: phoneInvites } = await serviceSupabase
+          .from('campaign_vendor_invites')
+          .select('campaign_id')
+          .ilike('phone', `%${cleanPhone}%`);
+        (phoneInvites || []).forEach((row: any) => row.campaign_id && invitedCampaignIdsSet.add(row.campaign_id));
+      }
+
+      const invitedCampaignIds = Array.from(invitedCampaignIdsSet);
+
+      if (societyId) {
+        query = query.eq('society_id', societyId);
+      }
+
+      if (invitedCampaignIds.length > 0) {
+        query = query.in('id', invitedCampaignIds);
+      } else {
+        return NextResponse.json({
+          polls: [],
+          active_polls: [],
+          my_polls: [],
+          society_polls: [],
+          upcoming_services: [],
+          previous_campaigns: [],
+        });
+      }
+    } else if (societyId) {
       query = query.eq('society_id', societyId);
     } else {
       // Scoped strictly to societies the user belongs to

@@ -20,6 +20,7 @@ import {
   resetUser,
   trackReferralSignupCompleted,
 } from '@/src/shared/lib/analytics';
+import { getSafePostAuthRedirect } from '@/lib/consent';
 
 const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
 const REF_COOKIE_NAME = `${APP_PREFIX}_ref_code`;
@@ -51,12 +52,13 @@ interface AuthContextType {
   uiUser: BaseUserProfile;
   loading: boolean;
   hasTermsConsent: boolean;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
-  signInWithEmailOtp: (email: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: (nextParam?: string) => Promise<{ error: Error | null }>;
+  signInWithEmailOtp: (email: string, nextParam?: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (
     email: string,
     password: string,
-    inviteCode?: string
+    inviteCode?: string,
+    nextParam?: string
   ) => Promise<{
     data: { user?: unknown; session?: unknown } | null;
     error: Error | null;
@@ -342,9 +344,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [user, supabase]);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (nextParam?: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const redirectTo = `${origin}/auth/callback`;
+    const safeNext = getSafePostAuthRedirect(nextParam || null);
+    const redirectTo = safeNext && safeNext !== '/home'
+      ? `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
+      : `${origin}/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -361,10 +366,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [supabase]);
 
   const signInWithEmailOtp = useCallback(
-    async (email: string) => {
+    async (email: string, nextParam?: string) => {
       const origin =
         typeof window !== 'undefined' ? window.location.origin : '';
-      const emailRedirectTo = `${origin}/auth/callback`;
+      const safeNext = getSafePostAuthRedirect(nextParam || null);
+      const emailRedirectTo = safeNext && safeNext !== '/home'
+        ? `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
+        : `${origin}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -379,9 +387,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const signUpWithEmail = useCallback(
-    async (email: string, password: string, inviteCode?: string) => {
+    async (email: string, password: string, inviteCode?: string, nextParam?: string) => {
       const clientId = getAppClientId();
       const fp = await getVisitorFingerprint();
+      const safeNext = getSafePostAuthRedirect(nextParam || null);
 
       let effectiveCode = inviteCode?.trim().toUpperCase();
       if (!effectiveCode && typeof document !== 'undefined') {
@@ -401,6 +410,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           fingerprint: fp,
           client_id: clientId,
           invite_code: effectiveCode,
+          next: safeNext,
         }),
       });
 
