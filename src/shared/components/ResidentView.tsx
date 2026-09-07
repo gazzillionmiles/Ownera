@@ -87,6 +87,13 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
   const [isBooking, setIsBooking] = useState(false);
   const [confirmedBookingData, setConfirmedBookingData] = useState<any | null>(null);
 
+  // Reschedule / Slot Change Modal State
+  const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
+  const [rescheduleSlots, setRescheduleSlots] = useState<BookingSlot[]>([]);
+  const [selectedRescheduleSlotId, setSelectedRescheduleSlotId] = useState<string>('');
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [now] = useState(() => Date.now());
+
   // Rating and Issue Modals State
   const [ratingBooking, setRatingBooking] = useState<Booking | null>(null);
   const [ratingScore, setRatingScore] = useState(5);
@@ -153,6 +160,59 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       toast.error(err.message || 'Booking process failed');
     } finally {
       setIsBooking(false);
+    }
+  };
+
+  const handleOpenReschedule = async (b: Booking) => {
+    const serviceDate = b.campaign?.event_date;
+    if (serviceDate) {
+      const serviceDateTime = new Date(`${serviceDate}T09:00:00`);
+      const diffHours = (serviceDateTime.getTime() - now) / (1000 * 60 * 60);
+      if (diffHours < 12) {
+        toast.error('Slot changes close 12 hours before service day so vendors can arrange technician dispatch.');
+        return;
+      }
+    }
+
+    setRescheduleBooking(b);
+    let slots = b.campaign?.slots || [];
+    if (slots.length === 0 && b.campaign_id) {
+      try {
+        const sRes = await fetch(`/api/campaigns/${b.campaign_id}/slots`);
+        const sData = await sRes.json();
+        slots = sData.slots || [];
+      } catch (err) {
+        console.error('Error fetching slots for reschedule:', err);
+      }
+    }
+    setRescheduleSlots(slots);
+    setSelectedRescheduleSlotId(b.slot_id || (slots[0]?.id || ''));
+  };
+
+  const handleConfirmReschedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rescheduleBooking || !selectedRescheduleSlotId) return;
+
+    setIsRescheduling(true);
+    try {
+      const res = await fetch(`/api/bookings/${rescheduleBooking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: selectedRescheduleSlotId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Failed to reschedule slot');
+      }
+
+      toast.success('Arrival time slot updated successfully!');
+      setRescheduleBooking(null);
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || 'Error updating slot');
+    } finally {
+      setIsRescheduling(false);
     }
   };
 
@@ -515,6 +575,36 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
                     {/* Completion / Rating / Issue Prompts */}
                     <div className="pt-2 border-t border-slate-100 space-y-2">
+                      {/* Reschedule Button with 12h cutoff indicator */}
+                      {(b.status === 'confirmed' || b.status === 'scheduled') && (() => {
+                        const serviceDate = b.campaign?.event_date;
+                        let canChange = true;
+                        if (serviceDate) {
+                          const serviceDateTime = new Date(`${serviceDate}T09:00:00`);
+                          const diffHours = (serviceDateTime.getTime() - now) / (1000 * 60 * 60);
+                          if (diffHours < 12) canChange = false;
+                        }
+
+                        return (
+                          <div>
+                            {canChange ? (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReschedule(b)}
+                                className="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer border border-blue-100"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Change Arrival Slot</span>
+                              </button>
+                            ) : (
+                              <div className="w-full py-1.5 px-3 rounded-xl bg-slate-100 text-slate-500 font-semibold text-[11px] text-center" title="Vendors require 12 hours notice to organize technician routes">
+                                Slot locked &bull; Under 12h to service
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {b.status === 'completed' && !b.service_rating && (
                         <div className="space-y-2">
                           <button
@@ -676,20 +766,20 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* Booking Modal with Capacity Slots (Zero Payments in MVP) */}
       {bookingCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => setBookingCampaign(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
             >
-              <X className="w-5 h-5 stroke-[2.2]" />
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
 
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-1">
-                <Calendar className="w-3.5 h-3.5 text-blue-600" /> Select Service Slot
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold">
+                <Calendar className="w-3 h-3 text-blue-600" /> Select Service Slot
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                 {bookingCampaign.title}
               </h2>
               <p className="text-xs text-slate-500 font-medium">
@@ -697,10 +787,10 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </p>
             </div>
 
-            <form onSubmit={handleConfirmBooking} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleConfirmBooking} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                     Flat / Unit Number
                   </label>
                   <input
@@ -709,17 +799,17 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                     onChange={(e) => setBookingFlat(e.target.value)}
                     required
                     placeholder="e.g. A-402"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                     Quantity (Units)
                   </label>
                   <select
                     value={bookingQuantity}
                     onChange={(e) => setBookingQuantity(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   >
                     {[1, 2, 3, 4, 5].map((q) => (
                       <option key={q} value={q}>
@@ -732,11 +822,11 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
               {/* Capacity-Based Time Slot Picker */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
                   Select Preferred Arrival Window
                 </label>
                 {(!bookingCampaign.slots || bookingCampaign.slots.length === 0) ? (
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 font-medium">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 font-medium">
                     Standard service timing will be coordinated on service day.
                   </div>
                 ) : (
@@ -753,7 +843,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                           key={slot.id}
                           disabled={isFull}
                           onClick={() => setSelectedSlotId(slot.id)}
-                          className={`p-3 rounded-2xl border text-xs transition text-center cursor-pointer ${
+                          className={`p-2.5 rounded-xl border text-xs transition text-center cursor-pointer ${
                             isSelected
                               ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-extrabold ring-2 ring-blue-600/20'
                               : isFull
@@ -767,7 +857,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                             {isFull ? (
                               <span className="text-rose-500">FULL</span>
                             ) : (
-                              <span className="text-blue-600">{max - booked} / {max} slots left</span>
+                              <span className="text-blue-600">{max - booked} / {max} left</span>
                             )}
                           </div>
                         </button>
@@ -778,29 +868,117 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </div>
 
               {/* Direct Settlement Summary */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-500 font-medium">
                   <span>Agreed Group Rate:</span>
                   <span className="font-bold text-slate-900">₹{bookingCampaign.current_price} / unit</span>
                 </div>
                 <div className="flex justify-between text-slate-900 font-bold">
                   <span>Total Payable:</span>
-                  <span className="font-black text-base text-emerald-600">
+                  <span className="font-black text-sm text-emerald-600">
                     ₹{bookingCampaign.current_price * bookingQuantity}
                   </span>
                 </div>
-                <div className="pt-2 border-t border-slate-200 text-[11px] text-emerald-700 font-bold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                  <span>Pay ₹{bookingCampaign.current_price * bookingQuantity} directly to provider on service day after work is done.</span>
+                <div className="pt-1.5 border-t border-slate-200 text-[10px] text-emerald-700 font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                  <span>Pay directly to provider on service day after work completion.</span>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isBooking}
-                className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-300 text-white font-black text-sm sm:text-base shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-300 text-white font-extrabold text-xs uppercase tracking-wider shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {isBooking ? 'Confirming...' : 'Confirm Slot Reservation'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Arrival Slot Modal with 12h cutoff notice */}
+      {rescheduleBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
+            <button
+              type="button"
+              onClick={() => setRescheduleBooking(null)}
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold">
+                <Clock className="w-3 h-3 text-blue-600" /> Reschedule Arrival Slot
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                Change Arrival Window
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                {rescheduleBooking.campaign?.title} • Unit: {rescheduleBooking.flat_number}
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 font-medium leading-relaxed">
+              <strong>12-Hour Policy:</strong> Time slot changes close 12 hours before service day so providers have adequate time to assign technician dispatch routes.
+            </div>
+
+            <form onSubmit={handleConfirmReschedule} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                  Choose New Arrival Slot
+                </label>
+                {rescheduleSlots.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
+                    No alternative slots configured for this campaign.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {rescheduleSlots.map((slot) => {
+                      const booked = slot.booked_count || 0;
+                      const max = slot.max_capacity || 5;
+                      const isFull = booked >= max && slot.id !== rescheduleBooking.slot_id;
+                      const isSelected = selectedRescheduleSlotId === slot.id;
+
+                      return (
+                        <button
+                          type="button"
+                          key={slot.id}
+                          disabled={isFull}
+                          onClick={() => setSelectedRescheduleSlotId(slot.id)}
+                          className={`p-2.5 rounded-xl border text-xs transition text-center cursor-pointer ${
+                            isSelected
+                              ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-extrabold ring-2 ring-blue-600/20'
+                              : isFull
+                              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="font-extrabold">{slot.slot_time}</div>
+                          <div className="text-[10px] mt-0.5 font-bold">
+                            {slot.id === rescheduleBooking.slot_id ? (
+                              <span className="text-blue-600 font-black">Current Slot</span>
+                            ) : isFull ? (
+                              <span className="text-rose-500">FULL</span>
+                            ) : (
+                              <span className="text-slate-500">{max - booked} left</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isRescheduling || !selectedRescheduleSlotId || selectedRescheduleSlotId === rescheduleBooking.slot_id}
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                {isRescheduling ? 'Updating...' : 'Confirm New Arrival Slot'}
               </button>
             </form>
           </div>
@@ -810,13 +988,21 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* Booking Confirmed Voucher Modal matching Ownera BookingConfirmedScreen */}
       {confirmedBookingData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-2xl space-y-6 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-600 text-white flex items-center justify-center shadow-xl shadow-emerald-600/30 mx-auto">
-              <Check className="w-8 h-8 stroke-[3]" />
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-2xl space-y-4 text-center">
+            <button
+              type="button"
+              onClick={() => setConfirmedBookingData(null)}
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mx-auto">
+              <Check className="w-6 h-6 stroke-[3]" />
             </div>
 
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            <div className="space-y-0.5">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 Service slot confirmed! 🎉
               </h2>
               <p className="text-xs text-slate-500 font-medium">
@@ -824,7 +1010,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-left space-y-2.5 text-xs">
+            <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-100 text-left space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">Service</span>
                 <span className="font-extrabold text-slate-900">{confirmedBookingData.campaign?.title}</span>
@@ -838,14 +1024,14 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 <span className="font-extrabold text-blue-600">{confirmedBookingData.providerName}</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-slate-200">
-                <span className="text-slate-700 font-bold">Amount Payable on Completion</span>
+                <span className="text-slate-700 font-bold">Payable on Completion</span>
                 <span className="font-black text-sm text-emerald-600">{confirmedBookingData.price}</span>
               </div>
             </div>
 
             <button
               onClick={() => setConfirmedBookingData(null)}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-sm transition cursor-pointer"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-sm transition cursor-pointer"
             >
               Done &amp; Return to Hub
             </button>
@@ -856,33 +1042,33 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* Rating Modal */}
       {ratingBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => setRatingBooking(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
 
             <div className="space-y-1">
-              <h3 className="font-extrabold text-lg text-slate-900">Rate Completed Service</h3>
+              <h3 className="font-extrabold text-base sm:text-lg text-slate-900">Rate Completed Service</h3>
               <p className="text-xs text-slate-500 font-medium">
                 {ratingBooking.campaign?.title} • {ratingBooking.provider?.company_name || 'Provider'}
               </p>
             </div>
 
-            <form onSubmit={handleSubmitRating} className="space-y-4">
-              <div className="flex justify-center gap-2 py-3">
+            <form onSubmit={handleSubmitRating} className="space-y-3.5">
+              <div className="flex justify-center gap-2 py-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     type="button"
                     key={star}
                     onClick={() => setRatingScore(star)}
-                    className="p-2 transition hover:scale-110 cursor-pointer"
+                    className="p-1.5 transition hover:scale-110 cursor-pointer"
                   >
                     <Star
-                      className={`w-8 h-8 ${
+                      className={`w-7 h-7 ${
                         star <= ratingScore
                           ? 'text-amber-400 fill-amber-400'
                           : 'text-slate-200'
@@ -893,7 +1079,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                   Feedback / Review (Optional)
                 </label>
                 <textarea
@@ -908,7 +1094,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               <button
                 type="submit"
                 disabled={isSubmittingRating}
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition cursor-pointer"
               >
                 {isSubmittingRating ? 'Submitting...' : 'Submit Rating'}
               </button>
@@ -920,28 +1106,28 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* Issue Report Modal */}
       {issueBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => setIssueBooking(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
 
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-bold">
-                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Report a Service Problem
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[11px] font-bold">
+                <AlertTriangle className="w-3 h-3 text-rose-600" /> Report a Service Problem
               </div>
-              <h3 className="font-extrabold text-lg text-slate-900">We&apos;re here to resolve it</h3>
+              <h3 className="font-extrabold text-base sm:text-lg text-slate-900">We&apos;re here to resolve it</h3>
               <p className="text-xs text-slate-500 font-medium">
                 Organizer and provider will immediately receive this report.
               </p>
             </div>
 
-            <form onSubmit={handleSubmitIssue} className="space-y-4">
+            <form onSubmit={handleSubmitIssue} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                   Problem Category
                 </label>
                 <select
@@ -958,11 +1144,11 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                   Describe the Issue (Minimum 10 characters)
                 </label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={issueDesc}
                   onChange={(e) => setIssueDesc(e.target.value)}
                   required
@@ -975,7 +1161,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               <button
                 type="submit"
                 disabled={isSubmittingIssue}
-                className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition cursor-pointer"
               >
                 {isSubmittingIssue ? 'Submitting Report...' : 'Submit Issue to Society Organizer'}
               </button>

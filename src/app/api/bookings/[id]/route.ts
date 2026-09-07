@@ -86,10 +86,52 @@ export async function PATCH(
       if (!parsed.success) {
         return NextResponse.json({ error: 'Invalid slot selection' }, { status: 400 });
       }
+
+      // Check slot changing cutoff time (12 hours before scheduled service day)
+      const { data: campaign } = await serviceSupabase
+        .from('service_campaigns')
+        .select('event_date, title')
+        .eq('id', existingBooking.campaign_id)
+        .maybeSingle();
+
+      if (campaign?.event_date) {
+        // Assume service day starts at 09:00 AM local time
+        const serviceDateParsed = new Date(`${campaign.event_date}T09:00:00`);
+        const now = new Date();
+        const diffMs = serviceDateParsed.getTime() - now.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        if (diffHours < 12) {
+          return NextResponse.json(
+            {
+              error: 'SLOT_CHANGE_LOCKED',
+              message: 'Time slot modifications close 12 hours before service day so the provider can organize technician dispatch.',
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Decrement old slot booked count if changing to a different slot
+      if (existingBooking.slot_id && existingBooking.slot_id !== json.slotId) {
+        const { data: oldSlot } = await serviceSupabase
+          .from('booking_slots')
+          .select('booked_count')
+          .eq('id', existingBooking.slot_id)
+          .single();
+
+        if (oldSlot && (oldSlot.booked_count || 0) > 0) {
+          await serviceSupabase
+            .from('booking_slots')
+            .update({ booked_count: Math.max(0, (oldSlot.booked_count || 1) - 1) })
+            .eq('id', existingBooking.slot_id);
+        }
+      }
+
       updates.slot_id = json.slotId;
       updates.status = 'scheduled';
 
-      // Increment slot booked count
+      // Increment new slot booked count
       const { data: newSlot } = await serviceSupabase
         .from('booking_slots')
         .select('booked_count')

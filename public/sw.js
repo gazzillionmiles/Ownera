@@ -1,9 +1,9 @@
 /**
  * Production Service Worker
- * Auto-generated build version: app-pwa-v1-mtr10cuv
+ * Auto-generated build version: app-pwa-v1-mtr35u6b
  */
 
-const CACHE_VERSION = 'app-pwa-v1-mtr10cuv';
+const CACHE_VERSION = 'app-pwa-v1-mtr35u6b';
 const PRECACHE_NAME = 'app-precache-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'app-runtime-' + CACHE_VERSION;
 const API_CACHE = 'app-api-' + CACHE_VERSION;
@@ -19,10 +19,8 @@ const PRECACHE_URLS = [
   "/icons/icon-512x512.png",
   "/icons/icon-512-maskable.png",
   "/icons/apple-touch-icon.png",
-  "/_next/static/chunks/03e8-d153_ukx.js",
+  "/_next/static/chunks/00wzo1o1dw69q.js",
   "/_next/static/chunks/03woo_-ee93wu.js",
-  "/_next/static/chunks/05dihy9jq91_j.js",
-  "/_next/static/chunks/0ahzrzba4qr8n.js",
   "/_next/static/chunks/0c-3c3428y6b-.js",
   "/_next/static/chunks/0ceo19dbq857d.js",
   "/_next/static/chunks/0cyw7itlx-me4.js",
@@ -38,12 +36,14 @@ const PRECACHE_URLS = [
   "/_next/static/chunks/1-79m9uh9iqc2.js",
   "/_next/static/chunks/13tscds4ctm-6.js",
   "/_next/static/chunks/15kh69n0aaa3b.js",
+  "/_next/static/chunks/17mmpttigolkg.js",
   "/_next/static/chunks/17uu5w-u5_ij-.js",
   "/_next/static/chunks/17z6xptelfl1r.js",
   "/_next/static/chunks/1bizefod7zksd.js",
   "/_next/static/chunks/1c9mktjfr5rsw.js",
   "/_next/static/chunks/1ncseear_kakf.js",
-  "/_next/static/chunks/1ta_8_irzhmzu.js"
+  "/_next/static/chunks/1ta_8_irzhmzu.js",
+  "/_next/static/chunks/1utz37y44rfn9.js"
 ];
 
 // Install Event: Precache Core App Shell and Offline Page

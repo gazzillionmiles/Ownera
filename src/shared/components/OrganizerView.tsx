@@ -592,35 +592,35 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
       {/* Transfer Secretary Modal */}
       {isTransferModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => setIsTransferModalOpen(false)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
 
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-amber-600" />
+              <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
                 <span>Transfer Primary Secretary</span>
               </h2>
-              <p className="text-xs text-slate-500 font-medium mt-1">
+              <p className="text-xs text-slate-500 font-medium">
                 Select an active society member to become the new primary secretary.
               </p>
             </div>
 
-            <form onSubmit={handleTransferSecretary} className="space-y-4">
+            <form onSubmit={handleTransferSecretary} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                   Select New Secretary
                 </label>
                 <select
                   value={selectedNewSecretaryId}
                   onChange={(e) => setSelectedNewSecretaryId(e.target.value)}
                   required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 >
                   <option value="">-- Choose Society Member --</option>
                   {members
@@ -634,14 +634,14 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                   Your New Role after transfer
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setOldSecretaryRole('committee')}
-                    className={`p-3 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
+                    className={`p-2.5 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
                       oldSecretaryRole === 'committee'
                         ? 'border-blue-600 bg-blue-50 text-blue-900'
                         : 'border-slate-200 bg-slate-50 text-slate-600'
@@ -652,7 +652,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setOldSecretaryRole('resident')}
-                    className={`p-3 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
+                    className={`p-2.5 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
                       oldSecretaryRole === 'resident'
                         ? 'border-blue-600 bg-blue-50 text-blue-900'
                         : 'border-slate-200 bg-slate-50 text-slate-600'
@@ -666,7 +666,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               <button
                 type="submit"
                 disabled={isTransferring || !selectedNewSecretaryId}
-                className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-zinc-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-md shadow-amber-500/20"
+                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-zinc-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-sm shadow-amber-500/20"
               >
                 {isTransferring ? 'Transferring Role...' : 'Confirm Secretary Transfer'}
               </button>
@@ -678,24 +678,24 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
       {/* Invite Member Modal */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => {
                 setIsInviteModalOpen(false);
                 setGeneratedInviteLink(null);
               }}
-              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
 
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-                <Key className="w-5 h-5 text-blue-600" />
+              <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                <Key className="w-4 h-4 text-blue-600" />
                 <span>Invite Society Member</span>
               </h2>
-              <p className="text-xs text-slate-500 font-medium mt-1">
+              <p className="text-xs text-slate-500 font-medium">
                 Issue an invitation token with a designated role for your society.
               </p>
             </div>
@@ -718,16 +718,16 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleCreateInvitation} className="space-y-4">
+              <form onSubmit={handleCreateInvitation} className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                     Invited Role
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setInviteRole('committee')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
                         inviteRole === 'committee'
                           ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-2xs'
                           : 'border-slate-200 bg-slate-50 text-slate-600'
@@ -738,7 +738,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setInviteRole('resident')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
+                      className={`p-2 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
                         inviteRole === 'resident'
                           ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-2xs'
                           : 'border-slate-200 bg-slate-50 text-slate-600'
@@ -750,7 +750,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setInviteRole('secretary')}
-                        className={`p-2.5 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
+                        className={`p-2 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
                           inviteRole === 'secretary'
                             ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-2xs'
                             : 'border-slate-200 bg-slate-50 text-slate-600'
@@ -763,7 +763,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                     Recipient Email (Optional)
                   </label>
                   <input
@@ -771,14 +771,14 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="e.g. member@society.in"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isInviting}
-                  className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-md shadow-blue-500/20"
+                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-sm shadow-blue-500/20"
                 >
                   {isInviting ? 'Generating...' : 'Create Invitation Token'}
                 </button>

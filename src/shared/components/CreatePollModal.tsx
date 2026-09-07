@@ -195,50 +195,50 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4 max-h-[80vh] md:max-h-[75vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+          className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
         >
-          <X className="w-5 h-5 stroke-[2.2]" />
+          <X className="w-3.5 h-3.5 stroke-[2.5]" />
         </button>
 
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold mb-1">
+            <Sparkles className="w-3 h-3 text-blue-600" />
             <span>Create Service Poll &amp; Campaign</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
             Propose Service in {activeSociety?.name || 'Society'}
           </h2>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
+          <p className="text-xs text-slate-500 font-medium">
             Collect resident demand to unlock group vendor discounts across standard service categories.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* 1. Scope Selector */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
               1. Choose Scope
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => handleScopeChange('society')}
-                className={`p-4 rounded-2xl border text-left transition flex items-start gap-3 cursor-pointer ${
+                className={`p-3 rounded-2xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
                   scope === 'society'
                     ? 'border-blue-600 bg-blue-50/70 text-slate-900 shadow-sm ring-2 ring-blue-600/20'
                     : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <div className="p-2.5 rounded-xl bg-blue-100 text-blue-700 shrink-0 mt-0.5">
-                  <Building2 className="w-5 h-5" />
+                <div className="p-2 rounded-xl bg-blue-100 text-blue-700 shrink-0 mt-0.5">
+                  <Building2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-extrabold text-sm text-slate-900">Society-Wide Camp</div>
-                  <div className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                  <div className="font-extrabold text-xs sm:text-sm text-slate-900">Society-Wide Camp</div>
+                  <div className="text-[10px] text-slate-500 font-medium mt-0.5 leading-snug">
                     Visible to all neighbors. Quorum gathered before inviting vendor quotes.
                   </div>
                 </div>
@@ -247,18 +247,18 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleScopeChange('my_house')}
-                className={`p-4 rounded-2xl border text-left transition flex items-start gap-3 cursor-pointer ${
+                className={`p-3 rounded-2xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
                   scope === 'my_house'
                     ? 'border-blue-600 bg-blue-50/70 text-slate-900 shadow-sm ring-2 ring-blue-600/20'
                     : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <div className="p-2.5 rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
-                  <Home className="w-5 h-5" />
+                <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+                  <Home className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-extrabold text-sm text-slate-900">Personal Request</div>
-                  <div className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                  <div className="font-extrabold text-xs sm:text-sm text-slate-900">Personal Request</div>
+                  <div className="text-[10px] text-slate-500 font-medium mt-0.5 leading-snug">
                     Individual request for your flat/unit with direct vendor invites.
                   </div>
                 </div>
@@ -479,15 +479,15 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
           </div>
 
           {/* Submit Button */}
-          <div className="pt-3">
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-300 text-white font-black text-sm sm:text-base shadow-md shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-300 text-white font-black text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Submitting proposal...</span>
                 </>
               ) : (

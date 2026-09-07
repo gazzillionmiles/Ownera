@@ -392,84 +392,84 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
       {/* Quote Submission Modal */}
       {biddingCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
             <button
               type="button"
               onClick={() => setBiddingCampaign(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
 
             <div className="space-y-1">
-              <h3 className="font-black text-xl text-slate-900">Submit Quote to {biddingCampaign.society?.name || 'Society'}</h3>
-              <p className="text-xs text-slate-500 font-medium">Campaign: {biddingCampaign.title}</p>
+              <h3 className="font-black text-base sm:text-lg text-slate-900">Submit Quote to {biddingCampaign.society?.name || 'Society'}</h3>
+              <p className="text-xs text-slate-500 font-medium">{biddingCampaign.title}</p>
             </div>
 
-            <form onSubmit={handleSubmitBid} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSubmitBid} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Price Per Unit (₹)</label>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Price Per Unit (₹)</label>
                   <input
                     type="number"
                     value={bidPrice}
                     onChange={(e) => setBidPrice(Number(e.target.value))}
                     required
                     min={100}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Start Arrival Time</label>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Start Time</label>
                   <input
                     type="text"
                     value={availableStartTime}
                     onChange={(e) => setAvailableStartTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Crew Size (Technicians)</label>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Crew (Techs)</label>
                   <input
                     type="number"
                     value={techniciansCount}
                     onChange={(e) => setTechniciansCount(Number(e.target.value))}
                     min={1}
                     max={50}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Simultaneous Flats</label>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Simultaneous Flats</label>
                   <input
                     type="number"
                     value={simultaneousCapacity}
                     onChange={(e) => setSimultaneousCapacity(Number(e.target.value))}
                     min={1}
                     max={50}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Warranty Days</label>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Warranty (Days)</label>
                 <input
                   type="number"
                   value={bidWarranty}
                   onChange={(e) => setBidWarranty(Number(e.target.value))}
                   min={0}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmittingBid}
-                className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-md shadow-blue-500/25 disabled:opacity-50 cursor-pointer"
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 {isSubmittingBid ? 'Submitting Offer...' : 'Confirm Quote Submission'}
               </button>
