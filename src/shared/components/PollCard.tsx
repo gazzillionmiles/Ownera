@@ -203,24 +203,12 @@ export const PollCard: React.FC<PollCardProps> = ({
       {/* Vendor Quote / Booking Status Footer */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
         <div className="text-xs text-slate-500 flex items-center gap-2">
-          {hasSelectedProvider ? (
-            (() => {
-              const basePrice = poll.service?.base_price_estimate;
-              const hasRealSavings = typeof basePrice === 'number' && typeof poll.current_price === 'number' && basePrice > poll.current_price;
-              const savings = hasRealSavings ? basePrice - poll.current_price : 0;
-              const savingsPct = hasRealSavings ? Math.round((savings / basePrice) * 100) : 0;
-
-              return (
-                <span className="text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>
-                    Partner: {poll.selected_provider?.company_name || 'Assigned Provider'} (₹{poll.current_price}/unit
-                    {hasRealSavings ? ` • Save ₹${savings} (${savingsPct}% off)` : ''})
-                  </span>
-                </span>
-              );
-            })()
-          ) : (
+           {hasSelectedProvider ? (
+             <span className="text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+               <span>Partner: {poll.selected_provider?.company_name || 'Assigned Provider'} • Quote accepted</span>
+             </span>
+           ) : (
             <span className="text-slate-600 font-semibold flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
               <Briefcase className="w-4 h-4 text-blue-600" />
               {bidsCount > 0 ? `${bidsCount} Vendor ${bidsCount === 1 ? 'Quote' : 'Quotes'} received` : 'Waiting for vendor quotes'}

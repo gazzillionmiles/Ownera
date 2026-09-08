@@ -67,31 +67,31 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4 max-h-[80vh] md:max-h-[75vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#121620] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[80vh] md:max-h-[75vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
+          className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white transition flex items-center justify-center p-1.5 cursor-pointer"
         >
           <X className="w-3.5 h-3.5 stroke-[2.5]" />
         </button>
 
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold mb-1">
-            <Briefcase className="w-3 h-3 text-blue-600" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[11px] font-bold mb-1 border border-transparent dark:border-blue-500/20">
+            <Briefcase className="w-3 h-3 text-blue-600 dark:text-blue-400" />
             <span>Commercial Bid Comparison</span>
           </div>
-          <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
             Compare Quotes for &ldquo;{campaign.title}&rdquo;
           </h2>
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
             Review vendor pricing, technician crew sizes, and arrival window capacities. Accept the optimal quote to open booking slots.
           </p>
         </div>
 
         {bids.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500 space-y-2">
-            <p className="font-bold text-slate-800 text-sm">No quotes submitted yet</p>
+          <div className="p-12 text-center rounded-2xl bg-slate-50 dark:bg-[#181f2e] border border-slate-200 dark:border-white/10 text-xs text-slate-500 dark:text-zinc-400 space-y-2">
+            <p className="font-bold text-slate-800 dark:text-white text-sm">No quotes submitted yet</p>
             <p>Invite local service partners or wait for vendors to respond.</p>
           </div>
         ) : (
@@ -110,82 +110,76 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
                   key={bid.id}
                   className={`p-6 rounded-2xl border transition-all space-y-4 ${
                     isWinning
-                      ? 'border-2 border-emerald-500 bg-emerald-50/40 shadow-sm ring-4 ring-emerald-50'
-                      : 'border-slate-200/80 bg-white hover:border-slate-300 shadow-xs'
+                      ? 'border-2 border-emerald-500 dark:border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-md'
+                      : 'border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#181f2e] hover:border-slate-300 dark:hover:border-white/20 shadow-xs'
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-lg text-slate-900">{providerName}</span>
+                        <span className="font-black text-lg text-slate-900 dark:text-white">{providerName}</span>
                         {rating && rating > 0 ? (
-                          <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 px-2 py-0.5 rounded-md flex items-center gap-0.5">
                             <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {rating}
                           </span>
                         ) : null}
                         {completedJobs > 0 && (
-                          <span className="text-[11px] font-semibold text-slate-500">
+                          <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
                             ({completedJobs}+ completed jobs)
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-500 font-medium mt-0.5">
-                        Available on: <strong className="text-slate-800">{bid.available_date}</strong>
+                      <div className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
+                        Available on: <strong className="text-slate-800 dark:text-zinc-200">{bid.available_date}</strong>
                         {bid.available_start_time ? ` (${bid.available_start_time})` : ''}
                       </div>
                     </div>
 
                     <div className="text-right flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-start">
-                      <div className="text-3xl font-black text-emerald-600 tracking-tight font-mono">
+                      <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">
                         ₹{bid.price_per_unit}
                       </div>
-                      <div className="text-[11px] text-slate-400 font-semibold">per household / unit</div>
+                      <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-semibold">per household / unit</div>
                     </div>
                   </div>
 
                   {/* Operational Details Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="text-slate-400 text-[10px] font-bold uppercase">Crew Size</div>
-                      <div className="font-extrabold text-slate-900 mt-0.5">
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-100 dark:border-white/5">
+                      <div className="text-slate-400 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Crew Size</div>
+                      <div className="font-extrabold text-slate-900 dark:text-white mt-0.5">
                         {teamSize ? `${teamSize} Technicians` : 'Dedicated crew'}
                       </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="text-slate-400 text-[10px] font-bold uppercase">Simultaneous Units</div>
-                      <div className="font-extrabold text-blue-600 mt-0.5">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-100 dark:border-white/5">
+                      <div className="text-slate-400 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Simultaneous Units</div>
+                      <div className="font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">
                         {simultaneous ? `${simultaneous} at once` : 'Standard flow'}
                       </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="text-slate-400 text-[10px] font-bold uppercase">Est. Duration</div>
-                      <div className="font-extrabold text-slate-900 mt-0.5">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-100 dark:border-white/5">
+                      <div className="text-slate-400 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Est. Duration</div>
+                      <div className="font-extrabold text-slate-900 dark:text-white mt-0.5">
                         {duration ? `${duration} mins / flat` : 'Standard'}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="text-slate-400 text-[10px] font-bold uppercase">Warranty</div>
-                      <div className="font-extrabold text-emerald-600 mt-0.5">
-                        {bid.warranty_days ? `${bid.warranty_days} Days` : 'Standard'}
                       </div>
                     </div>
                   </div>
 
                   {bid.notes && (
-                    <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p className="text-xs text-slate-600 dark:text-zinc-300 bg-slate-50 dark:bg-black/25 p-3 rounded-xl border border-slate-100 dark:border-white/5">
                       &ldquo;{bid.notes}&rdquo;
                     </p>
                   )}
 
                   {/* Action CTA */}
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-slate-400 font-medium">
+                    <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
                       Direct cash / UPI settlement on service day
                     </span>
 
                     {isWinning ? (
-                      <div className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 font-extrabold text-xs flex items-center gap-1.5 border border-emerald-200">
-                        <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                      <div className="px-5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30">
+                        <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
                         <span>Accepted Offer</span>
                       </div>
                     ) : (

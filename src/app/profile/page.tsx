@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/src/shared/components/ui/theme-provider';
 import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { User, LogOut, Mail, Shield, Calendar, Building2, Briefcase, Key, RefreshCw } from 'lucide-react';
@@ -12,7 +13,7 @@ import { Society, Provider } from '@/src/types/ownera';
 export default function ProfilePage() {
   const router = useRouter();
   const { uiUser, signOut } = useAuth();
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const { theme, toggleTheme } = useTheme();
   const [societies, setSocieties] = useState<Society[]>([]);
   const [provider, setProvider] = useState<Provider | null>(null);
   const [platformAdminInfo, setPlatformAdminInfo] = useState<{ is_admin: boolean; role: string } | null>(null);
@@ -45,12 +46,6 @@ export default function ProfilePage() {
         .catch(() => {});
     }
   }, [uiUser.isLoggedIn]);
-
-  const handleToggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
-  };
 
   const handleTabChange = (tab: string) => {
     router.push(`/${tab}`);
@@ -86,7 +81,7 @@ export default function ProfilePage() {
         onTabChange={handleTabChange}
         activeSociety={societies[0] || null}
         theme={theme}
-        onToggleTheme={handleToggleTheme}
+        onToggleTheme={toggleTheme}
         user={uiUser}
       >
         <div className="space-y-6 pb-8 max-w-lg mx-auto">

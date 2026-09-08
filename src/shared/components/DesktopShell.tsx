@@ -24,8 +24,6 @@ interface DesktopShellProps {
   activeRole?: UserRole;
   activeSociety?: Society | null;
   onJoinSocietyClick?: () => void;
-  theme?: 'dark' | 'light';
-  onToggleTheme?: () => void;
   user?: BaseUserProfile;
   onOpenCreate?: () => void;
 }
@@ -37,9 +35,9 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
   activeRole = 'resident',
   activeSociety = null,
   onJoinSocietyClick = () => {},
-  theme = 'light',
   onOpenCreate,
 }) => {
+
   // Determine desktop secondary tabs matching active role
   let navItems: { id: string; label: string; icon: React.FC<{ className?: string }> }[] = [];
 
@@ -68,7 +66,6 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/70 text-slate-900 font-sans">
       <Header
-        theme={theme}
         activeRole={activeRole}
         activeSociety={activeSociety}
         onJoinSocietyClick={onJoinSocietyClick}

@@ -149,7 +149,10 @@ export const submitVendorQuoteSchema = z.object({
   techniciansCount: z.coerce.number().int().positive().default(5),
   estimatedDurationMinutes: z.coerce.number().int().positive().default(30),
   totalCapacity: z.coerce.number().int().positive().default(40),
-  warrantyDays: z.coerce.number().int().nonnegative().default(30),
+  warrantyDays: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? 0 : val),
+    z.coerce.number().int().nonnegative().default(0)
+  ),
   inclusions: z.array(z.string()).default([]),
   exclusions: z.array(z.string()).default([]),
   notes: z.string().max(1000).optional().nullable(),

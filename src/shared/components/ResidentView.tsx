@@ -281,15 +281,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
     }
   };
 
-  const realResidentSavings = userBookings.reduce((sum, b) => {
-    if (b.status === 'completed' && b.campaign?.service?.base_price_estimate && b.unit_price) {
-      const diff = b.campaign.service.base_price_estimate - b.unit_price;
-      if (diff > 0) {
-        return sum + diff * (b.quantity || 1);
-      }
-    }
-    return sum;
-  }, 0);
+  // Savings calculation removed: base_price_estimate is not a reliable post-vendor comparison value per requirements.
 
   // Top featured campaign for the Hero Deal Card
   const featuredCampaign =
@@ -687,17 +679,10 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 <div className="text-xs font-bold text-slate-500 mt-1">Service Drives Initiated</div>
               </div>
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                {realResidentSavings > 0 ? (
-                  <>
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-600 font-mono">₹{realResidentSavings.toLocaleString()}</div>
-                    <div className="text-xs font-bold text-slate-500 mt-1">Total Savings Earned</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-sm font-bold text-slate-700 font-mono py-1">Direct Vendor Savings</div>
-                    <div className="text-xs text-slate-400">Calculated upon drive completion</div>
-                  </>
-                )}
+                <>
+                  <div className="text-sm font-bold text-slate-700 font-mono py-1">Direct Vendor Savings</div>
+                  <div className="text-xs text-slate-400">Unlocked after vendor quote acceptance</div>
+                </>
               </div>
             </div>
 

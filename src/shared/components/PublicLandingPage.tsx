@@ -4,11 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Users,
-  ShieldCheck,
-  TrendingDown,
   Building2,
-  Wrench,
   ArrowRight,
   CheckCircle2,
   Sparkles,
@@ -17,7 +13,6 @@ import {
   Bug,
   Droplet,
   Check,
-  Calendar,
   Zap,
   Car,
   Paintbrush,
@@ -43,7 +38,7 @@ const STANDARDIZED_SERVICES = [
     individualPrice: 999,
     bulkPrice: 699,
     savings: 'Save ₹300 (30% off)',
-    desc: 'Odorless kitchen gel baiting, bathroom drain spray with 30-day retreat warranty.',
+    desc: 'Odorless kitchen gel baiting, bathroom drain spray with 30-day retreat protection.',
   },
   {
     name: 'Home Deep Cleaning',
@@ -168,7 +163,7 @@ export default function PublicLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#121316] text-[#FAF8F5] antialiased selection:bg-[#2CB7A5]/30">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#121316] text-[#1C1C1C] dark:text-[#FAF8F5] antialiased selection:bg-[#2CB7A5]/30">
       {/* Navigation Header */}
       <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#121316]/90 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">

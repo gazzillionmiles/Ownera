@@ -20,8 +20,6 @@ import { UserRole, Society } from '@/src/types/ownera';
 import { toast } from 'sonner';
 
 interface HeaderProps {
-  theme?: 'dark' | 'light';
-  onToggleTheme?: () => void;
   activeRole?: UserRole;
   activeSociety?: Society | null;
   onJoinSocietyClick?: () => void;
@@ -122,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
   const currentRole = activeRole || uiUser.activeRole || 'resident';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-18">
           {/* Brand & Society Identity */}
@@ -142,11 +140,11 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <div className="leading-tight">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight group-hover:text-blue-600 transition-colors">
+                  <span className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg tracking-tight group-hover:text-blue-600 transition-colors">
                     {APP_NAME.toLowerCase()}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 hidden sm:block truncate max-w-[220px]">
+                <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block truncate max-w-[220px]">
                   {activeSociety?.name || 'Bulk Services Hub'}
                 </p>
               </div>
@@ -157,10 +155,10 @@ export const Header: React.FC<HeaderProps> = ({
               {activeSociety ? (
                 <button
                   onClick={() => setIsSocietyMenuOpen(!isSocietyMenuOpen)}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/90 hover:border-slate-300 bg-slate-50/80 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer"
                 >
-                  <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="truncate max-w-[150px] font-bold text-slate-800">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="truncate max-w-[150px] font-bold text-slate-800 dark:text-slate-100">
                     {activeSociety.name}
                   </span>
                   <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -169,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onJoinSocietyClick && (
                   <button
                     onClick={onJoinSocietyClick}
-                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Join Society</span>
@@ -178,8 +176,8 @@ export const Header: React.FC<HeaderProps> = ({
               )}
 
               {isSocietyMenuOpen && (
-                <div className="absolute top-12 left-0 w-72 rounded-2xl border border-slate-100 bg-white shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="absolute top-12 left-0 w-72 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#141b27] shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Your Societies ({userSocieties.length})
                   </div>
 
@@ -192,23 +190,23 @@ export const Header: React.FC<HeaderProps> = ({
                           onClick={() => handleSocietySelect(soc)}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition cursor-pointer ${
                             isCurrent
-                              ? 'bg-emerald-50 text-emerald-800 font-bold'
-                              : 'text-slate-700 hover:bg-slate-50'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
+                              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                           }`}
                         >
                           <div className="truncate">
-                            <div className="font-bold truncate text-slate-900">{soc.name}</div>
-                            <div className="text-[10px] text-slate-400">
+                            <div className="font-bold truncate text-slate-900 dark:text-slate-100">{soc.name}</div>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500">
                               {soc.city} • {soc.member_count !== undefined ? `${soc.member_count} members` : `${soc.total_homes} units`}
                             </div>
                           </div>
-                          {isCurrent && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
+                          {isCurrent && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
                         </button>
                       );
                     })}
                   </div>
 
-                  <div className="my-1.5 border-t border-slate-100" />
+                  <div className="my-1.5 border-t border-slate-100 dark:border-slate-800" />
 
                   {onJoinSocietyClick && (
                     <button
@@ -216,7 +214,7 @@ export const Header: React.FC<HeaderProps> = ({
                         setIsSocietyMenuOpen(false);
                         onJoinSocietyClick();
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-bold text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Join or Create Society</span>
@@ -274,13 +272,13 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
 
               {isNotifOpen && (
-                <div className="absolute top-12 right-0 w-80 rounded-2xl border border-slate-100 bg-white shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
-                    <span className="font-extrabold text-xs text-slate-900">Notifications</span>
+                <div className="absolute top-12 right-0 w-80 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#141b27] shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
+                    <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">Notifications</span>
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllRead}
-                        className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                        className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                       >
                         Mark all as read
                       </button>
@@ -288,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   {notifications.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-slate-400">
+                    <div className="py-6 text-center text-xs text-slate-400 dark:text-slate-500">
                       No new notifications
                     </div>
                   ) : (
@@ -298,12 +296,12 @@ export const Header: React.FC<HeaderProps> = ({
                           key={n.id}
                           className={`p-2.5 rounded-xl text-xs transition ${
                             n.read
-                              ? 'bg-slate-50 text-slate-600'
-                              : 'bg-blue-50/70 text-slate-900 border border-blue-100'
+                              ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300'
+                              : 'bg-blue-50/70 dark:bg-blue-950/40 text-slate-900 dark:text-slate-100 border border-blue-100 dark:border-blue-900/40'
                           }`}
                         >
-                          <div className="font-bold text-slate-900">{n.title}</div>
-                          <div className="text-[11px] mt-0.5 leading-snug text-slate-600">{n.message}</div>
+                          <div className="font-bold text-slate-900 dark:text-slate-100">{n.title}</div>
+                          <div className="text-[11px] mt-0.5 leading-snug text-slate-600 dark:text-slate-300">{n.message}</div>
                         </div>
                       ))}
                     </div>
@@ -338,56 +336,56 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
 
               {isProfileOpen && (
-                <div className="absolute top-12 right-0 w-64 rounded-2xl border border-slate-100 bg-white shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 mb-2">
+                <div className="absolute top-12 right-0 w-64 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#141b27] shadow-xl p-2 z-50 animate-in fade-in zoom-in-95">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 mb-2">
                     <div className="flex items-center justify-between">
-                      <p className="font-extrabold text-xs text-slate-900 truncate">{uiUser.name || 'User'}</p>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase">
+                      <p className="font-extrabold text-xs text-slate-900 dark:text-slate-100 truncate">{uiUser.name || 'User'}</p>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 uppercase">
                         {currentRole === 'organizer' ? 'Secretary' : currentRole}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 truncate mt-0.5">{uiUser.email}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{uiUser.email}</p>
                     {activeSociety && (
-                      <p className="text-[10px] text-emerald-700 mt-1 flex items-center gap-1 font-bold">
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1 font-bold">
                         <Building2 className="w-3 h-3" /> {activeSociety.name}
                       </p>
                     )}
                   </div>
 
-                  <div className="space-y-0.5 text-xs font-bold text-slate-700">
+                  <div className="space-y-0.5 text-xs font-bold text-slate-700 dark:text-slate-200">
                     <button
                       onClick={() => {
                         setIsProfileOpen(false);
                         router.push('/profile');
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-slate-50 transition cursor-pointer"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer"
                     >
-                      <User className="w-3.5 h-3.5 text-slate-500" />
+                      <User className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                       <span>Account Profile</span>
                     </button>
 
-                    {isPlatformAdminUser && (
+                     {isPlatformAdminUser && (
                       <>
                         <button
                           onClick={() => {
                             setIsProfileOpen(false);
                             router.push('/admin/issues');
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-amber-700 hover:bg-amber-50 transition cursor-pointer"
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition cursor-pointer"
                         >
-                          <Shield className="w-3.5 h-3.5 text-amber-600" />
+                          <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                           <span>Platform Admin Portal</span>
                         </button>
-                        <div className="my-1.5 border-t border-slate-100" />
+                        <div className="my-1.5 border-t border-slate-100 dark:border-slate-800" />
                       </>
                     )}
                   </div>
 
-                  <div className="my-1 border-t border-slate-100" />
+                  <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
 
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-bold text-left transition cursor-pointer"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold text-left transition cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>

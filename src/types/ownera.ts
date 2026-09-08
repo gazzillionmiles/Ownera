@@ -174,7 +174,7 @@ export interface ProviderBid {
   total_capacity?: number;
   max_capacity?: number;
   service_duration_minutes?: number;
-  warranty_days?: number;
+  warranty_days?: number | string | null;
   inclusions?: string[];
   exclusions?: string[];
   notes?: string | null;

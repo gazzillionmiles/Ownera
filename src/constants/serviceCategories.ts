@@ -142,7 +142,7 @@ export const STANDARDIZED_SERVICES_CATALOG: StandardServiceItem[] = [
     category: 'Cleaning & Pest Control',
     categoryId: 'cleaning-pest-control',
     description: 'Odorless herbal gel baiting and anti-pest spray across all rooms and bathroom drains.',
-    inclusions: ['Kitchen cabinet gel baiting', 'Bathroom drain spray', 'Perimeter baseboard treatment', '30-day retreat warranty'],
+    inclusions: ['Kitchen cabinet gel baiting', 'Bathroom drain spray', 'Perimeter baseboard treatment', '30-day retreat guarantee'],
     exclusions: ['Termite structural drilling', 'Bedbug chemical fogging'],
     typical_duration_minutes: 60,
     suggested_campaign_days: 7,

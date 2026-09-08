@@ -59,7 +59,6 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
   const [techniciansCount, setTechniciansCount] = useState(5);
   const [estimatedDurationMinutes, setEstimatedDurationMinutes] = useState(30);
   const [totalCapacity, setTotalCapacity] = useState(40);
-  const [bidWarranty, setBidWarranty] = useState(45);
   const [bidNotes, setBidNotes] = useState('Dedicated mobile crew on site with professional equipment.');
   const [isSubmittingBid, setIsSubmittingBid] = useState(false);
   const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
@@ -89,7 +88,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
           totalCapacity,
           maxCapacity: totalCapacity,
           serviceDurationMinutes: estimatedDurationMinutes,
-          warrantyDays: bidWarranty,
+          warrantyDays: 0,
           inclusions: ['Full standardized checklist servicing', 'Inspection & pressure test'],
           exclusions: ['Parts replacement'],
           notes: bidNotes,
@@ -453,17 +452,6 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Warranty (Days)</label>
-                <input
-                  type="number"
-                  value={bidWarranty}
-                  onChange={(e) => setBidWarranty(Number(e.target.value))}
-                  min={0}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                />
               </div>
 
               <button

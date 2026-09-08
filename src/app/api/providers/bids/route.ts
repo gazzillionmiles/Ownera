@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         total_capacity: totalCapacity,
         max_capacity: totalCapacity,
         service_duration_minutes: estimatedDurationMinutes,
-        warranty_days: warrantyDays,
+        warranty_days: Number(warrantyDays) || 0,
         inclusions: inclusions || [],
         exclusions: exclusions || [],
         notes,

@@ -40,7 +40,6 @@ export default function VendorQuotePage({
   const [techniciansCount, setTechniciansCount] = useState<number>(5);
   const [estimatedDurationMinutes, setEstimatedDurationMinutes] = useState<number>(30);
   const [totalCapacity, setTotalCapacity] = useState<number>(40);
-  const [warrantyDays, setWarrantyDays] = useState<number>(30);
   const [notes, setNotes] = useState<string>(
     'Dedicated team of technicians equipped with high-pressure jet pump and testing gauges.'
   );
@@ -96,7 +95,7 @@ export default function VendorQuotePage({
           techniciansCount,
           estimatedDurationMinutes,
           totalCapacity,
-          warrantyDays,
+          warrantyDays: 0,
           inclusions: ['Standard full checklist servicing', 'Inspection & pressure test'],
           exclusions: ['Parts replacement'],
           notes,
@@ -310,31 +309,17 @@ export default function VendorQuotePage({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Total Daily Capacity (Units)
-                </label>
-                <input
-                  type="number"
-                  value={totalCapacity}
-                  onChange={(e) => setTotalCapacity(Number(e.target.value))}
-                  min={5}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Service Warranty (Days)
-                </label>
-                <input
-                  type="number"
-                  value={warrantyDays}
-                  onChange={(e) => setWarrantyDays(Number(e.target.value))}
-                  min={0}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Total Daily Capacity (Units)
+              </label>
+              <input
+                type="number"
+                value={totalCapacity}
+                onChange={(e) => setTotalCapacity(Number(e.target.value))}
+                min={5}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
             </div>
 
             <div>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/src/shared/components/ui/theme-provider';
 import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { SettingsView } from '@/src/shared/components/SettingsView';
@@ -12,14 +13,8 @@ import { toast } from 'sonner';
 export default function SettingsPage() {
   const router = useRouter();
   const { uiUser, signOut, updateProfile } = useAuth();
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const { theme, toggleTheme } = useTheme();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const handleToggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
-  };
 
   const handleTabChange = (tab: string) => {
     if (tab === 'settings') return;
@@ -38,12 +33,12 @@ export default function SettingsPage() {
         activeTab="settings"
         onTabChange={handleTabChange}
         theme={theme}
-        onToggleTheme={handleToggleTheme}
+        onToggleTheme={toggleTheme}
         user={uiUser}
       >
         <SettingsView
           theme={theme}
-          onToggleTheme={handleToggleTheme}
+          onToggleTheme={toggleTheme}
           user={uiUser}
           onLogout={handleLogout}
           onRequestDeleteAccount={() => setIsDeleteModalOpen(true)}

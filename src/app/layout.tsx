@@ -49,7 +49,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={jakarta.variable}>
-      <body className="font-sans antialiased bg-[#FAF8F5] dark:bg-[#121316] text-[#1C1C1C] dark:text-white transition-colors duration-200">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('ownera_theme');if(t==='light'||t==='dark'){document.documentElement.classList.add(t)}else{var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.add(prefersDark?'dark':'light');}}catch(e){document.documentElement.classList.add('dark');}})();`,
+          }}
+        />
+      </head>
+      <body className="font-sans antialiased bg-[#FAF8F5] dark:bg-[#0b0f17] text-[#1C1C1C] dark:text-[#f8fafc] transition-colors duration-200">
         <Providers>{children}</Providers>
       </body>
     </html>

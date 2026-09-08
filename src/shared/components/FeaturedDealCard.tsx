@@ -32,11 +32,6 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
   const percentage = Math.min(100, Math.round((joinedCount / targetNeeded) * 100));
   const neededToUnlock = Math.max(0, targetNeeded - joinedCount);
 
-  const basePrice = campaign.service?.base_price_estimate;
-  const dealPrice = campaign.current_price || (basePrice ? Math.round(basePrice * 0.75) : null);
-  const savings = basePrice && dealPrice ? basePrice - dealPrice : null;
-  const savingsPercent = basePrice && savings ? Math.round((savings / basePrice) * 100) : null;
-
   const isAcService = campaign.title?.toLowerCase().includes('ac') || campaign.service?.name?.toLowerCase().includes('ac');
   const isCarService = campaign.title?.toLowerCase().includes('car');
   const isCleaningService = campaign.title?.toLowerCase().includes('clean');
@@ -56,32 +51,8 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
           </h2>
 
           <p className="text-xs sm:text-sm font-medium text-slate-500">
-            {campaign.description || 'Pre-negotiated society bulk pricing. More residents join, the lower the group rate.'}
+            {campaign.description || 'Vendor bids determine the final bulk rate. Join to unlock competitive quotes.'}
           </p>
-
-          {/* Pricing & Savings */}
-          {dealPrice && (
-            <div className="flex flex-wrap items-baseline gap-3 pt-2">
-              {basePrice && (
-                <span className="text-base sm:text-lg font-medium text-rose-500 line-through">
-                  ₹{basePrice}
-                </span>
-              )}
-              <span className="text-3xl sm:text-4xl font-black text-emerald-600 tracking-tight">
-                ₹{dealPrice}
-              </span>
-              <span className="text-sm sm:text-base font-bold text-slate-700">
-                / unit
-              </span>
-
-              {savings && savings > 0 && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white shadow-xs">
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  Save ₹{savings} ({savingsPercent}% off)
-                </span>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Vector Illustration */}

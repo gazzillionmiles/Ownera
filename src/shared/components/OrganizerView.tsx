@@ -299,7 +299,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                       <h3 className="font-extrabold text-base text-slate-900">{camp.title}</h3>
                       <p className="text-xs text-slate-500 font-medium mt-0.5">
                         {camp.selected_provider
-                          ? `Partner: ${camp.selected_provider.company_name} (₹${camp.current_price}/unit)`
+                          ? `Partner: ${camp.selected_provider.company_name} • Quote accepted`
                           : `${camp.bids?.length || camp.bids_count || 0} Vendor Offers received`}
                       </p>
                     </div>
@@ -345,7 +345,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsTransferModalOpen(true)}
-                  className="px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-bold text-xs uppercase hover:bg-amber-100 transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-amber-50 dark:!bg-amber-50 border border-amber-200 dark:border-amber-200 text-amber-900 dark:!text-amber-900 font-bold text-xs uppercase hover:bg-amber-100 dark:hover:!bg-amber-100 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Shield className="w-4 h-4 text-amber-600" />
                   <span>Transfer Secretary</span>
@@ -401,10 +401,10 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                             isSec
-                              ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                              ? 'bg-amber-100 dark:!bg-amber-100 text-amber-900 dark:!text-amber-900 border border-amber-200 dark:border-amber-200'
                               : isCom
                               ? 'bg-blue-100 text-blue-900 border border-blue-200'
-                              : 'bg-slate-200/80 text-slate-700'
+                              : 'bg-slate-200/80 text-slate-700 dark:!text-slate-700'
                           }`}
                         >
                           {m.role}
@@ -483,7 +483,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                       <h3 className="font-extrabold text-base text-slate-900">{camp.title}</h3>
                       <p className="text-xs text-slate-500 font-medium mt-0.5">
                         {camp.selected_provider
-                          ? `Partner: ${camp.selected_provider.company_name} (₹${camp.current_price}/unit)`
+                          ? `Partner: ${camp.selected_provider.company_name} • Quote accepted`
                           : `${camp.bids?.length || camp.bids_count || 0} Vendor Offers received`}
                       </p>
                     </div>

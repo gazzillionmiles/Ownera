@@ -701,7 +701,7 @@ export default function PartnerRegisterPage() {
                     rows={3}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Describe your equipment, background checks, warranty policies, and commercial references..."
+                    placeholder="Describe your equipment, background checks, service standards, and commercial references..."
                     className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none"
                   />
                 </div>

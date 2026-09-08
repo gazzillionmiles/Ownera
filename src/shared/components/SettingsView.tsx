@@ -5,10 +5,11 @@ import { ThemeMode } from '@/src/types/saas';
 import { BaseUserProfile } from '@/src/types/auth';
 import { Sun, Moon, LogOut, User, Clock, ChevronRight, Bug } from 'lucide-react';
 import { ReportIssueModal } from '@/src/shared/components/ReportIssueModal';
+import { useTheme } from '@/src/shared/components/ui/theme-provider';
 
 interface SettingsViewProps {
-  theme: ThemeMode;
-  onToggleTheme: () => void;
+  theme?: ThemeMode;
+  onToggleTheme?: () => void;
   user: BaseUserProfile;
   onUpdateUser?: (updates: Partial<BaseUserProfile>) => void;
   onRequestDeleteAccount?: () => void;
@@ -16,12 +17,15 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
-  theme,
-  onToggleTheme,
+  theme: propTheme,
+  onToggleTheme: propToggleTheme,
   user,
   onRequestDeleteAccount,
   onLogout,
 }) => {
+  const { theme: ctxTheme, toggleTheme } = useTheme();
+  const theme = propTheme || ctxTheme;
+  const onToggleTheme = propToggleTheme || toggleTheme;
   const isDark = theme === 'dark';
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
