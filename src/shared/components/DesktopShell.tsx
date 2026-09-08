@@ -26,6 +26,8 @@ interface DesktopShellProps {
   onJoinSocietyClick?: () => void;
   user?: BaseUserProfile;
   onOpenCreate?: () => void;
+  theme?: any;
+  onToggleTheme?: () => void;
 }
 
 export const DesktopShell: React.FC<DesktopShellProps> = ({
@@ -43,23 +45,22 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
 
   if (activeRole === 'resident') {
     navItems = [
-      { id: 'campaigns', label: 'Service Camps', icon: Sparkles },
+      { id: 'campaigns', label: 'Services', icon: Sparkles },
       { id: 'bookings', label: 'My Bookings', icon: Calendar },
-      { id: 'society', label: 'Society Hub', icon: Building2 },
+      { id: 'society', label: 'Society', icon: Building2 },
     ];
   } else if (activeRole === 'organizer' || activeRole === 'secretary' || activeRole === 'committee') {
     navItems = [
-      { id: 'overview', label: 'Overview', icon: Home },
-      { id: 'campaigns', label: 'Campaigns & Bids', icon: Layers },
-      { id: 'members', label: 'Society Members', icon: Users },
-      { id: 'schedule', label: 'Service Schedule', icon: Calendar },
+      { id: 'overview', label: 'Home', icon: Home },
+      { id: 'campaigns', label: 'My Actions', icon: Layers },
+      { id: 'members', label: 'Members', icon: Users },
+      { id: 'schedule', label: 'Schedule', icon: Calendar },
     ];
   } else if (activeRole === 'provider') {
     navItems = [
-      { id: 'overview', label: 'Earnings & Stats', icon: TrendingUp },
-      { id: 'opportunities', label: 'Demand Opportunities', icon: Layers },
-      { id: 'schedule', label: 'Jobs Checklist', icon: CheckSquare },
-      { id: 'profile', label: 'Provider Profile', icon: Briefcase },
+      { id: 'opportunities', label: 'Opportunities', icon: Layers },
+      { id: 'schedule', label: 'My Jobs', icon: CheckSquare },
+      { id: 'overview', label: 'Payments', icon: TrendingUp },
     ];
   }
 
@@ -80,7 +81,7 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
               <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200/80 shadow-2xs">
                 {navItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = activeTab === item.id;
+                  const isActive = activeTab === item.id || (activeRole === 'resident' && item.id === 'campaigns' && activeTab === 'home');
                   return (
                     <button
                       key={item.id}

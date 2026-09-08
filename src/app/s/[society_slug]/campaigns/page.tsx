@@ -86,14 +86,24 @@ export default function SocietyCampaignsPage({
     );
   }
 
+  const handleTabChange = (tab: string) => {
+    if (!society) return;
+    if (tab === 'bookings') {
+      router.push(`/s/${society.slug}/bookings`);
+    } else if (tab === 'campaigns') {
+      router.push(`/s/${society.slug}/campaigns`);
+    } else if (tab === 'home' || tab === 'overview') {
+      router.push(`/s/${society.slug}`);
+    } else {
+      router.push(`/s/${society.slug}?tab=${tab}`);
+    }
+  };
+
   return (
     <ProtectedRoute>
       <DesktopShell
         activeTab="campaigns"
-        onTabChange={(tab) => {
-          if (tab === 'bookings') router.push(`/s/${society.slug}/bookings`);
-          else if (tab === 'campaigns') router.push(`/s/${society.slug}/campaigns`);
-        }}
+        onTabChange={handleTabChange}
         activeRole={activeRole}
         activeSociety={society}
         onJoinSocietyClick={() => setIsJoinModalOpen(true)}
@@ -110,6 +120,7 @@ export default function SocietyCampaignsPage({
           }}
           isJoinModalOpen={isJoinModalOpen}
           setIsJoinModalOpen={setIsJoinModalOpen}
+          onTabChange={handleTabChange}
         />
       </DesktopShell>
     </ProtectedRoute>

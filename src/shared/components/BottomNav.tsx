@@ -31,10 +31,10 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
 
     if (activeRole === 'provider') {
       const providerTabs = [
-        { id: 'overview', label: 'Earnings', icon: TrendingUp },
-        { id: 'opportunities', label: 'Demand', icon: Layers },
-        { id: 'schedule', label: 'Jobs', icon: CheckSquare },
-        { id: 'profile', label: 'Profile', icon: Briefcase },
+        { id: 'opportunities', label: 'Opportunities', icon: Layers },
+        { id: 'schedule', label: 'My Jobs', icon: CheckSquare },
+        { id: 'overview', label: 'Payments', icon: TrendingUp },
+        { id: 'profile', label: 'Account', icon: Briefcase },
       ];
 
       return (
@@ -83,7 +83,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Home className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">Overview</span>
+              <span className="text-[10px] font-bold">Home</span>
             </button>
 
             <button
@@ -93,7 +93,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Layers className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">Camps</span>
+              <span className="text-[10px] font-bold">My Actions</span>
             </button>
 
             {onOpenCreate && (
@@ -141,30 +141,30 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
       >
         <div className="flex items-center justify-between max-w-md mx-auto">
           {/* Camps / Home */}
-          <button
-            id="bottom-nav-camps"
-            onClick={() => onTabChange('campaigns')}
-            className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors cursor-pointer ${
-              activeTab === 'campaigns' || activeTab === 'home'
-                ? 'text-blue-600'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <Sparkles className="w-5 h-5 stroke-[2.2]" />
-            <span className="text-[10px] font-bold">Camps</span>
-          </button>
+            <button
+              id="bottom-nav-services"
+              onClick={() => onTabChange('campaigns')}
+              className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors cursor-pointer ${
+                activeTab === 'campaigns' || activeTab === 'home'
+                  ? 'text-blue-600'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <Sparkles className="w-5 h-5 stroke-[2.2]" />
+              <span className="text-[10px] font-bold">Services</span>
+            </button>
 
           {/* Bookings */}
-          <button
-            id="bottom-nav-bookings"
-            onClick={() => onTabChange('bookings')}
-            className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors cursor-pointer ${
-              activeTab === 'bookings' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <Calendar className="w-5 h-5 stroke-[2.2]" />
-            <span className="text-[10px] font-bold">Bookings</span>
-          </button>
+            <button
+              id="bottom-nav-bookings"
+              onClick={() => onTabChange('bookings')}
+              className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors cursor-pointer ${
+                activeTab === 'bookings' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <Calendar className="w-5 h-5 stroke-[2.2]" />
+              <span className="text-[10px] font-bold">My Bookings</span>
+            </button>
 
           {/* Center Floating Plus Action */}
           {onOpenCreate && (
@@ -193,14 +193,14 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
           </button>
 
           {/* User Profile */}
-          <button
-            id="bottom-nav-profile"
-            onClick={() => router.push('/profile')}
-            className="flex flex-col items-center gap-1 min-w-[48px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-          >
-            <User className="w-5 h-5 stroke-[2.2]" />
-            <span className="text-[10px] font-bold">Profile</span>
-          </button>
+            <button
+              id="bottom-nav-account"
+              onClick={() => router.push('/profile')}
+              className="flex flex-col items-center gap-1 min-w-[48px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <User className="w-5 h-5 stroke-[2.2]" />
+              <span className="text-[10px] font-bold">Account</span>
+            </button>
         </div>
       </nav>
     );

@@ -5,6 +5,7 @@ import {
   ServiceCampaign,
   Booking,
   BookingSlot,
+  BookingStatus,
   Society,
   ServiceCatalogItem,
 } from '@/src/types/ownera';
@@ -54,6 +55,7 @@ interface ResidentViewProps {
   onVote: (pollId: string, option: string) => Promise<void>;
   onRefresh: () => void;
   onOpenJoinModal: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
 export const ResidentView: React.FC<ResidentViewProps> = ({
@@ -72,6 +74,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
   onVote,
   onRefresh,
   onOpenJoinModal,
+  onTabChange,
 }) => {
   // Modals state
   const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
@@ -289,88 +292,226 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
     activePolls[0] ||
     polls[0];
 
+  const activeBookingStatuses: BookingStatus[] = ['confirmed', 'scheduled', 'in_progress', 'disputed'];
+  const activeBookings = userBookings.filter((b) => activeBookingStatuses.includes(b.status));
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* ------------------------------------------------------------- */}
-      {/* TAB 1: CAMPAIGNS & POLLS FEED */}
+      {/* TAB 1: RESIDENT HOME / SUMMARY VIEW */}
       {/* ------------------------------------------------------------- */}
-      {(activeTab === 'campaigns' || activeTab === 'home') && (
+      {(activeTab === 'home' || activeTab === 'overview' || !activeTab) && (
         <div className="space-y-8">
-          {/* Welcome Banner with Society Overview matching Ownera HomeScreen */}
-          <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute -right-12 -top-12 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute right-32 -bottom-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div className="space-y-2">
+          {/* Welcome Banner - Compact on mobile per BATCH 3B */}
+          <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-3xl p-4 sm:p-6 text-white shadow-xl relative overflow-hidden">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="space-y-1.5">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-400 text-xs font-bold border border-white/10">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   <span>{activeSociety?.name || 'Society Hub'}</span>
                   <span className="text-slate-400">•</span>
                   <span>{activeSociety?.city || 'Community'}</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
-                  Good day, {user.name ? user.name.split(' ')[0] : 'Neighbor'} <span className="text-2xl sm:text-3xl">👋</span>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
+                  Good day, {user.name ? user.name.split(' ')[0] : 'Neighbor'} 👋
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-                  Pool society demand with neighbors to unlock negotiated group discounts for AC servicing, deep cleaning, and home maintenance.
+                <p className="text-[11px] sm:text-xs text-slate-300 max-w-md line-clamp-2 sm:line-clamp-none">
+                  Pool demand with neighbors for group discounts on AC servicing, deep cleaning & maintenance.
                 </p>
               </div>
 
-              {/* Quick Metrics Cluster */}
-              <div className="flex flex-wrap items-center gap-3 shrink-0">
-                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-3 sm:p-4 text-center min-w-[90px]">
-                  <span className="text-xl sm:text-2xl font-black text-white block">
+              {/* Metrics - De-emphasized on mobile */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0 text-[11px]">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-1.5 text-center min-w-[70px]">
+                  <span className="font-black text-white block">
                     {activeSociety?.member_count !== undefined ? activeSociety.member_count : (activeSociety?.total_homes || 0)}
                   </span>
-                  <span className="text-[11px] text-slate-300 font-medium">Members</span>
+                  <span className="text-[10px] text-slate-300">Members</span>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-3 sm:p-4 text-center min-w-[90px]">
-                  <span className="text-xl sm:text-2xl font-black text-emerald-400 block">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-1.5 text-center min-w-[70px]">
+                  <span className="font-black text-emerald-400 block">
                     {activePolls.length}
                   </span>
-                  <span className="text-[11px] text-slate-300 font-medium">Active Drives</span>
+                  <span className="text-[10px] text-slate-300">Active</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCreatePollOpen(true)}
-                  className="px-5 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 stroke-[2.5]" />
-                  <span>Propose Service</span>
-                </button>
               </div>
             </div>
           </section>
 
-          {/* Featured Hero Deal Card */}
-          {featuredCampaign && (
-            <section aria-labelledby="featured-deal-heading" className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 id="featured-deal-heading" className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                    Active Group Drive
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Pre-negotiated bulk campaign for {activeSociety?.name || 'your society'}
-                  </p>
-                </div>
-              </div>
-
-              <FeaturedDealCard
-                campaign={featuredCampaign}
-                onOpenBooking={(c) => handleStartBooking(c)}
-                onOpenCompareQuotes={(c) => setQuoteComparisonCamp(c)}
-                onVote={onVote}
-              />
-            </section>
-          )}
-
-          {/* Active Society Polls Grid */}
-          <section aria-labelledby="polls-heading" className="space-y-4">
+          {/* BATCH 2A HIERARCHY - Active Services Summary (max 4 cards) */}
+          <section aria-labelledby="active-services-heading" className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 id="polls-heading" className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <h2 id="active-services-heading" className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  Active Services for Your Building
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">Join or book these deals with your neighbours</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onTabChange?.('campaigns')}
+                className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                See all services <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {(() => {
+              const actionableStatuses = ['poll_active', 'open', 'threshold_reached', 'pending_secretary_approval', 'booking_open', 'quote_selected'];
+              const combined = [...activePolls, ...upcomingServices]
+                .sort((a, b) => {
+                  const aAction = actionableStatuses.includes(a.status) ? 0 : 1;
+                  const bAction = actionableStatuses.includes(b.status) ? 0 : 1;
+                  if (aAction !== bAction) return aAction - bAction;
+                  if (a.event_date && b.event_date) {
+                    return a.event_date.localeCompare(b.event_date);
+                  }
+                  return 0;
+                })
+                .slice(0, 4);
+
+              return combined.length === 0 ? (
+                <div className="p-8 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+                  <p className="font-bold text-slate-800 text-sm">No active services right now</p>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">Be the first to propose a collective drive for your building.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatePollOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition cursor-pointer"
+                  >
+                    Request a Service for Your Building
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-5">
+                  {combined.map((p) => (
+                    <PollCard
+                      key={p.id}
+                      poll={p}
+                      user={user}
+                      onVote={onVote}
+                      onOpenInviteVendor={(camp) => setInviteVendorCamp(camp)}
+                      onOpenCompareQuotes={(camp) => setQuoteComparisonCamp(camp)}
+                      onOpenBooking={(camp) => handleStartBooking(camp)}
+                      onRefresh={onRefresh}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+          </section>
+
+          {/* BATCH 2A HIERARCHY - My Active Bookings Summary (max 3 cards or Fix 7 empty state) */}
+          <section aria-labelledby="my-bookings-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 id="my-bookings-heading" className="text-xl font-extrabold text-slate-900 tracking-tight">
+                  My Next Bookings
+                </h2>
+                <p className="text-xs text-slate-500">Action required or upcoming</p>
+              </div>
+              {activeBookings.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onTabChange?.('bookings')}
+                  className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  View all bookings <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {activeBookings.length === 0 ? (
+              <div className="p-6 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-2">
+                <p className="font-bold text-slate-800 text-sm">You haven&apos;t booked any services yet</p>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  When you join or reserve a service, it will appear here.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onTabChange?.('campaigns')}
+                  className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Browse Available Services
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {activeBookings.slice(0, 3).map((b) => {
+                  const isDisputed = b.status === 'disputed';
+                  return (
+                    <div
+                      key={b.id}
+                      className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-extrabold text-slate-900 text-base">{b.campaign?.title || 'Service'}</h3>
+                          <p className="text-xs text-slate-500">Unit {b.flat_number} • {b.campaign?.event_date}</p>
+                        </div>
+                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${isDisputed ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
+                          {b.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                        <span className="text-emerald-600 font-black">₹{b.total_amount}</span>
+                        {(b.status === 'confirmed' || b.status === 'scheduled') && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReschedule(b)}
+                            className="text-blue-600 font-bold hover:underline cursor-pointer"
+                          >
+                            Change Slot
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* TAB 2: FULL SERVICES DISCOVERY DESTINATION */}
+      {/* ------------------------------------------------------------- */}
+      {activeTab === 'campaigns' && (
+        <div className="space-y-8">
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <button
+                  type="button"
+                  onClick={() => onTabChange?.('home')}
+                  className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  ← Back to Home
+                </button>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                All Services for Your Building
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                Explore all community service proposals, group drives, and upcoming scheduled maintenance.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsCreatePollOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Propose Service</span>
+            </button>
+          </div>
+
+          {/* Active Society Polls Grid */}
+          <section aria-labelledby="all-polls-heading" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 id="all-polls-heading" className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                   <Vote className="w-5 h-5 text-blue-600" />
                   <span>Community Proposals ({activePolls.length})</span>
                 </h2>
@@ -381,18 +522,11 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
             </div>
 
             {activePolls.length === 0 ? (
-              <div className="p-10 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-3">
-                <p className="font-bold text-slate-800 text-sm">No active society proposals right now</p>
+              <div className="p-8 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-2">
+                <p className="font-bold text-slate-800 text-sm">No active proposals right now</p>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Be the first to propose a collective drive for AC servicing, home deep cleaning, or pest control!
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setIsCreatePollOpen(true)}
-                  className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition cursor-pointer"
-                >
-                  + Propose a Service
-                </button>
               </div>
             ) : (
               <div className="grid gap-5">
@@ -414,8 +548,8 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
           {/* My Created Polls Section */}
           {myPolls.length > 0 && (
-            <section aria-labelledby="my-polls-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
-              <h2 id="my-polls-heading" className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <section aria-labelledby="all-my-polls-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
+              <h2 id="all-my-polls-heading" className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500" />
                 <span>My Created Proposals ({myPolls.length})</span>
               </h2>
@@ -439,14 +573,39 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
           {/* Upcoming Service Days */}
           {upcomingServices.length > 0 && (
-            <section aria-labelledby="upcoming-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
-              <h2 id="upcoming-heading" className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <section aria-labelledby="all-upcoming-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
+              <h2 id="all-upcoming-heading" className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-emerald-600" />
                 <span>Upcoming Scheduled Service Days</span>
               </h2>
 
               <div className="grid gap-4">
                 {upcomingServices.map((p) => (
+                  <PollCard
+                    key={p.id}
+                    poll={p}
+                    user={user}
+                    onVote={onVote}
+                    onOpenInviteVendor={(camp) => setInviteVendorCamp(camp)}
+                    onOpenCompareQuotes={(camp) => setQuoteComparisonCamp(camp)}
+                    onOpenBooking={(camp) => handleStartBooking(camp)}
+                    onRefresh={onRefresh}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Previous Campaigns / Past Services */}
+          {previousCampaigns.length > 0 && (
+            <section aria-labelledby="all-past-heading" className="space-y-4 pt-4 border-t border-slate-200/80">
+              <h2 id="all-past-heading" className="text-lg font-bold text-slate-500 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-slate-400" />
+                <span>Previous Completed Services ({previousCampaigns.length})</span>
+              </h2>
+
+              <div className="grid gap-4 opacity-75">
+                {previousCampaigns.map((p) => (
                   <PollCard
                     key={p.id}
                     poll={p}

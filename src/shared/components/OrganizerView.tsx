@@ -41,6 +41,7 @@ interface OrganizerViewProps {
   activeTab: string;
   onVote: (pollId: string, option: string) => Promise<void>;
   onRefresh: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
 export const OrganizerView: React.FC<OrganizerViewProps> = ({
@@ -52,6 +53,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
   user,
   activeTab,
   onRefresh,
+  onTabChange,
 }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -437,11 +439,11 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {activeTab === 'campaigns' ? 'Society Service Campaigns' : 'Service Schedule'}
+                {activeTab === 'campaigns' ? 'My Actions & Campaigns' : 'Service Schedule'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
                 {activeTab === 'campaigns'
-                  ? 'Manage active demand polls, review vendor bids, and open resident booking slots.'
+                  ? 'Review pending approvals, compare vendor bids, and manage service campaigns.'
                   : 'Confirmed resident bookings and technician dispatch schedule.'}
               </p>
             </div>
@@ -454,6 +456,14 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               <span>Propose Campaign</span>
             </button>
           </div>
+
+          {/* Secretary Approval Queue Notice Card */}
+          {activeTab === 'campaigns' && pendingApprovals.length > 0 && (
+            <SecretaryApprovalCard
+              pendingPolls={pendingApprovals}
+              onRefresh={onRefresh}
+            />
+          )}
 
           {activeTab === 'campaigns' ? (
             campaigns.length === 0 ? (

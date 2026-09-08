@@ -25,6 +25,7 @@ interface HomeViewProps {
   onSocietyChange: (society: Society) => void;
   isJoinModalOpen: boolean;
   setIsJoinModalOpen: (open: boolean) => void;
+  onTabChange?: (tab: string) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -35,6 +36,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSocietyChange,
   isJoinModalOpen,
   setIsJoinModalOpen,
+  onTabChange,
 }) => {
   const [polls, setPolls] = useState<ServiceCampaign[]>([]);
   const [activePolls, setActivePolls] = useState<ServiceCampaign[]>([]);
@@ -152,6 +154,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           onVote={handleVote}
           onRefresh={fetchAllData}
           onOpenJoinModal={() => setIsJoinModalOpen(true)}
+          onTabChange={onTabChange}
         />
       )}
 
@@ -166,6 +169,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           activeTab={activeTab}
           onVote={handleVote}
           onRefresh={fetchAllData}
+          onTabChange={onTabChange}
         />
       )}
 
@@ -178,6 +182,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           user={user}
           activeTab={activeTab}
           onRefresh={fetchAllData}
+          onTabChange={onTabChange}
         />
       )}
 

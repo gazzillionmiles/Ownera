@@ -137,23 +137,23 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Royal Blue Header matching Ownera ProviderDashboardScreen */}
-      <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-indigo-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-6">
+      <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-indigo-900 text-white p-4 sm:p-6 rounded-3xl shadow-lg space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-bold mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-bold mb-1">
               <Wrench className="w-3.5 h-3.5" />
               <span>Service Partner Portal</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black flex items-center gap-2 tracking-tight">
-              {providerProfile?.company_name || 'Service Partner Hub'} <span className="text-2xl">👋</span>
+            <h1 className="text-xl sm:text-2xl font-black flex items-center gap-2 tracking-tight">
+              {providerProfile?.company_name || 'Service Partner Hub'} 👋
             </h1>
-            <p className="text-xs sm:text-sm text-blue-100 font-medium mt-1">
-              Active bulk service invitations, high-density demand pooling, and job dispatch management.
+            <p className="text-[11px] sm:text-xs text-blue-100 font-medium mt-0.5">
+              Bulk invitations, demand pooling & job dispatch.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
+            <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" />
               <span>{providerProfile?.rating ? `${providerProfile.rating}★ Rating` : 'Active Partner'}</span>
             </span>
@@ -162,22 +162,22 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
 
         {/* 4 Stat Metrics in a Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-4 sm:p-5">
+          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl px-3 py-2">
             <span className="text-2xl sm:text-3xl font-black tracking-tight block font-mono">{campaigns.length}</span>
             <span className="text-xs font-bold text-blue-100 mt-1 block">Society Invitations</span>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-4 sm:p-5">
+          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl px-3 py-2">
             <span className="text-2xl sm:text-3xl font-black tracking-tight block font-mono">{providerBids.length}</span>
             <span className="text-xs font-bold text-blue-100 mt-1 block">Quotes Submitted</span>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-4 sm:p-5">
+          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl px-3 py-2">
             <span className="text-2xl sm:text-3xl font-black tracking-tight block font-mono">{confirmedCount}</span>
             <span className="text-xs font-bold text-blue-100 mt-1 block">Scheduled Flats</span>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-4 sm:p-5">
+          <div className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl px-3 py-2">
             <span className="text-2xl sm:text-3xl font-black tracking-tight block font-mono">{completedCount}</span>
             <span className="text-xs font-bold text-blue-100 mt-1 block">Completed Jobs</span>
           </div>

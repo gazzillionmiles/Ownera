@@ -1,9 +1,9 @@
 /**
  * Production Service Worker
- * Auto-generated build version: app-pwa-v1-mtrpdcms
+ * Auto-generated build version: app-pwa-v1-mtt2rroj
  */
 
-const CACHE_VERSION = 'app-pwa-v1-mtrpdcms';
+const CACHE_VERSION = 'app-pwa-v1-mtt2rroj';
 const PRECACHE_NAME = 'app-precache-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'app-runtime-' + CACHE_VERSION;
 const API_CACHE = 'app-api-' + CACHE_VERSION;
@@ -21,29 +21,29 @@ const PRECACHE_URLS = [
   "/icons/apple-touch-icon.png",
   "/_next/static/chunks/00wzo1o1dw69q.js",
   "/_next/static/chunks/03woo_-ee93wu.js",
+  "/_next/static/chunks/0bpkt9g8s32nx.js",
   "/_next/static/chunks/0ceo19dbq857d.js",
   "/_next/static/chunks/0cyw7itlx-me4.js",
   "/_next/static/chunks/0cz1d0mv5g_q7.js",
-  "/_next/static/chunks/0d26k3mac24j_.js",
-  "/_next/static/chunks/0e62i9sediz_z.js",
+  "/_next/static/chunks/0e8wj0vlv48-5.js",
   "/_next/static/chunks/0h2qsuyze9ds1.js",
-  "/_next/static/chunks/0k1zyg8ine823.css",
-  "/_next/static/chunks/0le1uejj9o7nn.js",
   "/_next/static/chunks/0oyyf_3ujtpsj.js",
   "/_next/static/chunks/0qaquzo0gb2fv.js",
   "/_next/static/chunks/0rdi1ogq3cl5g.js",
   "/_next/static/chunks/0vjpld0tahd7i.js",
+  "/_next/static/chunks/0z_fkyvghiqki.js",
+  "/_next/static/chunks/0_b3f8-n615cg.js",
   "/_next/static/chunks/13tscds4ctm-6.js",
-  "/_next/static/chunks/14aupjimcdtiu.js",
   "/_next/static/chunks/17uu5w-u5_ij-.js",
   "/_next/static/chunks/17z6xptelfl1r.js",
-  "/_next/static/chunks/18w282z9ol86-.js",
   "/_next/static/chunks/1bizefod7zksd.js",
+  "/_next/static/chunks/1h2abcwh0k2ww.js",
   "/_next/static/chunks/1j4clacevsol0.js",
-  "/_next/static/chunks/1kd5mng30ymxd.js",
-  "/_next/static/chunks/1kxap2k649nlq.js",
-  "/_next/static/chunks/1mn5-eu1cchs-.js",
-  "/_next/static/chunks/1ncseear_kakf.js"
+  "/_next/static/chunks/1ncseear_kakf.js",
+  "/_next/static/chunks/1v-r4bnewgpdl.js",
+  "/_next/static/chunks/1xc07etaz-xyu.js",
+  "/_next/static/chunks/1xjecdypa6lob.css",
+  "/_next/static/chunks/203ahksgpxgtf.js"
 ];
 
 // Install Event: Precache Core App Shell and Offline Page

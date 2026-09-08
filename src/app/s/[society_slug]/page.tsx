@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, use, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
@@ -12,16 +12,18 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { JoinSocietyModal } from '@/src/shared/components/JoinSocietyModal';
 
-export default function SocietyDashboardPage({
+function SocietyDashboardPage({
   params,
 }: {
   params: Promise<{ society_slug: string }>;
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const { uiUser } = useAuth();
   const [activeRole, setActiveRole] = useState<UserRole>('resident');
-  const [activeTab, setActiveTab] = useState<string>('campaigns');
+  const [activeTab, setActiveTab] = useState<string>(tabParam || 'home');
   const [society, setSociety] = useState<Society | null>(null);
   const [societyRole, setSocietyRole] = useState<string>('resident');
   const [loading, setLoading] = useState(true);
@@ -58,10 +60,10 @@ export default function SocietyDashboardPage({
           // Context-aware role activation: automatically switch view according to role in this society
           if (roleInThisSociety === 'secretary' || roleInThisSociety === 'organizer' || roleInThisSociety === 'committee') {
             setActiveRole('organizer');
-            setActiveTab('overview');
+            setActiveTab(tabParam || 'overview');
           } else {
             setActiveRole('resident');
-            setActiveTab('campaigns');
+            setActiveTab(tabParam || 'home');
           }
         } else {
           setError(
@@ -78,7 +80,7 @@ export default function SocietyDashboardPage({
     if (uiUser.isLoggedIn) {
       loadSociety();
     }
-  }, [resolvedParams.society_slug, uiUser.isLoggedIn, router]);
+  }, [resolvedParams.society_slug, uiUser.isLoggedIn, router, tabParam]);
 
   return (
     <ProtectedRoute>
@@ -101,8 +103,26 @@ export default function SocietyDashboardPage({
           }}
           isJoinModalOpen={isJoinModalOpen}
           setIsJoinModalOpen={setIsJoinModalOpen}
+          onTabChange={(tab) => setActiveTab(tab)}
         />
       </DesktopShell>
     </ProtectedRoute>
+  );
+}
+
+export default function SocietyDashboardPageWrapper(props: {
+  params: Promise<{ society_slug: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+          <p className="text-xs font-semibold text-slate-500">Loading society dashboard...</p>
+        </div>
+      }
+    >
+      <SocietyDashboardPage {...props} />
+    </Suspense>
   );
 }
