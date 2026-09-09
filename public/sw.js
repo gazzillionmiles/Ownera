@@ -1,9 +1,9 @@
 /**
  * Production Service Worker
- * Auto-generated build version: app-pwa-v1-mtufixz9
+ * Auto-generated build version: app-pwa-v1-mtuhb7xh
  */
 
-const CACHE_VERSION = 'app-pwa-v1-mtufixz9';
+const CACHE_VERSION = 'app-pwa-v1-mtuhb7xh';
 const PRECACHE_NAME = 'app-precache-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'app-runtime-' + CACHE_VERSION;
 const API_CACHE = 'app-api-' + CACHE_VERSION;
@@ -19,31 +19,31 @@ const PRECACHE_URLS = [
   "/icons/icon-512x512.png",
   "/icons/icon-512-maskable.png",
   "/icons/apple-touch-icon.png",
-  "/_next/static/chunks/00wzo1o1dw69q.js",
-  "/_next/static/chunks/01f535pjgzun2.js",
   "/_next/static/chunks/03woo_-ee93wu.js",
   "/_next/static/chunks/0bpkt9g8s32nx.js",
   "/_next/static/chunks/0ceo19dbq857d.js",
   "/_next/static/chunks/0cyw7itlx-me4.js",
   "/_next/static/chunks/0cz1d0mv5g_q7.js",
   "/_next/static/chunks/0h2qsuyze9ds1.js",
-  "/_next/static/chunks/0i9x-7u35lr3_.js",
   "/_next/static/chunks/0oyyf_3ujtpsj.js",
   "/_next/static/chunks/0qaquzo0gb2fv.js",
   "/_next/static/chunks/0rdi1ogq3cl5g.js",
+  "/_next/static/chunks/0rwemeix7rnuk.js",
+  "/_next/static/chunks/0v8khgedtllk0.js",
   "/_next/static/chunks/0vjpld0tahd7i.js",
   "/_next/static/chunks/0z_fkyvghiqki.js",
+  "/_next/static/chunks/104p-arl66jzo.js",
   "/_next/static/chunks/13tscds4ctm-6.js",
-  "/_next/static/chunks/148-wpyohibte.css",
+  "/_next/static/chunks/14aupjimcdtiu.js",
   "/_next/static/chunks/17uu5w-u5_ij-.js",
   "/_next/static/chunks/17z6xptelfl1r.js",
   "/_next/static/chunks/1bizefod7zksd.js",
+  "/_next/static/chunks/1d631_4tm_8bx.js",
   "/_next/static/chunks/1j4clacevsol0.js",
+  "/_next/static/chunks/1kxap2k649nlq.js",
   "/_next/static/chunks/1ncseear_kakf.js",
-  "/_next/static/chunks/1v-r4bnewgpdl.js",
-  "/_next/static/chunks/233k2-x9ao27q.js",
   "/_next/static/chunks/24jw5aw1tv5q2.js",
-  "/_next/static/chunks/2dxqi3gjcmoj5.js"
+  "/_next/static/chunks/27rayzawwz4j-.js"
 ];
 
 // Install Event: Precache Core App Shell and Offline Page

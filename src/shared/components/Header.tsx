@@ -13,13 +13,18 @@ import {
   Wrench,
   User,
   Check,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/src/shared/components/ui/theme-provider';
 import { APP_NAME } from '@/src/constants';
 import { UserRole, Society } from '@/src/types/ownera';
 import { toast } from 'sonner';
 
 interface HeaderProps {
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
   activeRole?: UserRole;
   activeSociety?: Society | null;
   onJoinSocietyClick?: () => void;
@@ -27,6 +32,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  theme: propTheme,
+  onToggleTheme: propToggleTheme,
   activeRole = 'resident',
   activeSociety,
   onJoinSocietyClick,
@@ -34,6 +41,10 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const router = useRouter();
   const { uiUser, signOut } = useAuth();
+  const { theme: ctxTheme, toggleTheme: ctxToggleTheme } = useTheme();
+  const theme = propTheme || ctxTheme;
+  const toggleTheme = propToggleTheme || ctxToggleTheme;
+  const isDark = theme === 'dark';
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -310,6 +321,21 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
+            {/* Dark / Light Mode Switcher */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+              aria-label="Toggle theme"
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? (
+                <Sun className="w-5 h-5 text-amber-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-slate-600" />
+              )}
+            </button>
+
             {/* User Profile Menu */}
             <div className="relative" ref={menuRef}>
               <button
@@ -362,6 +388,24 @@ export const Header: React.FC<HeaderProps> = ({
                     >
                       <User className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                       <span>Account Profile</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleTheme()}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer text-slate-700 dark:text-slate-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        {isDark ? (
+                          <Sun className="w-3.5 h-3.5 text-amber-500" />
+                        ) : (
+                          <Moon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        )}
+                        <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {isDark ? 'Dark' : 'Light'}
+                      </span>
                     </button>
 
                      {isPlatformAdminUser && (

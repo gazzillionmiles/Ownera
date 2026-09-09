@@ -20,7 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }));
 
   return (
-    <ThemeProvider defaultTheme="dark">
+    <ThemeProvider defaultTheme="light">
       <NetworkStatusProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>

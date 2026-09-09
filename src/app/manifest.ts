@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Buy together. Pay less. Collective buying for residential communities.",
     start_url: "/",
     display: "standalone",
-    background_color: "#09090b",
-    theme_color: "#09090b",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
     orientation: "portrait",
     scope: "/",
     icons: [

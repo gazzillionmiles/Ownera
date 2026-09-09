@@ -18,7 +18,12 @@ import {
   Paintbrush,
   Hammer,
   Sun,
+  Moon,
+  ShieldCheck,
+  Clock,
+  Users,
 } from 'lucide-react';
+import { useTheme } from '@/src/shared/components/ui/theme-provider';
 import { APP_NAME, APP_TAGLINE } from '@/src/constants';
 
 const STANDARDIZED_SERVICES = [
@@ -26,125 +31,93 @@ const STANDARDIZED_SERVICES = [
     name: 'AC Servicing & Jet Cleaning',
     category: 'AC Maintenance & Repair',
     icon: Wind,
-    individualPrice: 699,
-    bulkPrice: 499,
-    savings: 'Save ₹200 (28% off)',
     desc: 'High-pressure filter wash, outdoor unit deep flush & gas pressure diagnostics.',
+    badge: 'Standardized Scope',
   },
   {
     name: 'Pest & Cockroach Control',
     category: 'Cleaning & Pest Control',
     icon: Bug,
-    individualPrice: 999,
-    bulkPrice: 699,
-    savings: 'Save ₹300 (30% off)',
     desc: 'Odorless kitchen gel baiting, bathroom drain spray with 30-day retreat protection.',
+    badge: 'Verified Checklist',
   },
   {
     name: 'Home Deep Cleaning',
     category: 'Cleaning & Pest Control',
     icon: Sparkles,
-    individualPrice: 2999,
-    bulkPrice: 2199,
-    savings: 'Save ₹800 (27% off)',
     desc: 'Mechanized single-disc floor scrubbing, kitchen degreasing & bathroom descaling.',
+    badge: 'Bulk Camp Ready',
   },
   {
     name: 'RO Purifier Health Check',
     category: 'Water Purifier & Plumbing',
     icon: Droplet,
-    individualPrice: 499,
-    bulkPrice: 349,
-    savings: 'Save ₹150 (30% off)',
     desc: 'Pre-filter wash, booster pump test, TDS calibration & internal sanitization.',
+    badge: 'Standardized Scope',
   },
   {
     name: 'Electrical & Geyser Service',
     category: 'Electrical & Appliances',
     icon: Zap,
-    individualPrice: 499,
-    bulkPrice: 349,
-    savings: 'Save ₹150 (30% off)',
     desc: 'Water heater geyser descaling, thermostat test, MCB diagnostics, and repairs.',
+    badge: 'Verified Checklist',
   },
   {
     name: 'Car Foam Wash & Polish',
     category: 'Car & Bike Care',
     icon: Car,
-    individualPrice: 599,
-    bulkPrice: 399,
-    savings: 'Save ₹200 (33% off)',
     desc: 'Doorstep basement high-pressure foam wash, interior vacuuming & UV tyre dressing.',
+    badge: 'Bulk Camp Ready',
   },
   {
     name: 'Balcony Waterproofing',
     category: 'Painting & Waterproofing',
     icon: Paintbrush,
-    individualPrice: 1499,
-    bulkPrice: 1049,
-    savings: 'Save ₹450 (30% off)',
     desc: 'Polymer tile joint re-grouting, exterior waterproof elastomeric coat & sealing.',
+    badge: 'Standardized Scope',
   },
   {
     name: 'Home Carpentry & Repairs',
     category: 'Home Repair & Carpentry',
     icon: Hammer,
-    individualPrice: 449,
-    bulkPrice: 299,
-    savings: 'Save ₹150 (33% off)',
     desc: 'Door alignments, lock replacement, wall frame drilling, and precision carpentry.',
+    badge: 'Verified Checklist',
   },
   {
     name: 'Curtain & Carpet Deep Clean',
     category: 'Home Deep-Care',
     icon: Sparkles,
-    individualPrice: 799,
-    bulkPrice: 549,
-    savings: 'Save ₹250 (31% off)',
     desc: 'High-suction HEPA vacuum dust extraction & fabric enzyme steam sanitization.',
+    badge: 'Bulk Camp Ready',
   },
   {
     name: 'Water Tank Mechanical Clean',
     category: 'Society & Common Areas',
     icon: Building2,
-    individualPrice: 1499,
-    bulkPrice: 999,
-    savings: 'Save ₹500 (33% off)',
     desc: 'High-pressure rotary jet de-sludging, vacuum extraction & anti-bacterial UV wash.',
+    badge: 'Standardized Scope',
   },
   {
     name: 'Pre-Summer AC Drive',
     category: 'Seasonal Services',
     icon: Sun,
-    individualPrice: 649,
-    bulkPrice: 449,
-    savings: 'Save ₹200 (31% off)',
     desc: 'Mass society early-summer AC inspection, coil descaling & filter flushing.',
+    badge: 'Bulk Camp Ready',
   },
   {
     name: 'Balcony Mosquito Netting',
     category: 'Renovation & Home Upgrades',
     icon: Layers,
-    individualPrice: 1899,
-    bulkPrice: 1399,
-    savings: 'Save ₹500 (26% off)',
     desc: 'Custom-fitted stainless steel anti-rust mesh netting for windows & balconies.',
+    badge: 'Verified Checklist',
   },
 ];
 
 export default function PublicLandingPage() {
   const router = useRouter();
   const [inviteCode, setInviteCode] = useState('');
-  const [sliderHomes, setSliderHomes] = useState(24);
-
-  const calculateDemoPrice = (homes: number) => {
-    if (homes >= 30) return { price: 499, savings: 200, tier: '30+ Homes Bulk Tier' };
-    if (homes >= 20) return { price: 549, savings: 150, tier: '20-29 Homes Tier' };
-    if (homes >= 10) return { price: 599, savings: 100, tier: '10-19 Homes Tier' };
-    return { price: 699, savings: 0, tier: 'Standard Rate (1-9 Homes)' };
-  };
-
-  const demoPricing = calculateDemoPrice(sliderHomes);
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   const handleJoinSocietySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,37 +136,49 @@ export default function PublicLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#121316] text-[#1C1C1C] dark:text-[#FAF8F5] antialiased selection:bg-[#2CB7A5]/30">
+    <div className="min-h-screen bg-slate-50/70 dark:bg-[#0b0f17] text-slate-900 dark:text-[#f8fafc] font-sans antialiased">
       {/* Navigation Header */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#121316]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#0b0f17]/95 backdrop-blur-md shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#2CB7A5] to-emerald-400 flex items-center justify-center text-zinc-950 font-bold shadow-md">
-              <Layers className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-sm">
+              <Layers className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-xl tracking-tight leading-none text-white">{APP_NAME}</span>
-              <span className="text-[10px] text-zinc-400 font-medium tracking-wide">{APP_TAGLINE}</span>
+              <span className="font-extrabold text-lg sm:text-xl tracking-tight leading-none text-slate-900 dark:text-white">{APP_NAME}</span>
+              <span className="text-[10px] text-slate-400 font-medium tracking-wide mt-0.5">{APP_TAGLINE}</span>
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-zinc-400">
-            <a href="#how-it-works" className="hover:text-white transition">How it works</a>
-            <a href="#services" className="hover:text-white transition">Standard Services</a>
-            <a href="#three-sides" className="hover:text-white transition">Who It&apos;s For</a>
-            <a href="#pricing-model" className="hover:text-white transition">Bulk Pricing</a>
+          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <a href="#how-it-works" className="hover:text-blue-600 dark:hover:text-blue-400 transition">How It Works</a>
+            <a href="#services" className="hover:text-blue-600 dark:hover:text-blue-400 transition">Services</a>
+            <a href="#roles" className="hover:text-blue-600 dark:hover:text-blue-400 transition">Who It&apos;s For</a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+              aria-label="Toggle theme"
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+              )}
+            </button>
             <Link
               href="/login"
-              className="text-xs font-semibold px-4 py-2 text-zinc-300 hover:text-white transition"
+              className="text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 transition"
             >
               Sign In
             </Link>
             <Link
               href="/signup"
-              className="text-xs font-bold px-4 py-2 rounded-xl bg-[#2CB7A5] text-[#09090b] hover:bg-[#2CB7A5]/90 transition shadow-sm"
+              className="text-xs font-bold px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
             >
               Join Society
             </Link>
@@ -202,202 +187,145 @@ export default function PublicLandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2CB7A5]/10 border border-[#2CB7A5]/25 text-[#2CB7A5] text-xs font-semibold mb-6">
-            <Building2 className="w-3.5 h-3.5" /> Collective Buying For Residential Societies
+      <section className="relative pt-12 sm:pt-16 pb-14 sm:pb-20 overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 text-xs font-semibold mb-5 shadow-2xs">
+            <Building2 className="w-3.5 h-3.5 text-blue-600" />
+            <span>Collective Buying For Residential Societies</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6 text-white max-w-4xl mx-auto">
-            Your society has <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2CB7A5] via-emerald-300 to-teal-200">buying power.</span> <br />Use it.
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-5">
+            Your society has <span className="text-blue-600">buying power.</span> <br className="hidden sm:inline" />Use it together.
           </h1>
 
-          <p className="text-base sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
-            Ownera aggregates demand across apartment homes so residents get better bulk prices, while verified providers get 30+ jobs in one single building.
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto mb-8 leading-relaxed font-normal">
+            Ownera aggregates resident demand across apartment homes to unlock volume discounts, while verified commercial service providers get dedicated full-day routes in one single building.
           </p>
 
           {/* Quick Society Code Entry */}
-          <div className="max-w-md mx-auto mb-12">
-            <form onSubmit={handleJoinSocietySubmit} className="flex gap-2 p-1.5 rounded-2xl bg-[#18191D] border border-white/10 shadow-2xl">
+          <div className="max-w-md mx-auto mb-10">
+            <form onSubmit={handleJoinSocietySubmit} className="flex gap-2 p-1.5 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
               <input
                 type="text"
                 placeholder="Enter society invite code (e.g. SOC1234)"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value)}
-                className="flex-1 px-4 py-3 bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none uppercase font-mono tracking-wider"
+                className="flex-1 px-3.5 py-2.5 bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none uppercase font-mono tracking-wider font-semibold"
               />
               <button
                 type="submit"
-                className="px-5 py-3 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center gap-1.5 shrink-0"
+                className="min-h-[44px] px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
               >
                 <span>Join</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </form>
+            <p className="text-xs text-slate-400 font-medium mt-2">
+              Have an invite code from your society committee? Enter it above to join directly.
+            </p>
           </div>
 
-          {/* Key Stat Badges */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto pt-4 border-t border-white/[0.08]">
-            <div className="p-3 text-center">
-              <div className="text-2xl font-bold text-white font-mono">25-40%</div>
-              <div className="text-xs text-zinc-400">Average resident savings</div>
-            </div>
-            <div className="p-3 text-center">
-              <div className="text-2xl font-bold text-[#2CB7A5] font-mono">1 Location</div>
-              <div className="text-xs text-zinc-400">No travel waste for providers</div>
-            </div>
-            <div className="p-3 text-center">
-              <div className="text-2xl font-bold text-white font-mono">100%</div>
-              <div className="text-xs text-zinc-400">Standardized verified scope</div>
-            </div>
-            <div className="p-3 text-center">
-              <div className="text-2xl font-bold text-emerald-400 font-mono">₹49</div>
-              <div className="text-xs text-zinc-400">Adjustable deposit only</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Demand & Price Unlock Demo Card */}
-      <section id="pricing-model" className="max-w-4xl mx-auto px-4 sm:px-6 pb-24">
-        <div className="p-6 sm:p-8 rounded-3xl border border-[#2CB7A5]/30 bg-gradient-to-b from-[#18191D] to-[#141518] shadow-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2CB7A5]/10 text-[#2CB7A5] text-[11px] font-bold uppercase tracking-wider mb-1.5">
-                Live Dynamic Collective Pricing Demo
+          {/* 4 Trust & Value Pillars (Non-Monetary) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto pt-6 border-t border-slate-200/80">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center space-y-1">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2">
+                <Users className="w-4 h-4 stroke-[2.2]" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Community AC Service Camp</h2>
-              <p className="text-xs text-zinc-400">Sunday Service Day • Residential Community</p>
+              <div className="text-sm font-extrabold text-slate-900">Collective Demand</div>
+              <div className="text-xs text-slate-500 font-medium">Aggregated volume unlocks better partner bids</div>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-zinc-400">Individual Marketplace Rate</div>
-              <div className="text-xl font-bold text-zinc-500 line-through">₹699</div>
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center space-y-1">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2">
+                <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <div className="text-sm font-extrabold text-slate-900">Verified Providers</div>
+              <div className="text-xs text-slate-500 font-medium">Commercial partners vetted by committees</div>
             </div>
-          </div>
-
-          {/* Interactive Slider */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-              <span>Simulate Participating Homes in Society:</span>
-              <span className="text-base font-mono text-[#2CB7A5] font-bold">{sliderHomes} Homes Joined</span>
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center space-y-1">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2">
+                <Clock className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <div className="text-sm font-extrabold text-slate-900">1 Central Service Day</div>
+              <div className="text-xs text-slate-500 font-medium">Coordinated weekend delivery with dedicated teams</div>
             </div>
-            <input
-              type="range"
-              min="1"
-              max="40"
-              value={sliderHomes}
-              onChange={(e) => setSliderHomes(Number(e.target.value))}
-              className="w-full h-2.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#2CB7A5]"
-            />
-            <div className="flex justify-between text-[11px] font-mono text-zinc-500">
-              <span>1 Home (₹699)</span>
-              <span>10 Homes (₹599)</span>
-              <span>20 Homes (₹549)</span>
-              <span>30+ Homes (₹499)</span>
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center space-y-1">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-2">
+                <CheckCircle2 className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <div className="text-sm font-extrabold text-slate-900">Standardized Scope</div>
+              <div className="text-xs text-slate-500 font-medium">Transparent checklists with zero hidden surprises</div>
             </div>
-          </div>
-
-          {/* Result Card */}
-          <div className="grid sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-zinc-900/90 border border-white/5">
-            <div>
-              <div className="text-xs text-zinc-400 mb-1">Current Bulk Price</div>
-              <div className="text-3xl font-extrabold text-[#2CB7A5] font-mono">₹{demoPricing.price}</div>
-              <div className="text-[11px] text-zinc-500 mt-1">{demoPricing.tier}</div>
-            </div>
-            <div>
-              <div className="text-xs text-zinc-400 mb-1">Per Home Savings</div>
-              <div className="text-3xl font-extrabold text-emerald-400 font-mono">₹{demoPricing.savings}</div>
-              <div className="text-[11px] text-zinc-500 mt-1">vs single booking</div>
-            </div>
-            <div>
-              <div className="text-xs text-zinc-400 mb-1">Total Society Savings</div>
-              <div className="text-3xl font-extrabold text-white font-mono">₹{demoPricing.savings * sliderHomes}</div>
-              <div className="text-[11px] text-zinc-500 mt-1">combined community savings</div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 text-xs text-zinc-400">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#2CB7A5]" />
-              <span>3 verified HVAC providers submitted competing bids</span>
-            </div>
-            <Link
-              href="/login?mode=signup"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#2CB7A5] text-zinc-950 font-bold text-center hover:bg-[#25A08F] transition"
-            >
-              Confirm Booking (₹49 Deposit)
-            </Link>
           </div>
         </div>
       </section>
 
-      {/* 3 Step Workflow */}
-      <section id="how-it-works" className="max-w-5xl mx-auto px-4 sm:px-6 py-16 border-t border-white/[0.08]">
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-semibold text-[#2CB7A5] mb-3 uppercase tracking-wider">
+      {/* How It Works Section */}
+      <section id="how-it-works" className="max-w-5xl mx-auto px-4 sm:px-6 py-14 sm:py-16 border-t border-slate-200/80">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 text-xs font-semibold mb-2 uppercase tracking-wider">
             How Ownera Works
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-            Turn Many Homes Into One Better Deal
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Turn Many Homes Into One Coordinated Drive
           </h2>
-          <p className="text-sm text-zinc-400 max-w-xl mx-auto mt-2">
-            Ownera aggregates demand first and lets providers compete for the concentrated society demand.
+          <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto mt-1 font-medium">
+            Ownera brings together community demand first, then enables verified service partners to submit transparent bids.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-[#16171B] border border-white/5 space-y-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-[#2CB7A5]/10 border border-[#2CB7A5]/25 flex items-center justify-center font-bold text-[#2CB7A5] font-mono text-lg">
+        <div className="grid md:grid-cols-3 gap-5">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 font-black flex items-center justify-center font-mono text-base">
               01
             </div>
-            <h3 className="text-lg font-bold text-white">Demand Aggregates</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Residents in the same society express interest in a standardized service camp (e.g. AC service before summer). No upfront full payment needed.
+            <h3 className="text-base font-extrabold text-slate-900">Express Interest</h3>
+            <p className="text-xs text-slate-500 leading-relaxed font-normal">
+              Residents in the same society express interest in a seasonal service drive (such as AC servicing before summer). No full payment required upfront.
             </p>
-            <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5 text-[11px] text-zinc-300 font-mono">
-              24 / 30 neighbors joined
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 font-medium">
+              Quorum milestone gathered from neighbors
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#16171B] border border-white/5 space-y-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-[#2CB7A5]/10 border border-[#2CB7A5]/25 flex items-center justify-center font-bold text-[#2CB7A5] font-mono text-lg">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 font-black flex items-center justify-center font-mono text-base">
               02
             </div>
-            <h3 className="text-lg font-bold text-white">Providers Compete</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Top-rated verified service providers bid on the guaranteed volume. Knowing they get 25+ flats in 1 building, they give bulk volume pricing.
+            <h3 className="text-base font-extrabold text-slate-900">Providers Compete</h3>
+            <p className="text-xs text-slate-500 leading-relaxed font-normal">
+              Top-rated commercial service providers bid on the concentrated volume. Knowing they serve multiple flats in 1 building, they offer volume efficiencies.
             </p>
-            <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5 text-[11px] text-zinc-300 font-mono">
-              Provider B: ₹499/AC (Selected)
+            <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 text-xs text-blue-700 font-semibold">
+              Verified partner selected by the society committee
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#16171B] border border-white/5 space-y-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-[#2CB7A5]/10 border border-[#2CB7A5]/25 flex items-center justify-center font-bold text-[#2CB7A5] font-mono text-lg">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 font-black flex items-center justify-center font-mono text-base">
               03
             </div>
-            <h3 className="text-lg font-bold text-white">Fulfillment on Service Day</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Residents pick 90-minute time slots. The provider arrives with dedicated teams on Sunday, executes standardized checklist, and residents rate.
+            <h3 className="text-base font-extrabold text-slate-900">Fulfillment on Service Day</h3>
+            <p className="text-xs text-slate-500 leading-relaxed font-normal">
+              Residents select convenient arrival windows. Assigned technician crews execute the standardized service checklist, and residents rate performance.
             </p>
-            <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5 text-[11px] text-[#2CB7A5] font-mono">
-              Service completed • 4.9★ rating
+            <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100 text-xs text-emerald-800 font-semibold">
+              Service completed &bull; Transparent resident ratings
             </div>
           </div>
         </div>
       </section>
 
       {/* Standardized Services Catalog Grid */}
-      <section id="services" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-white/[0.08]">
+      <section id="services" className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-16 border-t border-slate-200/80">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-semibold text-[#2CB7A5] mb-3 uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 text-xs font-semibold mb-2 uppercase tracking-wider">
             Standardized Catalog
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-            Standardized Home Services Ready for Bulk Camps
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Essential Community Services Ready for Bulk Camps
           </h2>
-          <p className="text-sm text-zinc-400 max-w-xl mx-auto mt-2">
-            No vague quotes or surprise add-ons. Clear inclusions, exclusions, and guaranteed bulk pricing tiers.
+          <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto mt-1 font-medium">
+            Clear inclusions, exclusions, and verified scopes. No surprise add-ons or vague contractor quotes.
           </p>
         </div>
 
@@ -407,27 +335,27 @@ export default function PublicLandingPage() {
             return (
               <div
                 key={idx}
-                className="p-5 rounded-2xl bg-[#16171B] border border-white/5 hover:border-[#2CB7A5]/40 transition-all flex flex-col justify-between space-y-3"
+                className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-3"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#2CB7A5]/10 border border-[#2CB7A5]/20 flex items-center justify-center text-[#2CB7A5]">
-                      <Icon className="w-4 h-4" />
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center">
+                      <Icon className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      {s.savings}
+                    <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                      {s.category}
                     </span>
                   </div>
-                  <h3 className="font-bold text-sm text-white">{s.name}</h3>
-                  <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{s.desc}</p>
+                  <h3 className="font-extrabold text-base text-slate-900 leading-snug">{s.name}</h3>
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed font-normal">{s.desc}</p>
                 </div>
 
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-zinc-500 line-through mr-1.5">₹{s.individualPrice}</span>
-                    <span className="font-bold text-[#2CB7A5] text-sm">₹{s.bulkPrice}</span>
-                  </div>
-                  <span className="text-[10px] text-zinc-400">Bulk Camp</span>
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>{s.badge}</span>
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">Bulk Camp</span>
                 </div>
               </div>
             );
@@ -436,75 +364,101 @@ export default function PublicLandingPage() {
       </section>
 
       {/* Three Sides Value Proposition */}
-      <section id="three-sides" className="max-w-5xl mx-auto px-4 sm:px-6 py-16 border-t border-white/[0.08]">
+      <section id="roles" className="max-w-5xl mx-auto px-4 sm:px-6 py-14 sm:py-16 border-t border-slate-200/80">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white tracking-tight">Built For Everyone in the Community</h2>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 text-xs font-semibold mb-2 uppercase tracking-wider">
+            Who It&apos;s For
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Built For Everyone in the Community
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto mt-1 font-medium">
+            A unified platform designed for apartment residents, society leadership, and trusted service providers.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-[#18191D] border border-white/10 space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-[#2CB7A5]">For Residents</div>
-            <h3 className="text-lg font-bold text-white">Save money without hassle</h3>
-            <ul className="space-y-2 text-xs text-zinc-400">
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>Save 25-40% compared to solo marketplace rates</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>Verified providers vetted by your society organizers</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>Pick convenient slots on the society service day</span>
-              </li>
-            </ul>
+        <div className="grid md:grid-cols-3 gap-5">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-blue-600">For Residents</div>
+              <h3 className="text-lg font-extrabold text-slate-900">Better Deals Without the Hassle</h3>
+              <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Guaranteed volume discounts through collective community quorum</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Verified commercial service partners approved by your society committee</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Convenient 90-minute arrival slot booking on dedicated service days</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Standardized checklist execution with transparent resident ratings</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#18191D] border border-white/10 space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-[#2CB7A5]">For Society Organizers</div>
-            <h3 className="text-lg font-bold text-white">Zero vendor coordination chaos</h3>
-            <ul className="space-y-2 text-xs text-zinc-400">
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>No messy spreadsheets or unorganized WhatsApp polls</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>Invite top providers and compare structured bids side-by-side</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>Real-time dashboard of confirmed bookings and service status</span>
-              </li>
-            </ul>
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-amber-600">For Society Organizers</div>
+              <h3 className="text-lg font-extrabold text-slate-900">Zero Vendor Coordination Chaos</h3>
+              <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>No messy spreadsheets, repetitive phone calls, or unorganized chat polls</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Invite trusted providers and compare structured bids side-by-side</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Single secretary approval workflow for official society drives</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Real-time dashboard of confirmed bookings, technician arrivals, and issues</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#18191D] border border-white/10 space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-[#2CB7A5]">For Service Providers</div>
-            <h3 className="text-lg font-bold text-white">Concentrated demand in one building</h3>
-            <ul className="space-y-2 text-xs text-zinc-400">
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>30+ confirmed jobs in 1 location in a single day</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>Zero travel time or commute costs between apartments</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-3.5 h-3.5 text-[#2CB7A5] shrink-0 mt-0.5" />
-                <span>Predictable high-margin revenue (e.g. ₹15,000+ per day)</span>
-              </li>
-            </ul>
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-emerald-600">For Service Providers</div>
+              <h3 className="text-lg font-extrabold text-slate-900">Concentrated Multi-Unit Volume</h3>
+              <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>30+ confirmed jobs in 1 location on a single service day</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Zero travel time or commute waste between distant customer apartments</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Predictable technician routing with apartment-by-apartment checklists</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Direct society committee relationships with recurring seasonal drive opportunities</span>
+                </li>
+              </ul>
+            </div>
 
             <div className="pt-2">
               <Link
                 href="/partner/register"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition"
+                className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span>Register as Service Partner</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -512,46 +466,48 @@ export default function PublicLandingPage() {
       </section>
 
       {/* CTA Footer Banner */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center border-t border-white/[0.08]">
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
-          Ready to bring collective buying to your society?
-        </h2>
-        <p className="text-sm text-zinc-400 max-w-lg mx-auto mb-8">
-          Join your society with an invite code or create a new campaign for your apartment community.
-        </p>
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center border-t border-slate-200/80">
+        <div className="p-8 sm:p-12 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-6">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Ready to bring collective buying to your society?
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto font-medium">
+            Join your society with an invite code or propose a collective service camp for your apartment community.
+          </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href="/login?mode=signup"
-            className="w-full sm:w-auto px-8 py-3.5 bg-[#2CB7A5] text-zinc-950 font-bold text-sm rounded-2xl hover:bg-[#25A08F] transition shadow-lg flex items-center justify-center gap-2"
-          >
-            <span>Get Started with Ownera</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            href="/login"
-            className="w-full sm:w-auto px-6 py-3.5 bg-zinc-900 border border-white/10 text-zinc-300 font-semibold text-sm rounded-2xl hover:bg-zinc-800 transition"
-          >
-            Sign In to Existing Account
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/login?mode=signup"
+              className="w-full sm:w-auto min-h-[44px] px-8 py-3 rounded-xl bg-blue-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2"
+            >
+              <span>Get Started with Ownera</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/login"
+              className="w-full sm:w-auto min-h-[44px] px-6 py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider hover:bg-slate-200 transition flex items-center justify-center"
+            >
+              Sign In to Existing Account
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-10 text-xs text-zinc-500 bg-[#0E0F12]">
+      <footer className="border-t border-slate-200/80 py-10 text-xs text-slate-500 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#2CB7A5] flex items-center justify-center text-zinc-950 font-bold">
+            <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
               <Layers className="w-3.5 h-3.5" />
             </div>
-            <span className="font-bold text-white">{APP_NAME}</span>
-            <span>— {APP_TAGLINE}</span>
+            <span className="font-extrabold text-slate-900">{APP_NAME}</span>
+            <span className="text-slate-400">&mdash; {APP_TAGLINE}</span>
           </div>
-          <div className="flex gap-6">
-            <Link href="/privacy" className="hover:text-white transition">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition">Terms</Link>
-            <Link href="/refund" className="hover:text-white transition">Refunds</Link>
-            <Link href="/contact" className="hover:text-white transition">Contact</Link>
+          <div className="flex flex-wrap items-center gap-6 text-slate-500 font-medium">
+            <Link href="/privacy" className="hover:text-blue-600 transition">Privacy</Link>
+            <Link href="/terms" className="hover:text-blue-600 transition">Terms</Link>
+            <Link href="/refund" className="hover:text-blue-600 transition">Refunds</Link>
+            <Link href="/contact" className="hover:text-blue-600 transition">Contact</Link>
           </div>
         </div>
       </footer>

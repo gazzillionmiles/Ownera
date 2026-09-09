@@ -16,12 +16,12 @@ interface ThemeContextType {
 }
 
 const ThemeContext = React.createContext<ThemeContextType>({
-  theme: "dark",
+  theme: "light",
   setTheme: () => {},
   toggleTheme: () => {},
 });
 
-export function ThemeProvider({ children, defaultTheme = "dark" }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(defaultTheme);
 
   React.useEffect(() => {

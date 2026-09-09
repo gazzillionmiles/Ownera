@@ -38,6 +38,8 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
   activeSociety = null,
   onJoinSocietyClick = () => {},
   onOpenCreate,
+  theme,
+  onToggleTheme,
 }) => {
 
   // Determine desktop secondary tabs matching active role
@@ -65,12 +67,14 @@ export const DesktopShell: React.FC<DesktopShellProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50/70 text-slate-900 font-sans">
+    <div className="min-h-screen flex flex-col bg-slate-50/70 dark:bg-[#0b0f17] text-slate-900 dark:text-[#f8fafc] font-sans">
       <Header
         activeRole={activeRole}
         activeSociety={activeSociety}
         onJoinSocietyClick={onJoinSocietyClick}
         onOpenCreate={onOpenCreate}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
       <main className="flex-1 relative z-10 pb-20 md:pb-12 pt-4 sm:pt-6">

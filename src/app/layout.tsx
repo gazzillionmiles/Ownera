@@ -12,7 +12,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#121316",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -52,11 +52,11 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('ownera_theme');if(t==='light'||t==='dark'){document.documentElement.classList.add(t)}else{var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.add(prefersDark?'dark':'light');}}catch(e){document.documentElement.classList.add('dark');}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('ownera_theme');if(t==='light'||t==='dark'){document.documentElement.classList.add(t)}else{document.documentElement.classList.add('light');}}catch(e){document.documentElement.classList.add('light');}})();`,
           }}
         />
       </head>
-      <body className="font-sans antialiased bg-[#FAF8F5] dark:bg-[#0b0f17] text-[#1C1C1C] dark:text-[#f8fafc] transition-colors duration-200">
+      <body className="font-sans antialiased bg-slate-50/70 dark:bg-[#0b0f17] text-slate-900 dark:text-[#f8fafc] transition-colors duration-200">
         <Providers>{children}</Providers>
       </body>
     </html>
