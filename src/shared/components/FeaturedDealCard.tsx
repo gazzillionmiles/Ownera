@@ -37,20 +37,20 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
   const isCleaningService = campaign.title?.toLowerCase().includes('clean');
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#e0f2fe] via-[#f0f9ff] to-[#ffffff] border border-sky-100 shadow-md p-6 sm:p-8 space-y-6">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#e0f2fe] via-[#f0f9ff] to-[#ffffff] border border-sky-200 shadow-sm p-6 sm:p-8 space-y-6">
       {/* Top Banner Row */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-6">
-        <div className="space-y-3 z-10 flex-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/80 text-blue-800 text-xs font-bold">
+        <div className="space-y-2 z-10 flex-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/80 text-blue-800 text-xs font-semibold">
             <Calendar className="w-3.5 h-3.5 text-blue-600" />
             <span>Community Drive • {campaign.event_date || 'Upcoming Weekend'}</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
             {campaign.title}
           </h2>
 
-          <p className="text-xs sm:text-sm font-medium text-slate-500">
+          <p className="text-xs sm:text-sm font-normal text-slate-600 leading-relaxed">
             {campaign.description || 'Vendor bids determine the final bulk rate. Join to unlock competitive quotes.'}
           </p>
         </div>
@@ -78,12 +78,12 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
             Community Participation:
           </span>
           <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-800 shadow-2xs">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-2xs">
               <Users className="w-3.5 h-3.5 text-blue-600" />
               <span>{joinedCount} Residents Pledged</span>
             </div>
             {hasProvider && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
                 <Check className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Provider Assigned</span>
               </div>
@@ -91,16 +91,16 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
           </div>
         </div>
 
-        <div className="text-left sm:text-right">
-          <div className="flex items-baseline sm:justify-end gap-1.5">
+        <div className="text-left sm:text-right shrink-0">
+          <div className="flex items-baseline sm:justify-end gap-1.5 font-mono">
             <span className="text-2xl font-black text-blue-600 tracking-tight">
               {joinedCount}
             </span>
-            <span className="text-base font-bold text-slate-800">
+            <span className="text-sm font-bold text-slate-500 font-sans">
               / {targetNeeded} target
             </span>
           </div>
-          <p className="text-xs font-semibold text-slate-500 mt-0.5">
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
             {neededToUnlock > 0 ? `${neededToUnlock} more needed for next tier` : 'Quorum goal reached!'}
           </p>
         </div>
@@ -117,11 +117,11 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
       </div>
 
       {/* Action Area */}
-      <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <div className="pt-2 flex flex-col sm:flex-row items-center gap-3 w-full">
         {isBookingOpen && onOpenBooking ? (
           <button
             onClick={() => onOpenBooking(campaign)}
-            className="w-full sm:w-auto min-w-[260px] py-3.5 px-8 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto min-w-[240px] min-h-[48px] py-3.5 px-8 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
           >
             <span>Book Your Time Slot</span>
             <ArrowRight className="w-5 h-5 stroke-[2.5]" />
@@ -129,7 +129,7 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
         ) : (campaign.bids_count || 0) > 0 && onOpenCompareQuotes ? (
           <button
             onClick={() => onOpenCompareQuotes(campaign)}
-            className="w-full sm:w-auto min-w-[260px] py-3.5 px-8 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto min-w-[240px] min-h-[48px] py-3.5 px-8 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black text-sm sm:text-base rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
           >
             <span>Review Provider Bids ({campaign.bids_count})</span>
             <ArrowRight className="w-5 h-5 stroke-[2.5]" />
@@ -137,7 +137,7 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
         ) : null}
 
         {campaign.service?.name && (
-          <span className="text-xs text-slate-500 font-medium sm:ml-auto">
+          <span className="text-xs text-slate-500 font-normal sm:ml-auto">
             Standard service checklist verified by society
           </span>
         )}

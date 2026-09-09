@@ -197,7 +197,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Header Stats */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
@@ -219,7 +219,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsInviteModalOpen(true)}
-                className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 border border-slate-200 cursor-pointer"
+                className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 border border-slate-200 cursor-pointer"
               >
                 <Key className="w-4 h-4 text-blue-600" />
                 <span>Invite</span>
@@ -227,7 +227,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-md shadow-blue-500/20 flex items-center gap-2 shrink-0 cursor-pointer"
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-2 shrink-0 cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>Propose Campaign</span>
@@ -246,30 +246,30 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
           {/* Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-1">
-              <div className="text-xs font-bold text-slate-500">Active Polls &amp; Camps</div>
+              <div className="text-xs font-bold text-slate-500">Active Services</div>
               <div className="text-3xl font-black font-mono text-slate-900">{campaigns.length}</div>
-              <div className="text-[11px] font-semibold text-blue-600">In society hub</div>
+              <div className="text-xs font-semibold text-blue-600">In society hub</div>
             </div>
             <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-1">
               <div className="text-xs font-bold text-slate-500">Pending Approvals</div>
               <div className="text-3xl font-black font-mono text-amber-600">
                 {pendingApprovals.length}
               </div>
-              <div className="text-[11px] font-semibold text-slate-400">Awaiting review</div>
+              <div className="text-xs font-semibold text-slate-400">Awaiting review</div>
             </div>
             <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-1">
               <div className="text-xs font-bold text-slate-500">Confirmed Bookings</div>
               <div className="text-3xl font-black font-mono text-emerald-600">{totalConfirmedBookings}</div>
-              <div className="text-[11px] font-semibold text-slate-400">Slots reserved</div>
+              <div className="text-xs font-semibold text-slate-400">Slots reserved</div>
             </div>
             <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-1">
-              <div className="text-xs font-bold text-slate-500">Society Members</div>
+              <div className="text-xs font-bold text-slate-500">Members</div>
               <div className="text-3xl font-black font-mono text-slate-900">{members.length}</div>
-              <div className="text-[11px] font-semibold text-slate-400">Registered units</div>
+              <div className="text-xs font-semibold text-slate-400">Registered units</div>
             </div>
           </div>
 
-          {/* Active Camps List with Vendor Management */}
+          {/* Active Campaigns List with Vendor Management */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
@@ -279,7 +279,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
             </div>
 
             {campaigns.length === 0 ? (
-              <div className="p-10 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs text-slate-500 text-xs">
+              <div className="p-10 text-center rounded-2xl bg-white border border-slate-200/80 shadow-xs text-slate-500 text-xs">
                 No active campaigns. Click &ldquo;Propose Campaign&rdquo; above to organize your first community deal.
               </div>
             ) : (
@@ -287,36 +287,40 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                 {campaigns.map((camp) => (
                   <div
                     key={camp.id}
-                    className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3"
+                    className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all space-y-3"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 uppercase">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 uppercase border border-blue-100/60">
                         {camp.event_date || 'Upcoming'}
                       </span>
-                      <span className="text-xs font-mono font-bold text-slate-700">
+                      <span className="text-xs font-mono font-semibold text-slate-500">
                         {camp.total_votes || camp.poll_votes?.length || camp.confirmed_count || 0} Residents Pledged
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-base text-slate-900">{camp.title}</h3>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      <h3 className="font-extrabold text-base text-slate-900 leading-snug">{camp.title}</h3>
+                      <p className="text-xs text-slate-500 font-medium mt-1">
                         {camp.selected_provider
                           ? `Partner: ${camp.selected_provider.company_name} • Quote accepted`
                           : `${camp.bids?.length || camp.bids_count || 0} Vendor Offers received`}
                       </p>
                     </div>
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 pt-2 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => setInviteVendorCamp(camp)}
-                        className="flex-1 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition cursor-pointer"
+                        className="flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition flex items-center justify-center cursor-pointer"
                       >
                         + Invite Vendor
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedCampaignForBids(camp)}
-                        className="flex-1 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-bold text-blue-700 transition cursor-pointer"
+                        className={`flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                          (camp.bids?.length || camp.bids_count || 0) > 0
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                            : 'bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700'
+                        }`}
                       >
                         Review Offers ({camp.bids?.length || camp.bids_count || 0})
                       </button>
@@ -334,9 +338,9 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === 'members' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Society Members &amp; Leadership</h1>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Members &amp; Leadership</h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
                 Manage committee members, invite residents, and monitor registered apartment units.
               </p>
@@ -356,7 +360,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsInviteModalOpen(true)}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Invite Member</span>
@@ -364,7 +368,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                 Registered Residents &amp; Committee ({members.length})
@@ -436,7 +440,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {(activeTab === 'campaigns' || activeTab === 'schedule') && (
         <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 {activeTab === 'campaigns' ? 'My Actions & Campaigns' : 'Service Schedule'}
@@ -450,7 +454,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Propose Campaign</span>
@@ -467,7 +471,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
 
           {activeTab === 'campaigns' ? (
             campaigns.length === 0 ? (
-              <div className="p-12 text-center rounded-3xl border border-slate-200/80 bg-white shadow-xs space-y-3">
+              <div className="p-10 text-center rounded-2xl border border-slate-200/80 bg-white shadow-xs space-y-3">
                 <Layers className="w-10 h-10 text-slate-400 mx-auto" />
                 <div className="text-base font-bold text-slate-900">No campaigns created yet</div>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto">
@@ -479,36 +483,40 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                 {campaigns.map((camp) => (
                   <div
                     key={camp.id}
-                    className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3"
+                    className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all space-y-3"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 uppercase">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 uppercase border border-blue-100/60">
                         {camp.event_date || 'Upcoming'}
                       </span>
-                      <span className="text-xs font-mono font-bold text-slate-700">
+                      <span className="text-xs font-mono font-semibold text-slate-500">
                         {camp.total_votes || camp.poll_votes?.length || camp.confirmed_count || 0} Residents Pledged
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-base text-slate-900">{camp.title}</h3>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      <h3 className="font-extrabold text-base text-slate-900 leading-snug">{camp.title}</h3>
+                      <p className="text-xs text-slate-500 font-medium mt-1">
                         {camp.selected_provider
                           ? `Partner: ${camp.selected_provider.company_name} • Quote accepted`
                           : `${camp.bids?.length || camp.bids_count || 0} Vendor Offers received`}
                       </p>
                     </div>
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 pt-2 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => setInviteVendorCamp(camp)}
-                        className="flex-1 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition cursor-pointer"
+                        className="flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition flex items-center justify-center cursor-pointer"
                       >
                         + Invite Vendor
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedCampaignForBids(camp)}
-                        className="flex-1 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-bold text-blue-700 transition cursor-pointer"
+                        className={`flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                          (camp.bids?.length || camp.bids_count || 0) > 0
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                            : 'bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700'
+                        }`}
                       >
                         Review Offers ({camp.bids?.length || camp.bids_count || 0})
                       </button>
@@ -519,7 +527,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
             )
           ) : (
             allBookings.length === 0 ? (
-              <div className="p-12 text-center rounded-3xl border border-slate-200/80 bg-white shadow-xs space-y-3">
+              <div className="p-10 text-center rounded-2xl border border-slate-200/80 bg-white shadow-xs space-y-3">
                 <Calendar className="w-10 h-10 text-slate-400 mx-auto" />
                 <div className="text-base font-bold text-slate-900">No confirmed bookings yet</div>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto">
@@ -535,7 +543,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-extrabold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-100">
+                        <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                           Unit {b.flat_number}
                         </span>
                         <span className="text-sm font-extrabold text-slate-900">{b.campaign?.title || 'Service Camp'}</span>
@@ -549,10 +557,10 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                     </div>
 
                     <span
-                      className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${
+                      className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full uppercase border shrink-0 ${
                         b.status === 'completed'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : 'bg-blue-50 text-blue-800 border border-blue-200'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-blue-50 text-blue-800 border-blue-200'
                       }`}
                     >
                       {b.status}
@@ -676,7 +684,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               <button
                 type="submit"
                 disabled={isTransferring || !selectedNewSecretaryId}
-                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-zinc-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-sm shadow-amber-500/20"
+                className="w-full min-h-[44px] py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-zinc-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-sm"
               >
                 {isTransferring ? 'Transferring Role...' : 'Confirm Secretary Transfer'}
               </button>
@@ -788,7 +796,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                 <button
                   type="submit"
                   disabled={isInviting}
-                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-sm shadow-blue-500/20"
+                  className="w-full min-h-[44px] py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {isInviting ? 'Generating...' : 'Create Invitation Token'}
                 </button>

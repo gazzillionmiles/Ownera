@@ -220,7 +220,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 1. Scope Selector */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+            <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300 block">
               1. Choose Scope
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -269,10 +269,10 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
           {/* 2. Category Filter & Service Selection */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+              <label className="text-xs font-semibold text-slate-600 dark:text-zinc-300 block">
                 2. Select Service Category
               </label>
-              <span className="text-[11px] font-semibold text-slate-400">
+              <span className="text-xs font-medium text-slate-400">
                 12 Standard Categories
               </span>
             </div>

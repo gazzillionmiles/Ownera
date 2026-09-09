@@ -70,13 +70,13 @@ export const PollCard: React.FC<PollCardProps> = ({
   };
 
   return (
-    <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-all space-y-5">
+    <div className="p-6 sm:p-7 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-md transition-all space-y-5">
       {/* Header & Badges */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-        <div className="space-y-1.5">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-4 border-b border-slate-100">
+        <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
+              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
                 isMyHouse
                   ? 'bg-amber-50 text-amber-800 border border-amber-200'
                   : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
@@ -86,38 +86,38 @@ export const PollCard: React.FC<PollCardProps> = ({
             </span>
 
             {poll.service?.name && (
-              <span className="text-xs text-slate-500 font-semibold bg-slate-100 px-2.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center text-xs text-slate-600 font-semibold bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-full">
                 {poll.service.name}
               </span>
             )}
 
-            <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5 px-1 py-0.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>Service: {poll.event_date || 'Upcoming'}</span>
             </span>
           </div>
 
-          <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
             {poll.title}
           </h3>
 
           {poll.description && (
-            <p className="text-xs text-slate-500 font-medium line-clamp-2">
+            <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed line-clamp-2">
               {poll.description}
             </p>
           )}
 
           {poll.creator_profile?.name && (
-            <p className="text-[11px] text-slate-400 font-medium">
-              Proposed by <strong className="text-slate-700">{poll.creator_profile.name}</strong>
+            <p className="text-xs text-slate-400 font-medium">
+              Proposed by <strong className="text-slate-600 font-semibold">{poll.creator_profile.name}</strong>
             </p>
           )}
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 pt-0.5">
           <button
             onClick={handleShareClick}
-            className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[38px] px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             title="Share with neighbors on WhatsApp"
           >
             <Share2 className="w-4 h-4 text-emerald-600" />
@@ -202,27 +202,27 @@ export const PollCard: React.FC<PollCardProps> = ({
 
       {/* Vendor Quote / Booking Status Footer */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
-        <div className="text-xs text-slate-500 flex items-center gap-2">
+        <div className="text-xs text-slate-500 flex items-center gap-2 min-w-0">
            {hasSelectedProvider ? (
-             <span className="text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+             <span className="text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 truncate">
                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-               <span>Partner: {poll.selected_provider?.company_name || 'Assigned Provider'} • Quote accepted</span>
+               <span className="truncate">Partner: {poll.selected_provider?.company_name || 'Assigned Provider'} • Quote accepted</span>
              </span>
            ) : (
             <span className="text-slate-600 font-semibold flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-              <Briefcase className="w-4 h-4 text-blue-600" />
-              {bidsCount > 0 ? `${bidsCount} Vendor ${bidsCount === 1 ? 'Quote' : 'Quotes'} received` : 'Waiting for vendor quotes'}
+              <Briefcase className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>{bidsCount > 0 ? `${bidsCount} Vendor ${bidsCount === 1 ? 'Quote' : 'Quotes'} received` : 'Waiting for vendor quotes'}</span>
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto shrink-0">
           {/* Creator / Secretary Actions */}
           {isCreator && (
             <>
               <button
                 onClick={() => onOpenInviteVendor(poll)}
-                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition cursor-pointer"
+                className="flex-1 sm:flex-initial min-h-[40px] px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition flex items-center justify-center cursor-pointer"
               >
                 + Invite Vendor
               </button>
@@ -230,7 +230,7 @@ export const PollCard: React.FC<PollCardProps> = ({
               {bidsCount > 0 && !hasSelectedProvider && (
                 <button
                   onClick={() => onOpenCompareQuotes(poll)}
-                  className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                  className="flex-1 sm:flex-initial min-h-[40px] px-4 py-2.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>Compare Offers ({bidsCount})</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export const PollCard: React.FC<PollCardProps> = ({
           {isBookingOpen && (
             <button
               onClick={() => onOpenBooking(poll)}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 text-white font-extrabold text-xs hover:bg-blue-700 transition shadow-sm shadow-blue-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto min-h-[40px] px-5 py-2.5 rounded-xl bg-blue-600 text-white font-extrabold text-xs hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Book Time Slot</span>
               <ArrowRight className="w-4 h-4" />

@@ -140,7 +140,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
       <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-indigo-900 text-white p-4 sm:p-6 rounded-3xl shadow-lg space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-bold mb-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-blue-200 text-xs font-semibold mb-1">
               <Wrench className="w-3.5 h-3.5" />
               <span>Service Partner Portal</span>
             </div>
@@ -191,7 +191,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div
                 onClick={() => onTabChange?.('opportunities')}
-                className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-blue-300 hover:shadow-sm transition cursor-pointer space-y-3 group"
+                className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-blue-300 hover:shadow-md transition cursor-pointer space-y-3 group"
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2 group-hover:text-blue-600 transition">
@@ -210,7 +210,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
 
               <div
                 onClick={() => onTabChange?.('schedule')}
-                className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-emerald-300 hover:shadow-sm transition cursor-pointer space-y-3 group"
+                className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-emerald-300 hover:shadow-md transition cursor-pointer space-y-3 group"
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2 group-hover:text-emerald-600 transition">
@@ -229,7 +229,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
             </div>
           )}
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Layers className="w-5 h-5 text-blue-600" />
               <span>Society Bidding Invitations ({campaigns.length})</span>
@@ -240,7 +240,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
           </div>
 
           {campaigns.length === 0 ? (
-            <div className="p-12 text-center rounded-3xl border border-slate-200/80 bg-white shadow-xs space-y-3">
+            <div className="p-10 text-center rounded-2xl border border-slate-200/80 bg-white shadow-xs space-y-3">
               <Building2 className="w-10 h-10 text-slate-400 mx-auto" />
               <div className="text-base font-bold text-slate-900">No active campaign invitations</div>
               <p className="text-xs text-slate-500 max-w-xs mx-auto">
@@ -255,25 +255,25 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                 return (
                   <div
                     key={camp.id}
-                    className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4"
+                    className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 uppercase">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 uppercase border border-blue-100/60">
                             {camp.society?.name || 'Society'}
                           </span>
-                          <span className="text-xs text-slate-500 font-medium">
-                            Service Date: <strong className="text-slate-800">{camp.event_date || 'Upcoming'}</strong>
+                          <span className="text-xs text-slate-400 font-medium">
+                            Service Date: <strong className="text-slate-700 font-semibold">{camp.event_date || 'Upcoming'}</strong>
                           </span>
                         </div>
-                        <h3 className="font-extrabold text-lg text-slate-900">{camp.title}</h3>
+                        <h3 className="font-extrabold text-lg text-slate-900 leading-snug">{camp.title}</h3>
                       </div>
 
-                      <div className="text-right">
-                        <div className="text-xs text-slate-400 font-semibold">Demand Volume</div>
-                        <div className="text-2xl font-black text-blue-600 font-mono">
-                          {camp.total_votes || camp.confirmed_count || 0} / {camp.target_customers || 30} Flats
+                      <div className="text-left sm:text-right shrink-0">
+                        <div className="text-xs text-slate-400 font-medium">Demand Volume</div>
+                        <div className="text-2xl font-black text-blue-600 font-mono tracking-tight">
+                          {camp.total_votes || camp.confirmed_count || 0} / {camp.target_customers || 30} <span className="text-sm font-bold text-slate-500 font-sans">Flats</span>
                         </div>
                       </div>
                     </div>
@@ -282,13 +282,13 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                       {camp.description || 'Standardized service camp looking for verified commercial provider crews.'}
                     </p>
 
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 pt-2">
                       <div className="text-xs text-slate-500 font-medium">
-                        Target Rate: <strong className="text-slate-900 font-bold">₹{camp.current_price}</strong> / unit
+                        Target Rate: <strong className="text-slate-900 font-bold font-mono text-sm">₹{camp.current_price}</strong> / unit
                       </div>
 
                       {myBid ? (
-                        <div className="px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
+                        <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           <span>Quote Submitted: ₹{myBid.price_per_unit} ({myBid.status})</span>
                         </div>
@@ -296,7 +296,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleOpenBidModal(camp)}
-                          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition shadow-sm shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer"
+                          className="min-h-[40px] px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
                           <span>Submit Quote</span>
@@ -314,7 +314,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
       {/* Schedule / Jobs Checklist Tab */}
       {activeTab === 'schedule' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Confirmed Society Jobs Checklist
             </h2>
@@ -324,7 +324,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
           </div>
 
           {providerBookings.length === 0 ? (
-            <div className="p-12 text-center rounded-3xl border border-slate-200/80 bg-white shadow-xs space-y-3">
+            <div className="p-10 text-center rounded-2xl border border-slate-200/80 bg-white shadow-xs space-y-3">
               <CheckSquare className="w-10 h-10 text-slate-400 mx-auto" />
               <div className="text-base font-bold text-slate-900">No confirmed jobs scheduled yet</div>
               <p className="text-xs text-slate-500 max-w-xs mx-auto">
@@ -342,30 +342,30 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                     className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
                       isCompleted
                         ? 'border-emerald-200 bg-emerald-50/50'
-                        : 'border-slate-200/80 bg-white shadow-xs'
+                        : 'border-slate-200/80 bg-white shadow-sm'
                     }`}
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-100">
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 shrink-0">
                           Unit {job.flat_number}
                         </span>
                         <span className="text-sm font-extrabold text-slate-900">
                           {job.quantity} {job.quantity === 1 ? 'Unit' : 'Units'}
                         </span>
                         <span className="text-xs text-slate-500 font-semibold flex items-center gap-1 font-mono">
-                          <Clock className="w-3.5 h-3.5 text-blue-600" />
-                          {job.slot?.slot_time || 'Coordinated Slot'}
+                          <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span>{job.slot?.slot_time || 'Coordinated Slot'}</span>
                         </span>
                       </div>
-                      <div className="text-xs text-slate-500">
-                        Resident: <strong className="text-slate-800">{job.user_profile?.name || 'Resident'}</strong> • Phone: <strong className="text-slate-800">{job.user_profile?.phone || 'On site'}</strong>
+                      <div className="text-xs text-slate-500 font-medium">
+                        Resident: <strong className="text-slate-800 font-semibold">{job.user_profile?.name || 'Resident'}</strong> • Phone: <strong className="text-slate-800 font-semibold">{job.user_profile?.phone || 'On site'}</strong>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 self-end sm:self-center">
                       {isCompleted ? (
-                        <div className="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1.5">
+                        <div className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-semibold text-xs flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           <span>Service Completed</span>
                         </div>
@@ -374,7 +374,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                           type="button"
                           onClick={() => handleMarkJobCompleted(job.id)}
                           disabled={completingBookingId === job.id}
-                          className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-sm shadow-emerald-500/20 disabled:opacity-50"
+                          className="min-h-[40px] px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50"
                         >
                           {completingBookingId === job.id ? 'Marking...' : 'Mark Job Completed'}
                         </button>

@@ -77,7 +77,7 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
         </button>
 
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[11px] font-bold mb-1 border border-transparent dark:border-blue-500/20">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-xs font-semibold mb-1 border border-transparent dark:border-blue-500/20">
             <Briefcase className="w-3 h-3 text-blue-600 dark:text-blue-400" />
             <span>Commercial Bid Comparison</span>
           </div>
@@ -90,7 +90,7 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
         </div>
 
         {bids.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl bg-slate-50 dark:bg-[#181f2e] border border-slate-200 dark:border-white/10 text-xs text-slate-500 dark:text-zinc-400 space-y-2">
+          <div className="p-10 text-center rounded-2xl bg-slate-50 dark:bg-[#181f2e] border border-slate-200 dark:border-white/10 text-xs text-slate-500 dark:text-zinc-400 space-y-2">
             <p className="font-bold text-slate-800 dark:text-white text-sm">No quotes submitted yet</p>
             <p>Invite local service partners or wait for vendors to respond.</p>
           </div>

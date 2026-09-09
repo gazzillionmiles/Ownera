@@ -59,7 +59,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
                   }`}
                 >
                   <Icon className="w-5 h-5 stroke-[2.2]" />
-                  <span className="text-[10px] font-bold">{item.label}</span>
+                  <span className="text-xs font-bold">{item.label}</span>
                 </button>
               );
             })}
@@ -83,7 +83,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Home className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">Home</span>
+              <span className="text-xs font-bold">Home</span>
             </button>
 
             <button
@@ -93,7 +93,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Layers className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">My Actions</span>
+              <span className="text-xs font-bold">My Actions</span>
             </button>
 
             {onOpenCreate && (
@@ -115,7 +115,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Users className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">Members</span>
+              <span className="text-xs font-bold">Members</span>
             </button>
 
             <button
@@ -125,7 +125,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Calendar className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">Schedule</span>
+              <span className="text-xs font-bold">Schedule</span>
             </button>
           </div>
         </nav>
@@ -151,7 +151,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Sparkles className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">Services</span>
+              <span className="text-xs font-bold">Services</span>
             </button>
 
           {/* Bookings */}
@@ -163,7 +163,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               }`}
             >
               <Calendar className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">My Bookings</span>
+              <span className="text-xs font-bold">My Bookings</span>
             </button>
 
           {/* Center Floating Plus Action */}
@@ -189,7 +189,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
             }`}
           >
             <Building2 className="w-5 h-5 stroke-[2.2]" />
-            <span className="text-[10px] font-bold">Society</span>
+            <span className="text-xs font-bold">Society</span>
           </button>
 
           {/* User Profile */}
@@ -199,7 +199,7 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(
               className="flex flex-col items-center gap-1 min-w-[48px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
             >
               <User className="w-5 h-5 stroke-[2.2]" />
-              <span className="text-[10px] font-bold">Account</span>
+              <span className="text-xs font-bold">Account</span>
             </button>
         </div>
       </nav>

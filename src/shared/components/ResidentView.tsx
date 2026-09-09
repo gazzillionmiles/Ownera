@@ -370,13 +370,13 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 .slice(0, 4);
 
               return combined.length === 0 ? (
-                <div className="p-8 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+                <div className="p-8 text-center rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
                   <p className="font-bold text-slate-800 text-sm">No active services right now</p>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">Be the first to propose a collective drive for your building.</p>
                   <button
                     type="button"
                     onClick={() => setIsCreatePollOpen(true)}
-                    className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition cursor-pointer"
+                    className="min-h-[40px] px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition cursor-pointer"
                   >
                     Request a Service for Your Building
                   </button>
@@ -441,25 +441,31 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                   return (
                     <div
                       key={b.id}
-                      className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 space-y-3"
+                      className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-extrabold text-slate-900 text-base">{b.campaign?.title || 'Service'}</h3>
-                          <p className="text-xs text-slate-500">Unit {b.flat_number} • {b.campaign?.event_date}</p>
+                          <h3 className="font-extrabold text-slate-900 text-base leading-snug">{b.campaign?.title || 'Service'}</h3>
+                          <p className="text-xs text-slate-500 font-medium mt-0.5">Unit {b.flat_number} • {b.campaign?.event_date}</p>
                         </div>
-                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${isDisputed ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
+                        <span
+                          className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full uppercase border shrink-0 ${
+                            isDisputed
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
+                              : 'bg-blue-50 text-blue-800 border-blue-200'
+                          }`}
+                        >
                           {b.status}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                        <span className="text-emerald-600 font-black">₹{b.total_amount}</span>
+                        <span className="text-emerald-700 font-black text-sm font-mono">₹{b.total_amount}</span>
                         {(b.status === 'confirmed' || b.status === 'scheduled') && (
                           <button
                             type="button"
                             onClick={() => handleOpenReschedule(b)}
-                            className="text-blue-600 font-bold hover:underline cursor-pointer"
+                            className="min-h-[36px] px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition cursor-pointer border border-blue-100"
                           >
                             Change Slot
                           </button>
@@ -479,7 +485,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === 'campaigns' && (
         <div className="space-y-8">
-          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <button
@@ -522,7 +528,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
             </div>
 
             {activePolls.length === 0 ? (
-              <div className="p-8 text-center rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-2">
+              <div className="p-8 text-center rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-2">
                 <p className="font-bold text-slate-800 text-sm">No active proposals right now</p>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Be the first to propose a collective drive for AC servicing, home deep cleaning, or pest control!
@@ -628,7 +634,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === 'bookings' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 My Service Bookings
@@ -665,7 +671,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 return (
                   <div
                     key={b.id}
-                    className="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all p-6 space-y-4 flex flex-col justify-between"
+                    className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all p-6 space-y-4 flex flex-col justify-between"
                   >
                     <div className="space-y-3.5">
                       <div className="flex items-start justify-between gap-2">
@@ -677,49 +683,49 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                             <h3 className="font-extrabold text-slate-900 text-base leading-snug">
                               {b.campaign?.title || 'Service Camp'}
                             </h3>
-                            <p className="text-xs text-slate-500 font-semibold">Unit: {b.flat_number}</p>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">Unit {b.flat_number}</p>
                           </div>
                         </div>
 
                         <span
-                          className={`text-xs font-bold px-3 py-1 rounded-full uppercase shrink-0 ${
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full uppercase shrink-0 border ${
                             isCompleted
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                               : isDisputed
-                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                              : 'bg-blue-50 text-blue-800 border border-blue-200'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
+                              : 'bg-blue-50 text-blue-800 border-blue-200'
                           }`}
                         >
                           {b.status}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 p-3 rounded-xl border border-slate-100">
                         <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate">
                           <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{b.campaign?.event_date || 'Service Day'}</span>
+                          <span className="truncate font-semibold text-slate-800">{b.campaign?.event_date || 'Service Day'}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate">
                           <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{b.slot?.slot_time || 'Coordinated'}</span>
+                          <span className="truncate font-semibold text-slate-800">{b.slot?.slot_time || 'Coordinated'}</span>
                         </div>
                       </div>
 
                       <div className="space-y-1.5 text-xs">
                         <div className="flex items-center justify-between text-slate-600">
-                          <span className="flex items-center gap-1.5 font-medium">
+                          <span className="flex items-center gap-1.5 font-medium text-slate-500">
                             <UserCheck className="w-4 h-4 text-slate-400" />
                             Partner:
                           </span>
-                          <strong className="text-slate-900">{providerName}</strong>
+                          <strong className="text-slate-900 font-bold">{providerName}</strong>
                         </div>
 
                         <div className="flex items-center justify-between text-slate-600 pt-1 border-t border-slate-100">
-                          <span className="flex items-center gap-1.5 font-medium">
+                          <span className="flex items-center gap-1.5 font-medium text-slate-500">
                             <Tag className="w-4 h-4 text-slate-400" />
                             Payable:
                           </span>
-                          <span className="text-emerald-600 font-black text-base">₹{b.total_amount}</span>
+                          <span className="text-emerald-700 font-black text-base font-mono">₹{b.total_amount}</span>
                         </div>
                       </div>
                     </div>
@@ -742,13 +748,13 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleOpenReschedule(b)}
-                                className="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer border border-blue-100"
+                                className="w-full min-h-[40px] py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer border border-blue-100"
                               >
                                 <Clock className="w-3.5 h-3.5" />
                                 <span>Change Arrival Slot</span>
                               </button>
                             ) : (
-                              <div className="w-full py-1.5 px-3 rounded-xl bg-slate-100 text-slate-500 font-semibold text-[11px] text-center" title="Vendors require 12 hours notice to organize technician routes">
+                              <div className="w-full min-h-[36px] py-2 px-3 rounded-xl bg-slate-100 text-slate-500 font-semibold text-xs text-center flex items-center justify-center" title="Vendors require 12 hours notice to organize technician routes">
                                 Slot locked &bull; Under 12h to service
                               </div>
                             )}
@@ -761,14 +767,14 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                           <button
                             type="button"
                             onClick={() => setRatingBooking(b)}
-                            className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition cursor-pointer"
+                            className="w-full min-h-[40px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer shadow-sm"
                           >
                             ★ Rate Service &amp; Technician
                           </button>
                           <button
                             type="button"
                             onClick={() => setIssueBooking(b)}
-                            className="w-full py-2 text-slate-500 hover:text-rose-600 text-xs font-semibold transition cursor-pointer"
+                            className="w-full min-h-[36px] py-2 text-slate-500 hover:text-rose-600 text-xs font-semibold transition flex items-center justify-center cursor-pointer"
                           >
                             Report Problem
                           </button>
@@ -776,14 +782,14 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                       )}
 
                       {b.service_rating && (
-                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-xs font-semibold text-amber-900">
                           <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
                           <span>Rated {b.service_rating.rating}★: {b.service_rating.review || 'Completed'}</span>
                         </div>
                       )}
 
                       {b.service_issue && (
-                        <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-semibold flex items-center gap-1.5">
+                        <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-center gap-1.5">
                           <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                           <span>Issue: {b.service_issue.description}</span>
                         </div>
@@ -802,7 +808,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === 'society' && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-6">
+          <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-2">
@@ -820,24 +826,24 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
-                <div className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider">Society Invite Code</div>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                <div className="text-xs text-slate-400 uppercase font-extrabold tracking-wider">Society Invite Code</div>
                 <div className="text-2xl font-mono font-black text-blue-600">{activeSociety?.invite_code || '—'}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+              <div className="p-5 rounded-xl bg-slate-50 border border-slate-100 text-center">
                 <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
                   {activeSociety?.member_count !== undefined ? activeSociety.member_count : (activeSociety?.total_homes || 0)}
                 </div>
-                <div className="text-xs font-bold text-slate-500 mt-1">Society Members</div>
+                <div className="text-xs font-bold text-slate-500 mt-1">Members</div>
               </div>
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+              <div className="p-5 rounded-xl bg-slate-50 border border-slate-100 text-center">
                 <div className="text-2xl sm:text-3xl font-black text-blue-600 font-mono">{polls.length}</div>
                 <div className="text-xs font-bold text-slate-500 mt-1">Service Drives Initiated</div>
               </div>
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+              <div className="p-5 rounded-xl bg-slate-50 border border-slate-100 text-center">
                 <>
                   <div className="text-sm font-bold text-slate-700 font-mono py-1">Direct Vendor Savings</div>
                   <div className="text-xs text-slate-400">Unlocked after vendor quote acceptance</div>
@@ -854,7 +860,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                     navigator.clipboard.writeText(text);
                     toast.success('Society invite message copied!');
                   }}
-                  className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20"
+                  className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
                   <Copy className="w-4 h-4" />
                   <span>Copy Society Invite Code</span>
@@ -864,7 +870,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenJoinModal}
-                className="px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition cursor-pointer"
+                className="px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition cursor-pointer"
               >
                 Switch / Join Another Society
               </button>
@@ -1141,7 +1147,7 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
 
-            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md mx-auto">
               <Check className="w-6 h-6 stroke-[3]" />
             </div>
 
