@@ -1,9 +1,60 @@
 import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server.js';
 
 const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
 const REF_COOKIE_NAME = `${APP_PREFIX}_ref_code`;
 const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
+
+export function createRedirectResponse(url: URL | string, sourceResponse: NextResponse): NextResponse {
+  const redirectResponse = NextResponse.redirect(url);
+  sourceResponse.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+  });
+  return redirectResponse;
+}
+
+export interface AuthRedirectParams {
+  pathname: string;
+  searchParams: URLSearchParams;
+  hasCompletedOnboarding: boolean;
+  profile?: { active_role?: string; primary_society_id?: string | null } | null;
+  isPartnerPath?: boolean;
+}
+
+export function resolveAuthRedirectTarget({
+  pathname,
+  searchParams,
+  hasCompletedOnboarding,
+  profile,
+  isPartnerPath = pathname.startsWith('/partner'),
+}: AuthRedirectParams): string | null {
+  const nextParam = searchParams.get('next');
+  const isSafeNext = Boolean(
+    nextParam &&
+    nextParam.startsWith('/') &&
+    !nextParam.startsWith('//') &&
+    !nextParam.includes('\\')
+  );
+
+  if (!hasCompletedOnboarding) {
+    if (pathname === '/login' || pathname === '/signup' || pathname === '/public') {
+      if (isSafeNext && nextParam!.startsWith('/join/')) {
+        return nextParam!;
+      }
+      return '/onboarding';
+    }
+  } else {
+    if (pathname === '/onboarding' || pathname === '/login' || pathname === '/signup' || pathname === '/public') {
+      const isTargetableNext = isSafeNext && (nextParam!.startsWith('/join/') || nextParam!.startsWith('/s/'));
+      if (pathname !== '/onboarding' && isTargetableNext) {
+        return nextParam!;
+      }
+      return (profile?.active_role === 'provider' || isPartnerPath) ? '/partner' : '/home';
+    }
+  }
+
+  return null;
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -145,7 +196,7 @@ export async function updateSession(request: NextRequest) {
     if (refCode) {
       url.searchParams.set('ref', refCode.toUpperCase());
     }
-    const redirectResponse = NextResponse.redirect(url);
+    const redirectResponse = createRedirectResponse(url, supabaseResponse);
     if (refCode) {
       redirectResponse.cookies.set(REF_COOKIE_NAME, refCode.toUpperCase(), {
         path: '/',
@@ -167,13 +218,13 @@ export async function updateSession(request: NextRequest) {
     if (profile?.deletion_status === 'pending_deletion' && pathname !== '/account-deleted') {
       const url = request.nextUrl.clone();
       url.pathname = '/account-deleted';
-      return NextResponse.redirect(url);
+      return createRedirectResponse(url, supabaseResponse);
     }
 
     if (profile?.deletion_status !== 'pending_deletion' && pathname === '/account-deleted') {
       const url = request.nextUrl.clone();
       url.pathname = profile?.active_role === 'provider' ? '/partner' : profile?.primary_society_id ? '/home' : '/onboarding';
-      return NextResponse.redirect(url);
+      return createRedirectResponse(url, supabaseResponse);
     }
 
     // Determine onboarding completion status (has primary society, active society membership, or provider profile)
@@ -215,33 +266,35 @@ export async function updateSession(request: NextRequest) {
       if (pathname !== '/onboarding' && !isPublicRoute) {
         const url = request.nextUrl.clone();
         url.pathname = '/onboarding';
-        return NextResponse.redirect(url);
+        return createRedirectResponse(url, supabaseResponse);
       }
       if (pathname === '/login' || pathname === '/signup' || pathname === '/public') {
-        const nextParam = searchParams.get('next');
-        const isSafeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\');
-        const url = request.nextUrl.clone();
-        if (isSafeNext && nextParam.startsWith('/join/')) {
-          url.pathname = nextParam;
-          url.search = '';
-          return NextResponse.redirect(url);
+        const target = resolveAuthRedirectTarget({
+          pathname,
+          searchParams,
+          hasCompletedOnboarding,
+          profile,
+          isPartnerPath,
+        });
+        if (target) {
+          const targetUrl = new URL(target, request.nextUrl.origin);
+          return createRedirectResponse(targetUrl, supabaseResponse);
         }
-        url.pathname = '/onboarding';
-        return NextResponse.redirect(url);
       }
     } else {
       // Completed onboarding users attempting to visit /onboarding or auth entry pages
       if (pathname === '/onboarding' || pathname === '/login' || pathname === '/signup' || pathname === '/public') {
-        const nextParam = searchParams.get('next');
-        const isSafeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\');
-        const url = request.nextUrl.clone();
-        if (pathname !== '/onboarding' && isSafeNext && nextParam.startsWith('/join/')) {
-          url.pathname = nextParam;
-          url.search = '';
-          return NextResponse.redirect(url);
+        const target = resolveAuthRedirectTarget({
+          pathname,
+          searchParams,
+          hasCompletedOnboarding,
+          profile,
+          isPartnerPath,
+        });
+        if (target) {
+          const targetUrl = new URL(target, request.nextUrl.origin);
+          return createRedirectResponse(targetUrl, supabaseResponse);
         }
-        url.pathname = (profile?.active_role === 'provider' || isPartnerPath) ? '/partner' : '/home';
-        return NextResponse.redirect(url);
       }
     }
   }
