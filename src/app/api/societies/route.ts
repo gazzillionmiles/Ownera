@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/service';
 import { createSocietySchema } from '@/src/shared/validations/ownera';
 import { isPlatformAdmin } from '@/lib/ownera/rbac';
+import { setOnboardStatusCookie } from '@/lib/supabase/middleware';
 
 export async function GET(request: NextRequest) {
   try {
@@ -102,25 +103,28 @@ export async function GET(request: NextRequest) {
         member_count: memberCountMap.get(m.society_id) || 1,
       }));
 
-    // Auto-heal profiles.primary_society_id only if explicitly requested or on first membership
-    if (heal && societiesList.length > 0) {
-      const { data: userProfile } = await serviceSupabase
-        .from('profiles')
-        .select('primary_society_id, active_role')
-        .eq('id', user.id)
-        .maybeSingle();
+    // Auto-heal profiles.primary_society_id if user belongs to societies but primary_society_id is null
+    const { data: userProfile } = await serviceSupabase
+      .from('profiles')
+      .select('primary_society_id, active_role')
+      .eq('id', user.id)
+      .maybeSingle();
 
-      if (!userProfile?.primary_society_id) {
-        const topSoc = societiesList[0];
-        const isSecretary = topSoc.user_role === 'secretary' || topSoc.user_role === 'organizer' || topSoc.user_role === 'committee';
-        await serviceSupabase
-          .from('profiles')
-          .update({
-            primary_society_id: topSoc.id,
-            active_role: isSecretary ? 'organizer' : 'resident',
-          })
-          .eq('id', user.id);
-      }
+    if (!userProfile?.primary_society_id && societiesList.length > 0) {
+      const elevatedSoc =
+        societiesList.find((s) => s.user_role === 'secretary') ||
+        societiesList.find((s) => s.user_role === 'organizer' || s.user_role === 'committee');
+
+      const targetSoc = elevatedSoc || societiesList[0];
+      const isElevated = Boolean(elevatedSoc);
+
+      await serviceSupabase
+        .from('profiles')
+        .update({
+          primary_society_id: targetSoc.id,
+          active_role: isElevated ? 'organizer' : 'resident',
+        })
+        .eq('id', user.id);
     }
 
     return NextResponse.json({
@@ -263,9 +267,25 @@ export async function POST(request: NextRequest) {
 
     if (profileUpdateError) {
       console.error('[API/societies] Error updating creator profile:', profileUpdateError);
+      // Attempt safe fallback update for primary_society_id and active_role
+      const { error: fallbackError } = await serviceSupabase
+        .from('profiles')
+        .update({
+          primary_society_id: society.id,
+          active_role: 'organizer',
+        })
+        .eq('id', targetSecretaryId);
+
+      if (fallbackError) {
+        console.error('[API/societies] Fallback profile update failed:', fallbackError);
+        return NextResponse.json(
+          { error: 'Society was created, but failed to link profile. Please refresh or rejoin.' },
+          { status: 500 }
+        );
+      }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       society: {
         ...society,
@@ -274,6 +294,12 @@ export async function POST(request: NextRequest) {
         property_type: propertyType,
       },
       member,
+    });
+
+    return setOnboardStatusCookie(response, {
+      userId: user.id,
+      activeRole: 'organizer',
+      primarySocietyId: society.id,
     });
   } catch (err: any) {
     console.error('[API/societies] Unexpected error:', err);

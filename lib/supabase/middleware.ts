@@ -1,11 +1,34 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server.js';
 
-const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
-const REF_COOKIE_NAME = `${APP_PREFIX}_ref_code`;
-const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
-const CONSENT_COOKIE_NAME = `${APP_PREFIX}_terms_ok`;
-const STATUS_COOKIE_NAME = `${APP_PREFIX}_onboard_status`;
+export const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
+export const REF_COOKIE_NAME = `${APP_PREFIX}_ref_code`;
+export const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
+export const CONSENT_COOKIE_NAME = `${APP_PREFIX}_terms_ok`;
+export const STATUS_COOKIE_NAME = `${APP_PREFIX}_onboard_status`;
+
+export function evaluateOnboardingCacheHit(cachedStatusValue: string | undefined, userId: string): boolean {
+  const parts = cachedStatusValue && cachedStatusValue.startsWith(`${userId}:`) ? cachedStatusValue.split(':') : null;
+  return parts !== null && parts[1] === '1';
+}
+
+export function setOnboardStatusCookie(
+  response: NextResponse,
+  params: { userId: string; activeRole?: string; primarySocietyId?: string; deletionStatus?: string }
+) {
+  const { userId, activeRole = 'resident', primarySocietyId = '', deletionStatus = 'active' } = params;
+  response.cookies.set(
+    STATUS_COOKIE_NAME,
+    `${userId}:1:${activeRole}:${primarySocietyId}:${deletionStatus}`,
+    {
+      path: '/',
+      httpOnly: true,
+      maxAge: 600,
+      sameSite: 'lax',
+    }
+  );
+  return response;
+}
 
 export function createRedirectResponse(url: URL | string, sourceResponse: NextResponse): NextResponse {
   const redirectResponse = NextResponse.redirect(url);
@@ -274,16 +297,25 @@ export async function updateSession(request: NextRequest) {
         }
       }
 
-      supabaseResponse.cookies.set(
-        STATUS_COOKIE_NAME,
-        `${user.id}:${hasCompletedOnboarding ? '1' : '0'}:${activeRole}:${primarySocietyId || ''}:${deletionStatus}`,
-        {
+      if (hasCompletedOnboarding) {
+        supabaseResponse.cookies.set(
+          STATUS_COOKIE_NAME,
+          `${user.id}:1:${activeRole}:${primarySocietyId || ''}:${deletionStatus}`,
+          {
+            path: '/',
+            httpOnly: true,
+            maxAge: 600,
+            sameSite: 'lax',
+          }
+        );
+      } else {
+        supabaseResponse.cookies.set(STATUS_COOKIE_NAME, '', {
           path: '/',
           httpOnly: true,
-          maxAge: 600,
+          maxAge: 0,
           sameSite: 'lax',
-        }
-      );
+        });
+      }
     }
 
     if (deletionStatus === 'pending_deletion' && pathname !== '/account-deleted') {
