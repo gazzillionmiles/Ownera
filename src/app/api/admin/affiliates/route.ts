@@ -43,20 +43,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!isUserAdmin(user)) {
+    const serviceSupabase = createAdminClient();
+
+    if (!(await isUserAdmin(user, serviceSupabase))) {
       return NextResponse.json(
         { error: 'Forbidden. Access restricted to administrator account only.' },
         { status: 403 }
       );
     }
-
-    const clientIp = getClientIp(request);
-    const rateLimitResult = await checkAdminRateLimit(user.id, clientIp);
-    if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many admin requests. Please slow down.');
-    }
-
-    const serviceSupabase = createAdminClient();
 
     // 1. Fetch referrals (pending, flagged, rejected, active)
     const { data: rawReferrals, error: refErr } = await serviceSupabase

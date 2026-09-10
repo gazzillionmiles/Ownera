@@ -151,7 +151,7 @@ export interface Provider {
   email: string;
   services_offered: string[];
   operating_cities: string[];
-  verification_status: 'unverified' | 'pending' | 'verified' | 'rejected';
+  verification_status: 'unverified' | 'pending' | 'verified' | 'rejected' | 'banned';
   rating: number;
   total_jobs_completed: number;
   completion_rate: number;

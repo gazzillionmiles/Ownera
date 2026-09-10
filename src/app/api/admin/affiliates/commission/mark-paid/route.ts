@@ -23,7 +23,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!isUserAdmin(user)) {
+    const serviceSupabase = createAdminClient();
+
+    if (!(await isUserAdmin(user, serviceSupabase))) {
       return NextResponse.json(
         { error: 'Forbidden. Access restricted to administrator account only.' },
         { status: 403 }
@@ -49,7 +51,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Either commission_id or referrer_user_id is required' }, { status: 400 });
     }
 
-    const serviceSupabase = createAdminClient();
     const paidAt = new Date().toISOString();
     const noteText = typeof note === 'string' ? note.trim() : null;
 

@@ -28,6 +28,8 @@ import {
   CheckSquare,
   Users,
   Wrench,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -134,6 +136,12 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
   const expectedRevenue = providerBookings.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0) ||
     campaigns.reduce((sum, c) => sum + ((c.confirmed_count || 0) * (c.current_price || 0)), 0);
 
+  const verificationStatus = providerProfile?.verification_status || 'pending';
+  const isPendingReview = verificationStatus === 'pending' || verificationStatus === 'unverified';
+  const isBanned = verificationStatus === 'banned';
+  const isRejected = verificationStatus === 'rejected';
+  const isVerified = verificationStatus === 'verified';
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Royal Blue Header matching Ownera ProviderDashboardScreen */}
@@ -153,10 +161,27 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4" />
-              <span>{providerProfile?.rating ? `${providerProfile.rating}★ Rating` : 'Active Partner'}</span>
-            </span>
+            {isVerified ? (
+              <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4" />
+                <span>{providerProfile?.rating ? `${providerProfile.rating}★ Rating` : 'Active Verified Partner'}</span>
+              </span>
+            ) : isPendingReview ? (
+              <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                <span>Under Review</span>
+              </span>
+            ) : isBanned ? (
+              <span className="px-3 py-1 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Account Banned</span>
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-xl bg-slate-500/20 text-slate-300 border border-slate-500/30 text-xs font-bold flex items-center gap-1.5">
+                <XCircle className="w-4 h-4" />
+                <span>Not Approved</span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -183,6 +208,45 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Account Verification Status Notice */}
+      {isPendingReview && (
+        <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-amber-900">Your Business Profile is Under Review</h3>
+              <p className="text-xs text-amber-800/80 font-medium mt-0.5 max-w-2xl leading-relaxed">
+                Ownera administrators manually verify every commercial service partner before activating bidding privileges. You will be able to submit volume bids as soon as your account is approved.
+              </p>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold shrink-0">
+            <span>Status: Under Review</span>
+          </div>
+        </div>
+      )}
+
+      {isBanned && (
+        <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-rose-900">Vendor Account Suspended</h3>
+              <p className="text-xs text-rose-800/80 font-medium mt-0.5 max-w-2xl leading-relaxed">
+                This service provider account has been banned by platform administrators. Bidding on society drives and technician scheduling have been restricted. Contact support if you believe this is an error.
+              </p>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold shrink-0">
+            <span>Status: Banned</span>
+          </div>
+        </div>
+      )}
 
       {/* Overview & Opportunities Content */}
       {(activeTab === 'overview' || activeTab === 'opportunities') && (
@@ -291,6 +355,20 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                         <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           <span>Quote Submitted: ₹{myBid.price_per_unit} ({myBid.status})</span>
+                        </div>
+                      ) : !isVerified ? (
+                        <div className="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-semibold flex items-center gap-1.5">
+                          {isBanned ? (
+                            <>
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                              <span>Account Suspended</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>Under Review &bull; Quotes Locked</span>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <button

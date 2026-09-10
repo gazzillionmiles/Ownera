@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (!provider) {
-      // Auto-create a default provider profile if not yet created
+      // Auto-create a default provider profile if not yet created (defaults to pending review)
       const { data: newProvider, error: pErr } = await serviceSupabase
         .from('providers')
         .insert({
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           contact_person: user.user_metadata?.name || 'Provider',
           phone: user.phone || '9876543210',
           email: user.email || 'provider@ownera.in',
-          verification_status: 'verified',
+          verification_status: 'pending',
         })
         .select()
         .single();
@@ -118,6 +118,28 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create provider profile' }, { status: 500 });
       }
       provider = newProvider;
+    }
+
+    // Strict Vendor Verification Guard: Vendors must be manually approved by administrators before submitting bids
+    if (provider.verification_status === 'banned') {
+      return NextResponse.json(
+        { error: 'Your vendor account has been banned by administrators. You cannot submit quotes.' },
+        { status: 403 }
+      );
+    }
+
+    if (provider.verification_status === 'pending' || provider.verification_status === 'unverified') {
+      return NextResponse.json(
+        { error: 'Your vendor profile is currently under review. Bidding will be enabled once your account is verified by an administrator.' },
+        { status: 403 }
+      );
+    }
+
+    if (provider.verification_status === 'rejected') {
+      return NextResponse.json(
+        { error: 'Your vendor profile application was rejected by administrators.' },
+        { status: 403 }
+      );
     }
 
     // Insert bid

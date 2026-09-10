@@ -36,6 +36,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch societies' }, { status: 500 });
     }
 
+    // Fetch active member counts
+    const { data: allMembers } = await serviceSupabase
+      .from('society_members')
+      .select('society_id')
+      .eq('status', 'active');
+
+    const memberCountMap = new Map<string, number>();
+    (allMembers || []).forEach((m) => {
+      memberCountMap.set(m.society_id, (memberCountMap.get(m.society_id) || 0) + 1);
+    });
+
+    // Fetch campaign counts
+    const { data: allCampaigns } = await serviceSupabase
+      .from('service_campaigns')
+      .select('society_id, status');
+
+    const campaignCountMap = new Map<string, number>();
+    const activeCampaignCountMap = new Map<string, number>();
+    (allCampaigns || []).forEach((c) => {
+      campaignCountMap.set(c.society_id, (campaignCountMap.get(c.society_id) || 0) + 1);
+      if (['open', 'threshold_reached', 'quotes_invited', 'quote_selected', 'booking_open', 'scheduled'].includes(c.status)) {
+        activeCampaignCountMap.set(c.society_id, (activeCampaignCountMap.get(c.society_id) || 0) + 1);
+      }
+    });
+
+    // Fetch booking counts
+    const { data: allBookings } = await serviceSupabase
+      .from('bookings')
+      .select('society_id, status');
+
+    const bookingCountMap = new Map<string, number>();
+    (allBookings || []).forEach((b) => {
+      if (b.society_id && ['confirmed', 'scheduled', 'completed'].includes(b.status)) {
+        bookingCountMap.set(b.society_id, (bookingCountMap.get(b.society_id) || 0) + 1);
+      }
+    });
+
     // Fetch primary secretaries
     const { data: secretaries } = await serviceSupabase
       .from('society_members')
@@ -63,6 +100,10 @@ export async function GET(request: NextRequest) {
     const enrichedSocieties = (societies || []).map((soc) => ({
       ...soc,
       secretary: secretaryMap.get(soc.id) || null,
+      member_count: memberCountMap.get(soc.id) || 0,
+      total_campaigns_count: campaignCountMap.get(soc.id) || 0,
+      active_campaigns_count: activeCampaignCountMap.get(soc.id) || 0,
+      confirmed_bookings_count: bookingCountMap.get(soc.id) || 0,
     }));
 
     return NextResponse.json({ societies: enrichedSocieties });

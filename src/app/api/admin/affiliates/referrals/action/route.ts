@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!isUserAdmin(user)) {
+    const serviceSupabase = createAdminClient();
+
+    if (!(await isUserAdmin(user, serviceSupabase))) {
       return NextResponse.json(
         { error: 'Forbidden. Access restricted to administrator account only.' },
         { status: 403 }
@@ -43,7 +45,6 @@ export async function POST(request: NextRequest) {
     }
 
     const newStatus = action === 'approve' ? 'active' : 'rejected';
-    const serviceSupabase = createAdminClient();
 
     const { data: updated, error: updateError } = await serviceSupabase
       .from('referrals')

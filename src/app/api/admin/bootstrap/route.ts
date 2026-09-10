@@ -17,27 +17,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userEmail = user.email || user.user_metadata?.email || '';
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: 'User account has no associated email address' },
-        { status: 400 }
-      );
-    }
+    const admin = await getPlatformAdminRecord(user.id);
 
-    const result = await bootstrapPlatformAdmin(user.id, userEmail);
-
-    if (!result.success) {
+    if (!admin) {
       return NextResponse.json(
-        { error: result.message },
+        { error: 'Access denied. Administrator privileges are managed strictly via the database (platform_admins table).' },
         { status: 403 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: result.message,
-      admin: result.admin,
+      message: `Verified platform admin: ${admin.role}`,
+      admin,
     });
   } catch (err: any) {
     console.error('[API/admin/bootstrap] Unexpected error:', err);

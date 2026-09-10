@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { isUserAdmin } from '@/lib/admin/auth';
 import { Bug, AlertCircle, CheckCircle2, Clock, XCircle, Loader2, Save, ExternalLink, ShieldAlert, ArrowLeft, RefreshCw, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -64,11 +63,24 @@ export default function AdminIssuesPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      const adminCheck = isUserAdmin(user);
-      setIsAdmin(adminCheck);
-      if (adminCheck) {
-        fetchReports('all');
+      if (user) {
+        fetch('/api/admin/bootstrap')
+          .then((res) => res.json())
+          .then((data) => {
+            if (data?.is_admin) {
+              setIsAdmin(true);
+              fetchReports('all');
+            } else {
+              setIsAdmin(false);
+              setLoadingData(false);
+            }
+          })
+          .catch(() => {
+            setIsAdmin(false);
+            setLoadingData(false);
+          });
       } else {
+        setIsAdmin(false);
         setLoadingData(false);
       }
     }
@@ -203,6 +215,13 @@ export default function AdminIssuesPage() {
 
         {/* Section Tabs */}
         <div className="flex items-center gap-2 bg-[#1C1D22] p-1.5 rounded-2xl border border-white/10 shrink-0">
+          <Link
+            href="/admin"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Admin Panel</span>
+          </Link>
           <div className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#2CB7A5] text-[#121316] shadow-sm flex items-center gap-2">
             <Bug className="w-3.5 h-3.5" /> Issue Reports
           </div>

@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     // Check if provider profile already exists for this user to avoid missing constraint error (42P10)
     const { data: existingProvider, error: selectError } = await serviceSupabase
       .from('providers')
-      .select('id')
+      .select('id, verification_status')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -86,8 +86,18 @@ export async function POST(request: NextRequest) {
       console.error('[API/providers] Error checking existing provider:', selectError);
     }
 
+    if (existingProvider && existingProvider.verification_status === 'banned') {
+      return NextResponse.json(
+        { error: 'Your vendor account has been suspended by administrators.' },
+        { status: 403 }
+      );
+    }
+
     let provider;
     if (existingProvider) {
+      // Preserve verified status if already approved, or re-submit as pending if previously rejected/unverified
+      const nextStatus = existingProvider.verification_status === 'verified' ? 'verified' : 'pending';
+
       const { data, error: updateError } = await serviceSupabase
         .from('providers')
         .update({
@@ -97,7 +107,7 @@ export async function POST(request: NextRequest) {
           email,
           services_offered: servicesOffered,
           operating_cities: operatingCities,
-          verification_status: 'verified',
+          verification_status: nextStatus,
           bio: bio || null,
           updated_at: new Date().toISOString(),
         })
@@ -121,7 +131,7 @@ export async function POST(request: NextRequest) {
           email,
           services_offered: servicesOffered,
           operating_cities: operatingCities,
-          verification_status: 'verified',
+          verification_status: 'pending',
           bio: bio || null,
           updated_at: new Date().toISOString(),
         })
