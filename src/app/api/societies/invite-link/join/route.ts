@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { joinByInviteTokenSchema } from '@/src/shared/validations/ownera';
 import { joinSocietyByInviteToken } from '@/lib/ownera/invite-links';
+import { setOnboardStatusCookie } from '@/lib/supabase/middleware';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,12 +46,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const memberRole = result.member?.role || 'resident';
+    const profileRole = (memberRole === 'secretary' || memberRole === 'committee' || memberRole === 'organizer') ? 'organizer' : 'resident';
+
+    const response = NextResponse.json({
       success: true,
       alreadyMember: result.alreadyMember,
       message: result.message,
       society: result.society,
       member: result.member,
+    });
+
+    return setOnboardStatusCookie(response, {
+      userId: user.id,
+      activeRole: profileRole,
+      primarySocietyId: result.society?.id || '',
     });
   } catch (err: any) {
     console.error('[API/societies/invite-link/join POST] Error:', err);

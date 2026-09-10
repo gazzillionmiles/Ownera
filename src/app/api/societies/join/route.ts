@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/service';
 import { joinSocietySchema } from '@/src/shared/validations/ownera';
+import { setOnboardStatusCookie } from '@/lib/supabase/middleware';
 
 export async function POST(request: NextRequest) {
   try {
@@ -138,21 +139,28 @@ export async function POST(request: NextRequest) {
         .update({ status: 'accepted' })
         .eq('id', invite.id);
 
+      const inviteRole = (invite.role === 'secretary' || invite.role === 'committee' || invite.role === 'organizer') ? 'organizer' : 'resident';
       await serviceSupabase
         .from('profiles')
         .update({
           primary_society_id: invite.society_id,
-          active_role: (invite.role === 'secretary' || invite.role === 'committee' || invite.role === 'organizer') ? 'organizer' : 'resident',
+          active_role: inviteRole,
           unit_number: unitNumber,
           property_type: propertyType,
         })
         .eq('id', user.id);
 
-      return NextResponse.json({
+      const joinInviteResponse = NextResponse.json({
         success: true,
         message: `Successfully joined ${inviteSociety.name} as ${invite.role}!`,
         society: inviteSociety,
         member,
+      });
+
+      return setOnboardStatusCookie(joinInviteResponse, {
+        userId: user.id,
+        activeRole: inviteRole,
+        primarySocietyId: invite.society_id,
       });
     }
 
@@ -225,11 +233,17 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', user.id);
 
-    return NextResponse.json({
+    const mainJoinResponse = NextResponse.json({
       success: true,
       message: `Successfully joined ${society.name}!`,
       society,
       member,
+    });
+
+    return setOnboardStatusCookie(mainJoinResponse, {
+      userId: user.id,
+      activeRole: profileRole,
+      primarySocietyId: society.id,
     });
   } catch (err: any) {
     console.error('[API/societies/join] Unexpected error:', err);

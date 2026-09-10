@@ -44,9 +44,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   const { data: services = [], refetch: refetchServices } = useServices(!isProvider);
   const { data: pollsData, isLoading: pollsLoading, refetch: refetchPolls } = usePolls(societyId, isProvider ? 'provider' : 'resident');
-  const { data: residentBookings = [], refetch: refetchResBookings } = useBookings('resident', societyId, isResident && Boolean(societyId));
-  const { data: organizerBookings = [], refetch: refetchOrgBookings } = useBookings('organizer', societyId, isOrganizer && Boolean(societyId));
-  const { data: providerBookings = [], refetch: refetchProvBookings } = useBookings('provider', undefined, isProvider);
+  const { data: residentBookings = [], isLoading: resBookingsLoading, refetch: refetchResBookings } = useBookings('resident', societyId, isResident && Boolean(societyId));
+  const { data: organizerBookings = [], isLoading: orgBookingsLoading, refetch: refetchOrgBookings } = useBookings('organizer', societyId, isOrganizer && Boolean(societyId));
+  const { data: providerBookings = [], isLoading: provBookingsLoading, refetch: refetchProvBookings } = useBookings('provider', undefined, isProvider);
 
   const [providerProfile, setProviderProfile] = useState<Provider | null>(null);
   const [providerBids, setProviderBids] = useState<ProviderBid[]>([]);
@@ -95,7 +95,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
     if (isProvider) refetchProvBookings();
   }, [refetchPolls, refetchServices, refetchResBookings, refetchOrgBookings, refetchProvBookings, isResident, isOrganizer, isProvider]);
 
-  const isInitialLoading = !isProvider && !societyId ? false : (pollsLoading && !pollsData);
+  const bookingsLoading = isResident ? (resBookingsLoading && residentBookings.length === 0)
+    : isOrganizer ? (orgBookingsLoading && organizerBookings.length === 0)
+    : (provBookingsLoading && providerBookings.length === 0);
+
+  const isInitialLoading = !isProvider && !societyId ? false : ((pollsLoading && !pollsData) || bookingsLoading);
 
   if (isInitialLoading) {
     return (
