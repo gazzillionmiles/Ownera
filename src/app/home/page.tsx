@@ -8,7 +8,7 @@ import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { JoinSocietyModal } from '@/src/shared/components/JoinSocietyModal';
 import { Building2, Plus, ArrowRight, Loader2 } from 'lucide-react';
 import { Society } from '@/src/types/ownera';
-import { fetchUserSocieties } from '@/src/shared/lib/api';
+import { useUserSocieties } from '@/src/shared/hooks/useQueries';
 
 export default function HomePage() {
   const router = useRouter();
@@ -19,54 +19,59 @@ export default function HomePage() {
   const [modalTab, setModalTab] = useState<'join' | 'create'>('join');
   const hasResolvedRef = useRef(false);
 
+  const { data: societiesData, isLoading: societiesLoading, error: societiesFetchError } = useUserSocieties(uiUser.isLoggedIn);
+
   useEffect(() => {
     async function resolveUserSocieties() {
       if (hasResolvedRef.current) return;
-      hasResolvedRef.current = true;
 
-      try {
+      if (uiUser.activeRole === 'provider') {
+        hasResolvedRef.current = true;
         setLoading(true);
-        if (uiUser.activeRole === 'provider') {
-          const provRes = await fetch('/api/providers?self=true');
-          const provData = await provRes.json().catch(() => ({}));
-          if (provData?.provider) {
-            router.replace('/partner');
-          } else {
-            router.replace('/partner/register');
-          }
+        const provRes = await fetch('/api/providers?self=true');
+        const provData = await provRes.json().catch(() => ({}));
+        if (provData?.provider) {
+          router.replace('/partner');
+        } else {
+          router.replace('/partner/register');
+        }
+        return;
+      }
+
+      if (societiesFetchError) {
+        hasResolvedRef.current = true;
+        const err: any = societiesFetchError;
+        if (err?.status === 401) {
+          router.replace('/login');
           return;
         }
+        setLoading(false);
+        return;
+      }
 
-        const data = await fetchUserSocieties();
-        const userSocieties: Society[] = data.societies || [];
+      if (societiesData) {
+        hasResolvedRef.current = true;
+        const userSocieties: Society[] = societiesData.societies || [];
         setSocieties(userSocieties);
 
         if (userSocieties.length > 0) {
-          // If profile does not yet have primarySocietyId, refresh profile state first
           if (!uiUser.primarySocietyId) {
             await refreshProfile().catch(() => {});
           }
-          // If user has a preferred primary society matching their memberships, pick that; else pick first
           const primary = userSocieties.find((s) => s.id === uiUser.primarySocietyId) || userSocieties[0];
           router.replace(`/s/${primary.slug}`);
         } else {
           router.replace('/onboarding');
         }
-      } catch (err: any) {
-        console.error('[HomePage] Error loading user societies:', err);
-        if (err?.status === 401) {
-          router.replace('/login');
-          return;
-        }
-      } finally {
-        setLoading(false);
+      } else if (societiesLoading) {
+        setLoading(true);
       }
     }
 
     if (uiUser.isLoggedIn) {
       resolveUserSocieties();
     }
-  }, [uiUser.isLoggedIn, uiUser.activeRole, uiUser.primarySocietyId, router, refreshProfile]);
+  }, [uiUser.isLoggedIn, uiUser.activeRole, uiUser.primarySocietyId, router, refreshProfile, societiesData, societiesLoading, societiesFetchError]);
 
   if (loading) {
     return (

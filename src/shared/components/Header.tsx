@@ -21,7 +21,7 @@ import { useTheme } from '@/src/shared/components/ui/theme-provider';
 import { APP_NAME } from '@/src/constants';
 import { UserRole, Society } from '@/src/types/ownera';
 import { toast } from 'sonner';
-import { fetchUserSocieties } from '@/src/shared/lib/api';
+import { useUserSocieties } from '@/src/shared/hooks/useQueries';
 
 interface HeaderProps {
   theme?: 'dark' | 'light';
@@ -51,7 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isSocietyMenuOpen, setIsSocietyMenuOpen] = useState(false);
-  const [userSocieties, setUserSocieties] = useState<Society[]>([]);
+  const { data: societiesData } = useUserSocieties(uiUser.isLoggedIn);
+  const userSocieties = societiesData?.societies || [];
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isPlatformAdminUser, setIsPlatformAdminUser] = useState(false);
@@ -68,14 +69,6 @@ export const Header: React.FC<HeaderProps> = ({
           if (data.notifications) {
             setNotifications(data.notifications);
             setUnreadCount(data.notifications.filter((n: any) => !n.read).length);
-          }
-        })
-        .catch(() => {});
-
-      fetchUserSocieties()
-        .then((data) => {
-          if (data.societies) {
-            setUserSocieties(data.societies);
           }
         })
         .catch(() => {});

@@ -3,9 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BaseUserProfile } from '@/src/types/auth';
 import {
-  ServiceCampaign,
   Society,
-  ServiceCatalogItem,
   Booking,
   Provider,
   ProviderBid,
@@ -16,6 +14,7 @@ import { OrganizerView } from './OrganizerView';
 import { ProviderView } from './ProviderView';
 import { JoinSocietyModal } from './JoinSocietyModal';
 import { Loader2 } from 'lucide-react';
+import { useServices, usePolls, useBookings } from '@/src/shared/hooks/useQueries';
 
 interface HomeViewProps {
   user: BaseUserProfile;
@@ -38,130 +37,39 @@ export const HomeView: React.FC<HomeViewProps> = ({
   setIsJoinModalOpen,
   onTabChange,
 }) => {
-  const [polls, setPolls] = useState<ServiceCampaign[]>([]);
-  const [activePolls, setActivePolls] = useState<ServiceCampaign[]>([]);
-  const [myPolls, setMyPolls] = useState<ServiceCampaign[]>([]);
-  const [societyPolls, setSocietyPolls] = useState<ServiceCampaign[]>([]);
-  const [upcomingServices, setUpcomingServices] = useState<ServiceCampaign[]>([]);
-  const [previousCampaigns, setPreviousCampaigns] = useState<ServiceCampaign[]>([]);
-
-  const [services, setServices] = useState<ServiceCatalogItem[]>([]);
-  const [userBookings, setUserBookings] = useState<Booking[]>([]);
-  const [organizerBookings, setOrganizerBookings] = useState<Booking[]>([]);
-  const [providerBookings, setProviderBookings] = useState<Booking[]>([]);
-  const [providerBids, setProviderBids] = useState<ProviderBid[]>([]);
-  const [providerProfile, setProviderProfile] = useState<Provider | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const isOrganizer = activeRole === 'organizer' || activeRole === 'secretary' || activeRole === 'committee';
   const isProvider = activeRole === 'provider';
   const isResident = !isOrganizer && !isProvider;
+  const societyId = activeSociety?.id;
 
-  const fetchAllData = useCallback(async () => {
-    // If not provider, wait for valid activeSociety id before executing society-scoped requests
-    if (!isProvider && !activeSociety?.id) {
-      setLoading(false);
-      return;
-    }
+  const { data: services = [], refetch: refetchServices } = useServices(!isProvider);
+  const { data: pollsData, isLoading: pollsLoading, refetch: refetchPolls } = usePolls(societyId, isProvider ? 'provider' : 'resident');
+  const { data: residentBookings = [], refetch: refetchResBookings } = useBookings('resident', societyId, isResident && Boolean(societyId));
+  const { data: organizerBookings = [], refetch: refetchOrgBookings } = useBookings('organizer', societyId, isOrganizer && Boolean(societyId));
+  const { data: providerBookings = [], refetch: refetchProvBookings } = useBookings('provider', undefined, isProvider);
 
-    try {
-      setLoading(true);
-      const societyParam = activeSociety?.id ? `?societyId=${activeSociety.id}` : '';
-      const societyPrefix = activeSociety?.id ? `&societyId=${activeSociety.id}` : '';
-
-      const promises: Promise<any>[] = [];
-
-      // 1. Services Catalog & Polls/Campaigns (relevant for resident and organizer)
-      if (!isProvider) {
-        promises.push(
-          fetch('/api/services')
-            .then((r) => r.json())
-            .then((servData) => {
-              setServices(servData.services || []);
-            })
-            .catch(() => {})
-        );
-
-        promises.push(
-          fetch(`/api/polls${societyParam}`)
-            .then((r) => r.json())
-            .then((pollsData) => {
-              setPolls(pollsData.polls || []);
-              setActivePolls(pollsData.active_polls || []);
-              setMyPolls(pollsData.my_polls || []);
-              setSocietyPolls(pollsData.society_polls || []);
-              setUpcomingServices(pollsData.upcoming_services || []);
-              setPreviousCampaigns(pollsData.previous_campaigns || []);
-            })
-            .catch(() => {})
-        );
-      }
-
-      // 2. Resident bookings (only for resident)
-      if (isResident) {
-        promises.push(
-          fetch(`/api/bookings?role=resident${societyPrefix}`)
-            .then((r) => r.json())
-            .then((bookData) => {
-              setUserBookings(bookData.bookings || []);
-            })
-            .catch(() => {})
-        );
-      }
-
-      // 3. Organizer bookings (only for secretary / committee)
-      if (isOrganizer) {
-        promises.push(
-          fetch(`/api/bookings?role=organizer${societyPrefix}`)
-            .then((r) => r.json())
-            .then((orgBookData) => {
-              setOrganizerBookings(orgBookData.bookings || []);
-            })
-            .catch(() => {})
-        );
-      }
-
-      // 4. Provider specific endpoints (only for provider)
-      if (isProvider) {
-        promises.push(
-          fetch('/api/polls?role=provider')
-            .then((r) => r.json())
-            .then((pollsData) => {
-              setPolls(pollsData.polls || []);
-            })
-            .catch(() => {}),
-          fetch('/api/bookings?role=provider')
-            .then((r) => r.json())
-            .then((provBookData) => {
-              setProviderBookings(provBookData.bookings || []);
-            })
-            .catch(() => {}),
-          fetch('/api/providers?self=true')
-            .then((r) => r.json())
-            .then((provData) => {
-              setProviderProfile(provData.provider || null);
-            })
-            .catch(() => {}),
-          fetch('/api/providers/bids')
-            .then((r) => r.json())
-            .then((bidsData) => {
-              setProviderBids(bidsData.bids || []);
-            })
-            .catch(() => {})
-        );
-      }
-
-      await Promise.all(promises);
-    } catch (err) {
-      console.error('[HomeView] Error fetching data:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeSociety?.id, isOrganizer, isProvider, isResident]);
+  const [providerProfile, setProviderProfile] = useState<Provider | null>(null);
+  const [providerBids, setProviderBids] = useState<ProviderBid[]>([]);
 
   useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    if (isProvider) {
+      fetch('/api/providers?self=true')
+        .then((r) => r.json())
+        .then((d) => setProviderProfile(d.provider || null))
+        .catch(() => {});
+      fetch('/api/providers/bids')
+        .then((r) => r.json())
+        .then((d) => setProviderBids(d.bids || []))
+        .catch(() => {});
+    }
+  }, [isProvider]);
+
+  const polls = pollsData?.polls || [];
+  const activePolls = pollsData?.active_polls || [];
+  const myPolls = pollsData?.my_polls || [];
+  const societyPolls = pollsData?.society_polls || [];
+  const upcomingServices = pollsData?.upcoming_services || [];
+  const previousCampaigns = pollsData?.previous_campaigns || [];
 
   const handleVote = async (pollId: string, option: string) => {
     const res = await fetch(`/api/polls/${pollId}/vote`, {
@@ -176,10 +84,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
       const err = await res.json();
       throw new Error(err.error || 'Failed to record vote');
     }
-    fetchAllData();
+    refetchPolls();
   };
 
-  if (loading) {
+  const handleRefresh = useCallback(() => {
+    refetchPolls();
+    refetchServices();
+    if (isResident) refetchResBookings();
+    if (isOrganizer) refetchOrgBookings();
+    if (isProvider) refetchProvBookings();
+  }, [refetchPolls, refetchServices, refetchResBookings, refetchOrgBookings, refetchProvBookings, isResident, isOrganizer, isProvider]);
+
+  const isInitialLoading = !isProvider && !societyId ? false : (pollsLoading && !pollsData);
+
+  if (isInitialLoading) {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
         <Loader2 className="w-8 h-8 animate-spin text-[#2CB7A5]" />
@@ -200,13 +118,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
           upcomingServices={upcomingServices}
           previousCampaigns={previousCampaigns}
           campaigns={polls}
-          userBookings={userBookings}
+          userBookings={residentBookings}
           activeSociety={activeSociety}
           services={services}
           user={user}
           activeTab={activeTab}
           onVote={handleVote}
-          onRefresh={fetchAllData}
+          onRefresh={handleRefresh}
           onOpenJoinModal={() => setIsJoinModalOpen(true)}
           onTabChange={onTabChange}
         />
@@ -222,7 +140,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           user={user}
           activeTab={activeTab}
           onVote={handleVote}
-          onRefresh={fetchAllData}
+          onRefresh={handleRefresh}
           onTabChange={onTabChange}
         />
       )}
@@ -235,7 +153,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           providerProfile={providerProfile}
           user={user}
           activeTab={activeTab}
-          onRefresh={fetchAllData}
+          onRefresh={handleRefresh}
           onTabChange={onTabChange}
         />
       )}
@@ -246,7 +164,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         onClose={() => setIsJoinModalOpen(false)}
         onSuccess={(society) => {
           onSocietyChange(society);
-          fetchAllData();
+          handleRefresh();
         }}
       />
     </div>

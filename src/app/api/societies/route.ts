@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get societies user belongs to using service client to bypass any RLS join issues
-    let { data: rawMemberships, error: memberError } = await serviceSupabase
+    const { data: rawMemberships } = await serviceSupabase
       .from('society_members')
       .select('*, society:societies(*)')
       .eq('user_id', user.id)
@@ -41,33 +41,36 @@ export async function GET(request: NextRequest) {
 
     let memberships = rawMemberships || [];
 
-    // Auto-heal: Ensure user has active secretary membership for any societies they created
-    const { data: createdSocieties } = await serviceSupabase
-      .from('societies')
-      .select('*')
-      .eq('created_by', user.id);
+    // Only run auto-heal reconciliation if user has 0 memberships or explicitly requested
+    const heal = searchParams.get('heal') === 'true';
+    if (memberships.length === 0 || heal) {
+      const { data: createdSocieties } = await serviceSupabase
+        .from('societies')
+        .select('*')
+        .eq('created_by', user.id);
 
-    if (createdSocieties && createdSocieties.length > 0) {
-      const existingSocietyIds = new Set(memberships.map((m) => m.society_id));
-      for (const soc of createdSocieties) {
-        if (!existingSocietyIds.has(soc.id)) {
-          const { data: healedMem } = await serviceSupabase
-            .from('society_members')
-            .upsert(
-              {
-                society_id: soc.id,
-                user_id: user.id,
-                flat_number: 'Secretary Unit',
-                role: 'secretary',
-                status: 'active',
-              },
-              { onConflict: 'society_id,user_id' }
-            )
-            .select('*, society:societies(*)')
-            .single();
+      if (createdSocieties && createdSocieties.length > 0) {
+        const existingSocietyIds = new Set(memberships.map((m) => m.society_id));
+        for (const soc of createdSocieties) {
+          if (!existingSocietyIds.has(soc.id)) {
+            const { data: healedMem } = await serviceSupabase
+              .from('society_members')
+              .upsert(
+                {
+                  society_id: soc.id,
+                  user_id: user.id,
+                  flat_number: 'Secretary Unit',
+                  role: 'secretary',
+                  status: 'active',
+                },
+                { onConflict: 'society_id,user_id' }
+              )
+              .select('*, society:societies(*)')
+              .single();
 
-          if (healedMem) {
-            memberships.push(healedMem);
+            if (healedMem) {
+              memberships.push(healedMem);
+            }
           }
         }
       }
@@ -99,8 +102,8 @@ export async function GET(request: NextRequest) {
         member_count: memberCountMap.get(m.society_id) || 1,
       }));
 
-    // Auto-heal profiles.primary_society_id if user belongs to societies but primary_society_id is null
-    if (societiesList.length > 0) {
+    // Auto-heal profiles.primary_society_id only if explicitly requested or on first membership
+    if (heal && societiesList.length > 0) {
       const { data: userProfile } = await serviceSupabase
         .from('profiles')
         .select('primary_society_id, active_role')

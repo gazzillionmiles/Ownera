@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server.js';
 const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
 const REF_COOKIE_NAME = `${APP_PREFIX}_ref_code`;
 const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
+const CONSENT_COOKIE_NAME = `${APP_PREFIX}_terms_ok`;
+const STATUS_COOKIE_NAME = `${APP_PREFIX}_onboard_status`;
 
 export function createRedirectResponse(url: URL | string, sourceResponse: NextResponse): NextResponse {
   const redirectResponse = NextResponse.redirect(url);
@@ -169,23 +171,35 @@ export async function updateSession(request: NextRequest) {
     }
 
     const currentTermsVersion = process.env.TERMS_CONSENT_VERSION || '2026-v1';
-    const { data: consentEvent } = await supabase
-      .from('consent_events')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('event_type', 'terms_accepted')
-      .eq('consent_version', currentTermsVersion)
-      .limit(1)
-      .maybeSingle();
+    const cachedConsent = request.cookies.get(CONSENT_COOKIE_NAME)?.value;
+    const isConsentCached = cachedConsent === `${user.id}:${currentTermsVersion}`;
 
-    if (!consentEvent) {
-      return NextResponse.json(
-        {
-          error: 'TERMS_CONSENT_REQUIRED',
-          message: 'You must accept the Terms & Conditions and Privacy Policy to continue.',
-        },
-        { status: 403 }
-      );
+    if (!isConsentCached) {
+      const { data: consentEvent } = await supabase
+        .from('consent_events')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('event_type', 'terms_accepted')
+        .eq('consent_version', currentTermsVersion)
+        .limit(1)
+        .maybeSingle();
+
+      if (!consentEvent) {
+        return NextResponse.json(
+          {
+            error: 'TERMS_CONSENT_REQUIRED',
+            message: 'You must accept the Terms & Conditions and Privacy Policy to continue.',
+          },
+          { status: 403 }
+        );
+      }
+
+      supabaseResponse.cookies.set(CONSENT_COOKIE_NAME, `${user.id}:${currentTermsVersion}`, {
+        path: '/',
+        httpOnly: true,
+        maxAge: 3600,
+        sameSite: 'lax',
+      });
     }
   }
 
@@ -209,49 +223,79 @@ export async function updateSession(request: NextRequest) {
 
   // Handle pending_deletion account state and onboarding enforcement for authenticated users
   if (user && !isStatic && !isApiRoute) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('deletion_status, primary_society_id, active_role')
-      .eq('id', user.id)
-      .maybeSingle();
+    let deletionStatus = 'active';
+    let primarySocietyId: string | null = null;
+    let activeRole = 'resident';
+    let hasCompletedOnboarding = false;
 
-    if (profile?.deletion_status === 'pending_deletion' && pathname !== '/account-deleted') {
+    const cachedStatus = request.cookies.get(STATUS_COOKIE_NAME)?.value;
+    const isStatusCached = cachedStatus && cachedStatus.startsWith(`${user.id}:`);
+
+    if (isStatusCached) {
+      const parts = cachedStatus.split(':');
+      hasCompletedOnboarding = parts[1] === '1';
+      activeRole = parts[2] || 'resident';
+      primarySocietyId = parts[3] || null;
+      deletionStatus = parts[4] || 'active';
+    } else {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('deletion_status, primary_society_id, active_role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      deletionStatus = profile?.deletion_status || 'active';
+      primarySocietyId = profile?.primary_society_id || null;
+      activeRole = profile?.active_role || 'resident';
+
+      hasCompletedOnboarding = !!primarySocietyId || activeRole === 'provider';
+      if (!hasCompletedOnboarding) {
+        const { data: member } = await supabase
+          .from('society_members')
+          .select('society_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+
+        if (member?.society_id) {
+          hasCompletedOnboarding = true;
+        } else {
+          const { data: providerRec } = await supabase
+            .from('providers')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (providerRec?.id) {
+            hasCompletedOnboarding = true;
+          }
+        }
+      }
+
+      supabaseResponse.cookies.set(
+        STATUS_COOKIE_NAME,
+        `${user.id}:${hasCompletedOnboarding ? '1' : '0'}:${activeRole}:${primarySocietyId || ''}:${deletionStatus}`,
+        {
+          path: '/',
+          httpOnly: true,
+          maxAge: 600,
+          sameSite: 'lax',
+        }
+      );
+    }
+
+    if (deletionStatus === 'pending_deletion' && pathname !== '/account-deleted') {
       const url = request.nextUrl.clone();
       url.pathname = '/account-deleted';
       return createRedirectResponse(url, supabaseResponse);
     }
 
-    if (profile?.deletion_status !== 'pending_deletion' && pathname === '/account-deleted') {
+    if (deletionStatus !== 'pending_deletion' && pathname === '/account-deleted') {
       const url = request.nextUrl.clone();
-      url.pathname = profile?.active_role === 'provider' ? '/partner' : profile?.primary_society_id ? '/home' : '/onboarding';
+      url.pathname = activeRole === 'provider' ? '/partner' : primarySocietyId ? '/home' : '/onboarding';
       return createRedirectResponse(url, supabaseResponse);
-    }
-
-    // Determine onboarding completion status (has primary society, active society membership, or provider profile)
-    let hasCompletedOnboarding = !!profile?.primary_society_id || profile?.active_role === 'provider';
-    if (!hasCompletedOnboarding) {
-      const { data: member } = await supabase
-        .from('society_members')
-        .select('society_id')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .limit(1)
-        .maybeSingle();
-
-      if (member?.society_id) {
-        hasCompletedOnboarding = true;
-      } else {
-        const { data: providerRec } = await supabase
-          .from('providers')
-          .select('id')
-          .eq('user_id', user.id)
-          .limit(1)
-          .maybeSingle();
-
-        if (providerRec?.id) {
-          hasCompletedOnboarding = true;
-        }
-      }
     }
 
     const isPartnerPath = pathname.startsWith('/partner');
@@ -273,7 +317,7 @@ export async function updateSession(request: NextRequest) {
           pathname,
           searchParams,
           hasCompletedOnboarding,
-          profile,
+          profile: { active_role: activeRole as any, primary_society_id: primarySocietyId },
           isPartnerPath,
         });
         if (target) {
@@ -288,7 +332,7 @@ export async function updateSession(request: NextRequest) {
           pathname,
           searchParams,
           hasCompletedOnboarding,
-          profile,
+          profile: { active_role: activeRole as any, primary_society_id: primarySocietyId },
           isPartnerPath,
         });
         if (target) {

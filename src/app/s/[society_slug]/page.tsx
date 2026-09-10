@@ -9,7 +9,7 @@ import { HomeView } from '@/src/shared/components/HomeView';
 import { UserRole, Society } from '@/src/types/ownera';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { JoinSocietyModal } from '@/src/shared/components/JoinSocietyModal';
-import { fetchUserSocieties } from '@/src/shared/lib/api';
+import { useUserSocieties } from '@/src/shared/hooks/useQueries';
 
 function SocietyDashboardPage({
   params,
@@ -36,55 +36,54 @@ function SocietyDashboardPage({
     }
   }, [tabParam]);
 
+  const { data: societiesData, isLoading: societiesLoading, error: societiesFetchError } = useUserSocieties(uiUser.isLoggedIn);
+
   useEffect(() => {
-    async function loadSociety() {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchUserSocieties();
-        const userSocieties: Society[] = data.societies || [];
-
-        const targetSoc = userSocieties.find(
-          (s) => s.slug.toLowerCase() === resolvedParams.society_slug.toLowerCase()
-        );
-
-        if (targetSoc) {
-          setSociety(targetSoc);
-          const roleInThisSociety = targetSoc.user_role || 'resident';
-          setSocietyRole(roleInThisSociety);
-
-          // Context-aware role activation: automatically switch view according to role in this society
-          if (roleInThisSociety === 'secretary' || roleInThisSociety === 'organizer' || roleInThisSociety === 'committee') {
-            setActiveRole('organizer');
-            if (!tabParam) setActiveTab('overview');
-          } else {
-            setActiveRole('resident');
-            if (!tabParam) setActiveTab('home');
-          }
-
-          if (!uiUser.primarySocietyId) {
-            refreshProfile().catch(() => {});
-          }
-        } else {
-          setError(
-            `You are not yet a member of "${resolvedParams.society_slug}". Join below as Resident or Secretary.`
-          );
-        }
-      } catch (err: any) {
-        if (err?.status === 401) {
-          router.push(`/login?next=/s/${resolvedParams.society_slug}`);
-          return;
-        }
-        setError(err.message || 'Failed to verify society membership');
-      } finally {
-        setLoading(false);
+    if (societiesFetchError) {
+      const err: any = societiesFetchError;
+      if (err?.status === 401) {
+        router.push(`/login?next=/s/${resolvedParams.society_slug}`);
+        return;
       }
+      setError(err?.message || 'Failed to verify society membership');
+      setLoading(false);
+      return;
     }
 
-    if (uiUser.isLoggedIn) {
-      loadSociety();
+    if (societiesData) {
+      const userSocieties = societiesData.societies || [];
+      const targetSoc = userSocieties.find(
+        (s) => s.slug.toLowerCase() === resolvedParams.society_slug.toLowerCase()
+      );
+
+      if (targetSoc) {
+        setSociety(targetSoc);
+        const roleInThisSociety = targetSoc.user_role || 'resident';
+        setSocietyRole(roleInThisSociety);
+
+        // Context-aware role activation: automatically switch view according to role in this society
+        if (roleInThisSociety === 'secretary' || roleInThisSociety === 'organizer' || roleInThisSociety === 'committee') {
+          setActiveRole('organizer');
+          if (!tabParam) setActiveTab('overview');
+        } else {
+          setActiveRole('resident');
+          if (!tabParam) setActiveTab('home');
+        }
+
+        if (!uiUser.primarySocietyId) {
+          refreshProfile().catch(() => {});
+        }
+        setError(null);
+      } else {
+        setError(
+          `You are not yet a member of "${resolvedParams.society_slug}". Join below as Resident or Secretary.`
+        );
+      }
+      setLoading(false);
+    } else if (societiesLoading) {
+      setLoading(true);
     }
-  }, [resolvedParams.society_slug, uiUser.isLoggedIn, router, refreshProfile]);
+  }, [societiesData, societiesLoading, societiesFetchError, resolvedParams.society_slug, router, tabParam, uiUser.primarySocietyId, refreshProfile]);
 
   if (loading) {
     return (

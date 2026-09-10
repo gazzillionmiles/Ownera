@@ -8,28 +8,22 @@ import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { User, LogOut, Mail, Shield, Calendar, Building2, Briefcase, Key, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { Society, Provider } from '@/src/types/ownera';
+import { Provider } from '@/src/types/ownera';
+import { useUserSocieties } from '@/src/shared/hooks/useQueries';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { uiUser, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [societies, setSocieties] = useState<Society[]>([]);
+  const { data: societiesData } = useUserSocieties(uiUser.isLoggedIn);
+  const societies = societiesData?.societies || [];
   const [provider, setProvider] = useState<Provider | null>(null);
   const [platformAdminInfo, setPlatformAdminInfo] = useState<{ is_admin: boolean; role: string } | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(false);
 
   useEffect(() => {
     if (uiUser.isLoggedIn) {
-      // 1. Fetch user societies with roles
-      fetch('/api/societies')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.societies) setSocieties(data.societies);
-        })
-        .catch(() => {});
-
-      // 2. Fetch provider profile
+      // 1. Fetch provider profile
       fetch('/api/providers?self=true')
         .then((res) => res.json())
         .then((data) => {
@@ -37,7 +31,7 @@ export default function ProfilePage() {
         })
         .catch(() => {});
 
-      // 3. Fetch admin status
+      // 2. Fetch admin status
       fetch('/api/admin/bootstrap')
         .then((res) => res.json())
         .then((data) => {
