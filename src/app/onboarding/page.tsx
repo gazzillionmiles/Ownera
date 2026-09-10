@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { APP_NAME } from '@/src/constants';
 import { PropertyType } from '@/src/types/ownera';
 import { StateCityPicker } from '@/src/shared/components/StateCityPicker';
+import { fetchUserSocieties, invalidateSocietiesCache } from '@/src/shared/lib/api';
 
 const PROPERTY_TYPES: { id: PropertyType; label: string; desc: string }[] = [
   { id: 'flat', label: 'Flat', desc: 'Residential block / standalone building flat' },
@@ -73,14 +74,11 @@ export default function OnboardingPage() {
           }
         }
 
-        const res = await fetch('/api/societies');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.societies && data.societies.length > 0) {
-            await refreshProfile();
-            const targetSoc = data.societies.find((s: any) => s.id === uiUser.primarySocietyId) || data.societies[0];
-            router.replace(`/s/${targetSoc.slug}`);
-          }
+        const data = await fetchUserSocieties();
+        if (data.societies && data.societies.length > 0) {
+          await refreshProfile();
+          const targetSoc = data.societies.find((s: any) => s.id === uiUser.primarySocietyId) || data.societies[0];
+          router.replace(`/s/${targetSoc.slug}`);
         }
       } catch (err) {
         console.error('[OnboardingPage] Check societies error:', err);
@@ -141,6 +139,7 @@ export default function OnboardingPage() {
           throw new Error(createData.error || 'Failed to create society');
         }
 
+        invalidateSocietiesCache();
         await refreshProfile();
         toast.success(`Society "${createData.society?.name}" created! You are registered as Secretary.`);
         window.location.href = `/s/${createData.society?.slug}`;
@@ -173,6 +172,7 @@ export default function OnboardingPage() {
           throw new Error(joinData.error || 'Failed to join society');
         }
 
+        invalidateSocietiesCache();
         await refreshProfile();
         toast.success(joinData.message || `Welcome to ${joinData.society?.name}!`);
         window.location.href = `/s/${joinData.society?.slug}`;

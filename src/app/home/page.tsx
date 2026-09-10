@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
@@ -8,18 +8,22 @@ import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { JoinSocietyModal } from '@/src/shared/components/JoinSocietyModal';
 import { Building2, Plus, ArrowRight, Loader2 } from 'lucide-react';
 import { Society } from '@/src/types/ownera';
+import { fetchUserSocieties } from '@/src/shared/lib/api';
 
 export default function HomePage() {
   const router = useRouter();
-  const { uiUser } = useAuth();
+  const { uiUser, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [societies, setSocieties] = useState<Society[]>([]);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-
   const [modalTab, setModalTab] = useState<'join' | 'create'>('join');
+  const hasResolvedRef = useRef(false);
 
   useEffect(() => {
     async function resolveUserSocieties() {
+      if (hasResolvedRef.current) return;
+      hasResolvedRef.current = true;
+
       try {
         setLoading(true);
         if (uiUser.activeRole === 'provider') {
@@ -33,21 +37,27 @@ export default function HomePage() {
           return;
         }
 
-        const res = await fetch('/api/societies');
-        if (!res.ok) throw new Error('Failed to fetch societies');
-        const data = await res.json();
+        const data = await fetchUserSocieties();
         const userSocieties: Society[] = data.societies || [];
         setSocieties(userSocieties);
 
         if (userSocieties.length > 0) {
+          // If profile does not yet have primarySocietyId, refresh profile state first
+          if (!uiUser.primarySocietyId) {
+            await refreshProfile().catch(() => {});
+          }
           // If user has a preferred primary society matching their memberships, pick that; else pick first
           const primary = userSocieties.find((s) => s.id === uiUser.primarySocietyId) || userSocieties[0];
           router.replace(`/s/${primary.slug}`);
         } else {
           router.replace('/onboarding');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('[HomePage] Error loading user societies:', err);
+        if (err?.status === 401) {
+          router.replace('/login');
+          return;
+        }
       } finally {
         setLoading(false);
       }
@@ -56,7 +66,7 @@ export default function HomePage() {
     if (uiUser.isLoggedIn) {
       resolveUserSocieties();
     }
-  }, [uiUser.isLoggedIn, uiUser.primarySocietyId, router]);
+  }, [uiUser.isLoggedIn, uiUser.activeRole, uiUser.primarySocietyId, router, refreshProfile]);
 
   if (loading) {
     return (

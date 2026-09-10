@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { TermsConsentModal } from '@/src/shared/components/TermsConsentModal';
 import { APP_NAME } from '@/src/constants';
+import { getSocietiesCache } from '@/src/shared/lib/api';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, loading, uiUser } = useAuth();
@@ -29,8 +30,21 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const hasCompletedOnboarding = !!(profile?.primary_society_id || uiUser.primarySocietyId);
+      const cachedSocieties = getSocietiesCache();
+      const hasCompletedOnboarding = !!(
+        profile?.primary_society_id ||
+        uiUser.primarySocietyId ||
+        (cachedSocieties && cachedSocieties.length > 0)
+      );
       const isOnboardingPath = pathname === '/onboarding';
+      const isHomePath = pathname === '/home';
+      const isSocietyPath = pathname.startsWith('/s/');
+
+      // On /home or /s/[slug], society resolution is managed by the page.
+      // Do not prematurely bounce users to /onboarding while society resolution is active.
+      if (isHomePath || isSocietyPath) {
+        return;
+      }
 
       if (!hasCompletedOnboarding && !isOnboardingPath) {
         router.replace('/onboarding');
@@ -61,10 +75,17 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       return null;
     }
   } else {
-    const hasCompletedOnboarding = !!(profile?.primary_society_id || uiUser.primarySocietyId);
+    const cachedSocieties = getSocietiesCache();
+    const hasCompletedOnboarding = !!(
+      profile?.primary_society_id ||
+      uiUser.primarySocietyId ||
+      (cachedSocieties && cachedSocieties.length > 0)
+    );
     const isOnboardingPath = pathname === '/onboarding';
+    const isHomePath = pathname === '/home';
+    const isSocietyPath = pathname.startsWith('/s/');
 
-    if (!hasCompletedOnboarding && !isOnboardingPath) {
+    if (!hasCompletedOnboarding && !isOnboardingPath && !isHomePath && !isSocietyPath) {
       return null;
     }
   }

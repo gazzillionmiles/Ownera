@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Building2,
   Bell,
@@ -21,6 +21,7 @@ import { useTheme } from '@/src/shared/components/ui/theme-provider';
 import { APP_NAME } from '@/src/constants';
 import { UserRole, Society } from '@/src/types/ownera';
 import { toast } from 'sonner';
+import { fetchUserSocieties } from '@/src/shared/lib/api';
 
 interface HeaderProps {
   theme?: 'dark' | 'light';
@@ -40,6 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCreate,
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { uiUser, signOut } = useAuth();
   const { theme: ctxTheme, toggleTheme: ctxToggleTheme } = useTheme();
   const theme = propTheme || ctxTheme;
@@ -70,8 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
         })
         .catch(() => {});
 
-      fetch('/api/societies')
-        .then((res) => res.json())
+      fetchUserSocieties()
         .then((data) => {
           if (data.societies) {
             setUserSocieties(data.societies);
@@ -140,7 +141,9 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => {
                 if (activeSociety) {
                   router.push(`/s/${activeSociety.slug}`);
-                } else {
+                } else if (userSocieties.length > 0) {
+                  router.push(`/s/${userSocieties[0].slug}`);
+                } else if (pathname !== '/home' && !pathname.startsWith('/s/')) {
                   router.push('/home');
                 }
               }}

@@ -9,6 +9,7 @@ import { HomeView } from '@/src/shared/components/HomeView';
 import { UserRole, Society } from '@/src/types/ownera';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { fetchUserSocieties } from '@/src/shared/lib/api';
 
 export default function SocietyBookingsPage({
   params,
@@ -17,7 +18,7 @@ export default function SocietyBookingsPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { uiUser } = useAuth();
+  const { uiUser, refreshProfile } = useAuth();
   const [activeRole, setActiveRole] = useState<UserRole>('resident');
   const [society, setSociety] = useState<Society | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,9 +29,7 @@ export default function SocietyBookingsPage({
     async function loadSociety() {
       try {
         setLoading(true);
-        const res = await fetch('/api/societies');
-        if (!res.ok) throw new Error('Failed to load user societies');
-        const data = await res.json();
+        const data = await fetchUserSocieties();
         const userSocieties: Society[] = data.societies || [];
 
         const targetSoc = userSocieties.find(
@@ -45,10 +44,17 @@ export default function SocietyBookingsPage({
           } else {
             setActiveRole('resident');
           }
+          if (!uiUser.primarySocietyId) {
+            refreshProfile().catch(() => {});
+          }
         } else {
           setError(`You are not a registered active member of "${resolvedParams.society_slug}".`);
         }
       } catch (err: any) {
+        if (err?.status === 401) {
+          router.push(`/login?next=/s/${resolvedParams.society_slug}/bookings`);
+          return;
+        }
         setError(err.message || 'Failed to verify society membership');
       } finally {
         setLoading(false);
@@ -58,7 +64,7 @@ export default function SocietyBookingsPage({
     if (uiUser.isLoggedIn) {
       loadSociety();
     }
-  }, [resolvedParams.society_slug, uiUser.isLoggedIn]);
+  }, [resolvedParams.society_slug, uiUser.isLoggedIn, router, refreshProfile]);
 
   if (loading) {
     return (

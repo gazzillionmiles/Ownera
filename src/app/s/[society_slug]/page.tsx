@@ -7,10 +7,9 @@ import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { HomeView } from '@/src/shared/components/HomeView';
 import { UserRole, Society } from '@/src/types/ownera';
-import { Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
-import { toast } from 'sonner';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { JoinSocietyModal } from '@/src/shared/components/JoinSocietyModal';
+import { fetchUserSocieties } from '@/src/shared/lib/api';
 
 function SocietyDashboardPage({
   params,
@@ -21,7 +20,7 @@ function SocietyDashboardPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const { uiUser } = useAuth();
+  const { uiUser, refreshProfile } = useAuth();
   const [activeRole, setActiveRole] = useState<UserRole>('resident');
   const [activeTab, setActiveTab] = useState<string>(tabParam || 'home');
   const [society, setSociety] = useState<Society | null>(null);
@@ -30,22 +29,19 @@ function SocietyDashboardPage({
   const [error, setError] = useState<string | null>(null);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
-  const [isJoiningSecretary, setIsJoiningSecretary] = useState(false);
+  // Sync tab from query parameter without re-fetching society data
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     async function loadSociety() {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch('/api/societies');
-        if (res.status === 401) {
-          router.push(`/login?next=/s/${resolvedParams.society_slug}`);
-          return;
-        }
-        if (!res.ok) {
-          throw new Error('Unable to fetch your society memberships. Please sign in or join.');
-        }
-        const data = await res.json();
+        const data = await fetchUserSocieties();
         const userSocieties: Society[] = data.societies || [];
 
         const targetSoc = userSocieties.find(
@@ -60,10 +56,14 @@ function SocietyDashboardPage({
           // Context-aware role activation: automatically switch view according to role in this society
           if (roleInThisSociety === 'secretary' || roleInThisSociety === 'organizer' || roleInThisSociety === 'committee') {
             setActiveRole('organizer');
-            setActiveTab(tabParam || 'overview');
+            if (!tabParam) setActiveTab('overview');
           } else {
             setActiveRole('resident');
-            setActiveTab(tabParam || 'home');
+            if (!tabParam) setActiveTab('home');
+          }
+
+          if (!uiUser.primarySocietyId) {
+            refreshProfile().catch(() => {});
           }
         } else {
           setError(
@@ -71,6 +71,10 @@ function SocietyDashboardPage({
           );
         }
       } catch (err: any) {
+        if (err?.status === 401) {
+          router.push(`/login?next=/s/${resolvedParams.society_slug}`);
+          return;
+        }
         setError(err.message || 'Failed to verify society membership');
       } finally {
         setLoading(false);
@@ -80,7 +84,44 @@ function SocietyDashboardPage({
     if (uiUser.isLoggedIn) {
       loadSociety();
     }
-  }, [resolvedParams.society_slug, uiUser.isLoggedIn, router, tabParam]);
+  }, [resolvedParams.society_slug, uiUser.isLoggedIn, router, refreshProfile]);
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+          <p className="text-xs font-semibold text-slate-500">Loading society dashboard...</p>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error || !society) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col items-center justify-center p-6 text-center">
+          <AlertTriangle className="w-8 h-8 text-amber-500 mb-2" />
+          <h1 className="text-xl font-bold mb-2">Access Restricted</h1>
+          <p className="text-xs text-slate-500 max-w-md mb-6">{error || 'Society not found'}</p>
+          <button
+            onClick={() => setIsJoinModalOpen(true)}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition cursor-pointer"
+          >
+            Join Society
+          </button>
+          <JoinSocietyModal
+            isOpen={isJoinModalOpen}
+            onClose={() => setIsJoinModalOpen(false)}
+            onSuccess={(soc) => {
+              setSociety(soc);
+              setError(null);
+            }}
+          />
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>

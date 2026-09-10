@@ -6,6 +6,7 @@ import { Building2, X, ArrowRight, Loader2, Key, PlusCircle, ShieldCheck, MapPin
 import { toast } from 'sonner';
 import { PropertyType } from '@/src/types/ownera';
 import { StateCityPicker } from '@/src/shared/components/StateCityPicker';
+import { invalidateSocietiesCache } from '@/src/shared/lib/api';
 
 interface JoinSocietyModalProps {
   isOpen: boolean;
@@ -79,6 +80,7 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
       }
 
       toast.success(data.message || `Joined ${data.society?.name}!`);
+      invalidateSocietiesCache();
       onSuccess(data.society);
       onClose();
     } catch (err: any) {
@@ -122,6 +124,7 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
       }
 
       toast.success(`Society "${data.society?.name}" created! You are registered as Secretary.`);
+      invalidateSocietiesCache();
       onSuccess(data.society);
       onClose();
     } catch (err: any) {

@@ -53,57 +53,111 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [providerProfile, setProviderProfile] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const isOrganizer = activeRole === 'organizer' || activeRole === 'secretary' || activeRole === 'committee';
+  const isProvider = activeRole === 'provider';
+  const isResident = !isOrganizer && !isProvider;
+
   const fetchAllData = useCallback(async () => {
+    // If not provider, wait for valid activeSociety id before executing society-scoped requests
+    if (!isProvider && !activeSociety?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
+      setLoading(true);
       const societyParam = activeSociety?.id ? `?societyId=${activeSociety.id}` : '';
       const societyPrefix = activeSociety?.id ? `&societyId=${activeSociety.id}` : '';
 
-      // 1. Fetch polls and campaigns
-      const pollsRes = await fetch(`/api/polls${societyParam}`);
-      const pollsData = await pollsRes.json();
-      const fetchedPolls = pollsData.polls || [];
+      const promises: Promise<any>[] = [];
 
-      setPolls(fetchedPolls);
-      setActivePolls(pollsData.active_polls || []);
-      setMyPolls(pollsData.my_polls || []);
-      setSocietyPolls(pollsData.society_polls || []);
-      setUpcomingServices(pollsData.upcoming_services || []);
-      setPreviousCampaigns(pollsData.previous_campaigns || []);
+      // 1. Services Catalog & Polls/Campaigns (relevant for resident and organizer)
+      if (!isProvider) {
+        promises.push(
+          fetch('/api/services')
+            .then((r) => r.json())
+            .then((servData) => {
+              setServices(servData.services || []);
+            })
+            .catch(() => {})
+        );
 
-      // 2. Fetch services catalog
-      const servRes = await fetch('/api/services');
-      const servData = await servRes.json();
-      setServices(servData.services || []);
+        promises.push(
+          fetch(`/api/polls${societyParam}`)
+            .then((r) => r.json())
+            .then((pollsData) => {
+              setPolls(pollsData.polls || []);
+              setActivePolls(pollsData.active_polls || []);
+              setMyPolls(pollsData.my_polls || []);
+              setSocietyPolls(pollsData.society_polls || []);
+              setUpcomingServices(pollsData.upcoming_services || []);
+              setPreviousCampaigns(pollsData.previous_campaigns || []);
+            })
+            .catch(() => {})
+        );
+      }
 
-      // 3. Fetch bookings for current user
-      const bookRes = await fetch(`/api/bookings?role=resident${societyPrefix}`);
-      const bookData = await bookRes.json();
-      setUserBookings(bookData.bookings || []);
+      // 2. Resident bookings (only for resident)
+      if (isResident) {
+        promises.push(
+          fetch(`/api/bookings?role=resident${societyPrefix}`)
+            .then((r) => r.json())
+            .then((bookData) => {
+              setUserBookings(bookData.bookings || []);
+            })
+            .catch(() => {})
+        );
+      }
 
-      // 4. Fetch bookings for organizer in this society
-      const orgBookRes = await fetch(`/api/bookings?role=organizer${societyPrefix}`);
-      const orgBookData = await orgBookRes.json();
-      setOrganizerBookings(orgBookData.bookings || []);
+      // 3. Organizer bookings (only for secretary / committee)
+      if (isOrganizer) {
+        promises.push(
+          fetch(`/api/bookings?role=organizer${societyPrefix}`)
+            .then((r) => r.json())
+            .then((orgBookData) => {
+              setOrganizerBookings(orgBookData.bookings || []);
+            })
+            .catch(() => {})
+        );
+      }
 
-      // 5. Fetch bookings for provider
-      const provBookRes = await fetch('/api/bookings?role=provider');
-      const provBookData = await provBookRes.json();
-      setProviderBookings(provBookData.bookings || []);
+      // 4. Provider specific endpoints (only for provider)
+      if (isProvider) {
+        promises.push(
+          fetch('/api/polls?role=provider')
+            .then((r) => r.json())
+            .then((pollsData) => {
+              setPolls(pollsData.polls || []);
+            })
+            .catch(() => {}),
+          fetch('/api/bookings?role=provider')
+            .then((r) => r.json())
+            .then((provBookData) => {
+              setProviderBookings(provBookData.bookings || []);
+            })
+            .catch(() => {}),
+          fetch('/api/providers?self=true')
+            .then((r) => r.json())
+            .then((provData) => {
+              setProviderProfile(provData.provider || null);
+            })
+            .catch(() => {}),
+          fetch('/api/providers/bids')
+            .then((r) => r.json())
+            .then((bidsData) => {
+              setProviderBids(bidsData.bids || []);
+            })
+            .catch(() => {})
+        );
+      }
 
-      // 6. Fetch provider profile & bids
-      const provRes = await fetch('/api/providers?self=true');
-      const provData = await provRes.json();
-      setProviderProfile(provData.provider || null);
-
-      const bidsRes = await fetch('/api/providers/bids');
-      const bidsData = await bidsRes.json();
-      setProviderBids(bidsData.bids || []);
+      await Promise.all(promises);
     } catch (err) {
       console.error('[HomeView] Error fetching data:', err);
     } finally {
       setLoading(false);
     }
-  }, [activeSociety]);
+  }, [activeSociety?.id, isOrganizer, isProvider, isResident]);
 
   useEffect(() => {
     fetchAllData();
