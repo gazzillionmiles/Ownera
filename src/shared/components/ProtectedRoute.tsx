@@ -1,11 +1,21 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { TermsConsentModal } from '@/src/shared/components/TermsConsentModal';
 import { APP_NAME } from '@/src/constants';
-import { getSocietiesCache } from '@/src/shared/lib/api';
+import { getSocietiesCache, fetchUserSocieties } from '@/src/shared/lib/api';
+import { Society } from '@/src/types/ownera';
+import {
+  shouldResolveSocieties,
+  evaluateProtectedRouteGuard,
+  type ProtectedRouteGuardParams,
+  type ProtectedRouteGuardResult,
+} from '@/lib/routing/guards';
+
+export { shouldResolveSocieties, evaluateProtectedRouteGuard };
+export type { ProtectedRouteGuardParams, ProtectedRouteGuardResult };
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, loading, uiUser } = useAuth();
@@ -15,46 +25,84 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isPartner = profile?.active_role === 'provider' || uiUser.activeRole === 'provider';
   const isPartnerPath = pathname.startsWith('/partner');
 
+  const [resolvingSocieties, setResolvingSocieties] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const cached = getSocietiesCache();
+    return shouldResolveSocieties({
+      user,
+      profile,
+      uiUser,
+      authLoading: loading,
+      pathname,
+      hasCachedSocieties: cached !== null,
+      hasUserSocieties: false,
+    });
+  });
+
+  const [userSocieties, setUserSocieties] = useState<Society[] | null>(() => getSocietiesCache());
+
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.replace('/login');
-        return;
-      }
+    let isMounted = true;
 
-      // Partner routes and partner accounts do not participate in residential society onboarding
-      if (isPartner || isPartnerPath) {
-        if (pathname === '/onboarding') {
-          router.replace('/partner');
+    const cached = getSocietiesCache();
+    const needsResolution = shouldResolveSocieties({
+      user,
+      profile,
+      uiUser,
+      authLoading: loading,
+      pathname,
+      hasCachedSocieties: cached !== null,
+      hasUserSocieties: userSocieties !== null,
+    });
+
+    if (!needsResolution) {
+      if (cached && !userSocieties) {
+        setUserSocieties(cached);
+      }
+      setResolvingSocieties(false);
+      return;
+    }
+
+    setResolvingSocieties(true);
+    fetchUserSocieties()
+      .then((data) => {
+        if (isMounted) {
+          setUserSocieties(data.societies || []);
+          setResolvingSocieties(false);
         }
-        return;
-      }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setUserSocieties([]);
+          setResolvingSocieties(false);
+        }
+      });
 
-      const cachedSocieties = getSocietiesCache();
-      const hasCompletedOnboarding = !!(
-        profile?.primary_society_id ||
-        uiUser.primarySocietyId ||
-        (cachedSocieties && cachedSocieties.length > 0)
-      );
-      const isOnboardingPath = pathname === '/onboarding';
-      const isHomePath = pathname === '/home';
-      const isSocietyPath = pathname.startsWith('/s/');
+    return () => {
+      isMounted = false;
+    };
+  }, [loading, user, isPartner, isPartnerPath, profile?.primary_society_id, uiUser.primarySocietyId, pathname, userSocieties]);
 
-      // On /home or /s/[slug], society resolution is managed by the page.
-      // Do not prematurely bounce users to /onboarding while society resolution is active.
-      if (isHomePath || isSocietyPath) {
-        return;
-      }
+  const isResolving = loading || resolvingSocieties;
 
-      if (!hasCompletedOnboarding && !isOnboardingPath) {
-        router.replace('/onboarding');
-      } else if (hasCompletedOnboarding && isOnboardingPath) {
-        router.replace('/home');
+  useEffect(() => {
+    if (!isResolving) {
+      const cachedSocieties = userSocieties || getSocietiesCache();
+      const { targetRedirect } = evaluateProtectedRouteGuard({
+        user,
+        profile,
+        uiUser,
+        societies: cachedSocieties,
+        pathname,
+      });
+
+      if (targetRedirect) {
+        router.replace(targetRedirect);
       }
     }
-  }, [user, profile, uiUser, loading, pathname, router, isPartner, isPartnerPath]);
+  }, [user, profile, uiUser, isResolving, pathname, router, userSocieties]);
 
-  if (loading) {
+  if (isResolving) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50/70 text-slate-900">
         <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black animate-pulse shadow-lg mb-3">
@@ -69,22 +117,24 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  // Prevent flashing onboarding content if user is a partner
+  const cachedSocieties = userSocieties || getSocietiesCache();
+  const { hasCompletedOnboarding } = evaluateProtectedRouteGuard({
+    user,
+    profile,
+    uiUser,
+    societies: cachedSocieties,
+    pathname,
+  });
+
+  const isOnboardingPath = pathname === '/onboarding';
+  const isHomePath = pathname === '/home';
+  const isSocietyPath = pathname.startsWith('/s/');
+
   if (isPartner || isPartnerPath) {
     if (pathname === '/onboarding') {
       return null;
     }
   } else {
-    const cachedSocieties = getSocietiesCache();
-    const hasCompletedOnboarding = !!(
-      profile?.primary_society_id ||
-      uiUser.primarySocietyId ||
-      (cachedSocieties && cachedSocieties.length > 0)
-    );
-    const isOnboardingPath = pathname === '/onboarding';
-    const isHomePath = pathname === '/home';
-    const isSocietyPath = pathname.startsWith('/s/');
-
     if (!hasCompletedOnboarding && !isOnboardingPath && !isHomePath && !isSocietyPath) {
       return null;
     }
