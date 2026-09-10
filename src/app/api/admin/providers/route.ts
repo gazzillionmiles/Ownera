@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { requirePlatformPermission } from '@/lib/ownera/rbac';
 
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,7 +18,11 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createAdminClient();
     try {
-      await requirePlatformPermission(serviceSupabase, user.id, 'platform.providers.manage');
+      await requirePlatformPermission(
+        serviceSupabase,
+        user.id,
+        'platform.providers.manage'
+      );
     } catch (authErr: any) {
       return NextResponse.json(
         { error: authErr.message || 'Platform administrator access required' },
@@ -43,7 +48,10 @@ export async function GET(request: NextRequest) {
 
     if (fetchErr) {
       console.error('[API/admin/providers GET] Fetch error:', fetchErr);
-      return NextResponse.json({ error: 'Failed to fetch providers' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch providers' },
+        { status: 500 }
+      );
     }
 
     // 2. Fetch stats across all providers (unfiltered)
@@ -53,10 +61,20 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       total: (allStatuses || []).length,
-      pending: (allStatuses || []).filter((p) => p.verification_status === 'pending' || p.verification_status === 'unverified').length,
-      verified: (allStatuses || []).filter((p) => p.verification_status === 'verified').length,
-      banned: (allStatuses || []).filter((p) => p.verification_status === 'banned').length,
-      rejected: (allStatuses || []).filter((p) => p.verification_status === 'rejected').length,
+      pending: (allStatuses || []).filter(
+        (p) =>
+          p.verification_status === 'pending' ||
+          p.verification_status === 'unverified'
+      ).length,
+      verified: (allStatuses || []).filter(
+        (p) => p.verification_status === 'verified'
+      ).length,
+      banned: (allStatuses || []).filter(
+        (p) => p.verification_status === 'banned'
+      ).length,
+      rejected: (allStatuses || []).filter(
+        (p) => p.verification_status === 'rejected'
+      ).length,
     };
 
     // 3. Optional client-side search filtering if requested
@@ -67,7 +85,9 @@ export async function GET(request: NextRequest) {
         const contact = (p.contact_person || '').toLowerCase();
         const phone = (p.phone || '').toLowerCase();
         const email = (p.email || '').toLowerCase();
-        const cities = Array.isArray(p.operating_cities) ? p.operating_cities.join(' ').toLowerCase() : '';
+        const cities = Array.isArray(p.operating_cities)
+          ? p.operating_cities.join(' ').toLowerCase()
+          : '';
         return (
           name.includes(searchQuery) ||
           contact.includes(searchQuery) ||
@@ -81,6 +101,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ providers, stats });
   } catch (err: any) {
     console.error('[API/admin/providers GET] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

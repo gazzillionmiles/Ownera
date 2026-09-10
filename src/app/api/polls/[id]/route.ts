@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { calculateTierPrice } from '@/lib/ownera/campaigns';
 import { isPlatformAdmin, isCommittee } from '@/lib/ownera/rbac';
@@ -13,21 +14,23 @@ export async function GET(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     const serviceSupabase = createAdminClient();
 
     // Fetch poll/campaign with all relations
     const { data: poll, error: pollError } = await serviceSupabase
       .from('service_campaigns')
-      .select(`
+      .select(
+        `
         *,
         society:societies(*),
         service:services(*),
         pricing_tiers:campaign_pricing_tiers(*),
         selected_provider:providers(*),
         selected_bid:provider_bids(*)
-      `)
+      `
+      )
       .eq('id', id)
       .maybeSingle();
 
@@ -40,7 +43,11 @@ export async function GET(
 
     if (user) {
       const isPlatform = await isPlatformAdmin(user.id, serviceSupabase);
-      const isSecOrCom = await isCommittee(user.id, poll.society_id, serviceSupabase);
+      const isSecOrCom = await isCommittee(
+        user.id,
+        poll.society_id,
+        serviceSupabase
+      );
 
       const { data: member } = await serviceSupabase
         .from('society_members')
@@ -53,7 +60,8 @@ export async function GET(
       if (member) {
         isSocietyMember = true;
       }
-      isSecretaryOrCommittee = isSecOrCom || isPlatform || poll.organizer_id === user.id;
+      isSecretaryOrCommittee =
+        isSecOrCom || isPlatform || poll.organizer_id === user.id;
     }
 
     // Fetch poll votes
@@ -111,13 +119,15 @@ export async function GET(
 
       const { data: booking } = await serviceSupabase
         .from('bookings')
-        .select(`
+        .select(
+          `
           *,
           provider:providers(*),
           slot:booking_slots(*),
           service_issue:service_issues(*),
           service_rating:service_ratings(*)
-        `)
+        `
+        )
         .eq('campaign_id', id)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -138,11 +148,13 @@ export async function GET(
       voteBreakdown[opt] = 0;
     });
     (votes || []).forEach((v) => {
-      voteBreakdown[v.option_selected] = (voteBreakdown[v.option_selected] || 0) + 1;
+      voteBreakdown[v.option_selected] =
+        (voteBreakdown[v.option_selected] || 0) + 1;
     });
 
     const totalVotes = votes?.length || 0;
-    const interestedCount = voteBreakdown['Yes'] !== undefined ? voteBreakdown['Yes'] : totalVotes;
+    const interestedCount =
+      voteBreakdown['Yes'] !== undefined ? voteBreakdown['Yes'] : totalVotes;
 
     const priceInfo = calculateTierPrice(
       interestedCount,
@@ -171,6 +183,9 @@ export async function GET(
     });
   } catch (err: any) {
     console.error('[API/polls/[id] GET] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { createCampaignSchema } from '@/src/shared/validations/ownera';
 import { calculateTierPrice } from '@/lib/ownera/campaigns';
@@ -11,16 +12,26 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
     let societyId = searchParams.get('societyId');
     const societySlug = searchParams.get('societySlug');
     const status = searchParams.get('status');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(searchParams.get('limit') || '50', 10))
+    );
+    const rangeStart = (page - 1) * limit;
+    const rangeEnd = rangeStart + limit - 1;
 
     if (societySlug && !societyId) {
       const soc = await getSocietyBySlug(supabase, societySlug);
@@ -29,17 +40,28 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Column list mirrors the ServiceCampaign/Society/ServiceCatalogItem/
+    // Provider/PricingTier interfaces in src/types/ownera.ts instead of
+    // `select('*')`.
+    const CAMPAIGN_COLUMNS = `
+      id, society_id, organizer_id, service_id, title, description, scope, target_property_unit,
+      poll_question, poll_options, poll_deadline, secretary_approval_status, secretary_reviewed_by,
+      secretary_reviewed_at, rejection_reason, is_custom_service, custom_service_name, event_date,
+      interest_deadline, booking_deadline, minimum_customers, target_customers, maximum_customers,
+      deposit_amount, status, selected_provider_id, selected_bid_id, current_price, published_at,
+      created_at, updated_at,
+      society:societies(id, name, slug, invite_code, address, city, state, pincode, total_homes, created_by, created_at, updated_at),
+      service:services(id, name, slug, category, description, inclusions, exclusions, typical_duration_minutes, suggested_campaign_days, suggested_slot_duration_minutes, base_price_estimate, icon, created_at),
+      pricing_tiers:campaign_pricing_tiers(id, campaign_id, min_quantity, max_quantity, price_per_unit, tier_order, created_at),
+      selected_provider:providers(id, user_id, company_name, contact_person, phone, email, services_offered, operating_cities, verification_status, rating, total_jobs_completed, completion_rate, bio, created_at, updated_at)
+    `;
+
     // Query via user-authenticated client under RLS
     let query = supabase
       .from('service_campaigns')
-      .select(`
-        *,
-        society:societies(*),
-        service:services(*),
-        pricing_tiers:campaign_pricing_tiers(*),
-        selected_provider:providers(*)
-      `)
-      .order('created_at', { ascending: false });
+      .select(CAMPAIGN_COLUMNS, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(rangeStart, rangeEnd);
 
     if (societyId) {
       query = query.eq('society_id', societyId);
@@ -49,15 +71,23 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status);
     }
 
-    const { data: campaigns, error: campaignsError } = await query;
+    const { data: campaigns, error: campaignsError, count } = await query;
+    const total = count ?? 0;
+    const hasMore = rangeStart + (campaigns?.length || 0) < total;
 
     if (campaignsError) {
-      console.error('[API/campaigns] Error fetching campaigns:', campaignsError);
-      return NextResponse.json({ error: 'Failed to fetch campaigns' }, { status: 500 });
+      console.error(
+        '[API/campaigns] Error fetching campaigns:',
+        campaignsError
+      );
+      return NextResponse.json(
+        { error: 'Failed to fetch campaigns' },
+        { status: 500 }
+      );
     }
 
     if (!campaigns || campaigns.length === 0) {
-      return NextResponse.json({ campaigns: [] });
+      return NextResponse.json({ campaigns: [], page, limit, total, hasMore });
     }
 
     const campaignIds = campaigns.map((c) => c.id);
@@ -90,11 +120,12 @@ export async function GET(request: NextRequest) {
       .in('campaign_id', campaignIds);
 
     const enrichedCampaigns = campaigns.map((c) => {
-      const campParts = participants?.filter((p) => p.campaign_id === c.id) || [];
+      const campParts =
+        participants?.filter((p) => p.campaign_id === c.id) || [];
       const interestedList = campParts.filter((p) => p.status === 'interested');
       const confirmedList = campParts.filter((p) => p.status === 'confirmed');
       const completedList = campParts.filter((p) => p.status === 'completed');
-      
+
       const interestedCount = interestedList.length + confirmedList.length;
       const confirmedCount = confirmedList.length;
       const completedCount = completedList.length;
@@ -102,7 +133,8 @@ export async function GET(request: NextRequest) {
       const campSlots = slots?.filter((s) => s.campaign_id === c.id) || [];
 
       const userPart = campParts.find((p) => p.user_id === user.id) || null;
-      const userBooking = userBookings?.find((ub) => ub.campaign_id === c.id) || null;
+      const userBooking =
+        userBookings?.find((ub) => ub.campaign_id === c.id) || null;
 
       const totalActiveParticipants = campParts
         .filter((p) => p.status === 'interested' || p.status === 'confirmed')
@@ -128,10 +160,19 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ campaigns: enrichedCampaigns });
+    return NextResponse.json({
+      campaigns: enrichedCampaigns,
+      page,
+      limit,
+      total,
+      hasMore,
+    });
   } catch (err: any) {
     console.error('[API/campaigns] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -141,7 +182,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -151,7 +192,10 @@ export async function POST(request: NextRequest) {
     const parsed = createCampaignSchema.safeParse(json);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid campaign data', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid campaign data', details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const {
@@ -174,13 +218,19 @@ export async function POST(request: NextRequest) {
       await requireOrganizer(supabase, user.id, societyId);
     } catch (authErr: any) {
       return NextResponse.json(
-        { error: authErr.message || 'You must be an organizer of this society to create campaigns.' },
+        {
+          error:
+            authErr.message ||
+            'You must be an organizer of this society to create campaigns.',
+        },
         { status: 403 }
       );
     }
 
     // Base price is the highest price tier or starting tier
-    const sortedTiers = [...(pricingTiers || [])].sort((a: any, b: any) => a.min_quantity - b.min_quantity);
+    const sortedTiers = [...(pricingTiers || [])].sort(
+      (a: any, b: any) => a.min_quantity - b.min_quantity
+    );
     const startingPrice = sortedTiers[0]?.price_per_unit || 699;
 
     const serviceSupabase = createAdminClient();
@@ -220,17 +270,22 @@ export async function POST(request: NextRequest) {
 
     if (campaignError || !campaign) {
       console.error('[API/campaigns] Error creating campaign:', campaignError);
-      return NextResponse.json({ error: 'Failed to create campaign' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to create campaign' },
+        { status: 500 }
+      );
     }
 
     // Insert Pricing Tiers
-    const tierRows = ((parsed.data as any).pricingTiers || []).map((t: any, idx: number) => ({
-      campaign_id: campaign.id,
-      min_quantity: t.min_quantity,
-      max_quantity: t.max_quantity || null,
-      price_per_unit: t.price_per_unit,
-      tier_order: idx + 1,
-    }));
+    const tierRows = ((parsed.data as any).pricingTiers || []).map(
+      (t: any, idx: number) => ({
+        campaign_id: campaign.id,
+        min_quantity: t.min_quantity,
+        max_quantity: t.max_quantity || null,
+        price_per_unit: t.price_per_unit,
+        tier_order: idx + 1,
+      })
+    );
 
     await serviceSupabase.from('campaign_pricing_tiers').insert(tierRows);
 
@@ -262,6 +317,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, campaign });
   } catch (err: any) {
     console.error('[API/campaigns] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

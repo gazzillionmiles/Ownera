@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { getClientIp, checkPaymentOrderRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkPaymentOrderRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 import { requireSocietyMember } from '@/lib/ownera/auth';
 
 export async function POST(request: NextRequest) {
@@ -12,7 +17,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -24,7 +29,9 @@ export async function POST(request: NextRequest) {
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkPaymentOrderRateLimit(user.id, clientIp);
     if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many order creation attempts. Please wait a few moments.');
+      return createRateLimitResponse(
+        'Too many order creation attempts. Please wait a few moments.'
+      );
     }
 
     // 2. Parse request payload
@@ -39,7 +46,10 @@ export async function POST(request: NextRequest) {
 
     if (!bookingId && !campaignId) {
       return NextResponse.json(
-        { error: 'Missing bookingId. A valid booking is required to initiate service payment.' },
+        {
+          error:
+            'Missing bookingId. A valid booking is required to initiate service payment.',
+        },
         { status: 400 }
       );
     }
@@ -52,22 +62,30 @@ export async function POST(request: NextRequest) {
     if (bookingId) {
       const { data: booking, error: bErr } = await serviceSupabase
         .from('bookings')
-        .select(`
+        .select(
+          `
           *,
           campaign:service_campaigns(*),
           society:societies(*)
-        `)
+        `
+        )
         .eq('id', bookingId)
         .single();
 
       if (bErr || !booking) {
-        return NextResponse.json({ error: 'Booking record not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Booking record not found' },
+          { status: 404 }
+        );
       }
 
       // Security: Validate user ownership
       if (booking.user_id !== user.id) {
         return NextResponse.json(
-          { error: 'Forbidden: You cannot initiate payment for another resident’s booking.' },
+          {
+            error:
+              'Forbidden: You cannot initiate payment for another resident’s booking.',
+          },
           { status: 403 }
         );
       }
@@ -106,19 +124,26 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (cErr || !campaign) {
-        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Campaign not found' },
+          { status: 404 }
+        );
       }
 
       targetCampaign = campaign;
     }
 
     // Security: Validate active society membership
-    const targetSocietyId = targetBooking?.society_id || targetCampaign?.society_id;
+    const targetSocietyId =
+      targetBooking?.society_id || targetCampaign?.society_id;
     try {
       await requireSocietyMember(supabase, user.id, targetSocietyId);
     } catch (memErr: any) {
       return NextResponse.json(
-        { error: 'Forbidden: You must be an active member of this society to initiate payment.' },
+        {
+          error:
+            'Forbidden: You must be an active member of this society to initiate payment.',
+        },
         { status: 403 }
       );
     }
@@ -131,7 +156,9 @@ export async function POST(request: NextRequest) {
     if (paymentType === 'deposit') {
       amountInPaise = Math.round(depositPerUnit * quantity * 100);
     } else if (paymentType === 'balance') {
-      const balanceRupees = targetBooking?.balance_amount || (targetCampaign?.current_price - depositPerUnit) * quantity;
+      const balanceRupees =
+        targetBooking?.balance_amount ||
+        (targetCampaign?.current_price - depositPerUnit) * quantity;
       amountInPaise = Math.round(balanceRupees * 100);
     } else {
       // Full payment
@@ -152,13 +179,19 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Initialize Razorpay SDK
-    const keyId = process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_API_KEY || 'rzp_test_placeholder';
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_API_SECRET || 'test_secret_placeholder';
+    const keyId =
+      process.env.RAZORPAY_KEY_ID ||
+      process.env.RAZORPAY_API_KEY ||
+      'rzp_test_placeholder';
+    const keySecret =
+      process.env.RAZORPAY_KEY_SECRET ||
+      process.env.RAZORPAY_API_SECRET ||
+      'test_secret_placeholder';
 
     // Mock order for local test development
     if (keyId === 'rzp_test_placeholder' || !process.env.RAZORPAY_KEY_ID) {
       const mockOrderId = `order_mock_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      
+
       // Store created booking_payment state
       if (targetBooking?.id) {
         await serviceSupabase.from('booking_payments').insert({
@@ -203,7 +236,10 @@ export async function POST(request: NextRequest) {
     } catch (rzpError: any) {
       console.error('[API/payment/create-order] Razorpay error:', rzpError);
       return NextResponse.json(
-        { error: 'Failed to create order with Razorpay', details: rzpError.message },
+        {
+          error: 'Failed to create order with Razorpay',
+          details: rzpError.message,
+        },
         { status: 502 }
       );
     }
@@ -223,7 +259,10 @@ export async function POST(request: NextRequest) {
           raw_payload: { order, notes },
         });
       } catch (dbErr) {
-        console.error('[API/payment/create-order] DB error inserting booking_payments:', dbErr);
+        console.error(
+          '[API/payment/create-order] DB error inserting booking_payments:',
+          dbErr
+        );
       }
     }
 
@@ -240,7 +279,10 @@ export async function POST(request: NextRequest) {
         metadata: notes,
       });
     } catch (dbErr) {
-      console.error('[API/payment/create-order] DB error saving payment_order:', dbErr);
+      console.error(
+        '[API/payment/create-order] DB error saving payment_order:',
+        dbErr
+      );
     }
 
     return NextResponse.json({

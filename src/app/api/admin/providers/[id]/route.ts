@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { requirePlatformPermission } from '@/lib/ownera/rbac';
 
@@ -15,7 +16,7 @@ export async function PATCH(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,11 @@ export async function PATCH(
 
     const serviceSupabase = createAdminClient();
     try {
-      await requirePlatformPermission(serviceSupabase, user.id, 'platform.providers.manage');
+      await requirePlatformPermission(
+        serviceSupabase,
+        user.id,
+        'platform.providers.manage'
+      );
     } catch (authErr: any) {
       return NextResponse.json(
         { error: authErr.message || 'Platform administrator access required' },
@@ -44,11 +49,19 @@ export async function PATCH(
       targetStatus = 'banned';
     } else if (action === 'unban') {
       targetStatus = 'verified';
-    } else if (verification_status && ['verified', 'rejected', 'banned', 'pending'].includes(verification_status)) {
+    } else if (
+      verification_status &&
+      ['verified', 'rejected', 'banned', 'pending'].includes(
+        verification_status
+      )
+    ) {
       targetStatus = verification_status;
     } else {
       return NextResponse.json(
-        { error: 'Invalid moderation action. Must be approve, reject, ban, or unban.' },
+        {
+          error:
+            'Invalid moderation action. Must be approve, reject, ban, or unban.',
+        },
         { status: 400 }
       );
     }
@@ -61,7 +74,10 @@ export async function PATCH(
       .single();
 
     if (selectErr || !existingProvider) {
-      return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Provider not found' },
+        { status: 404 }
+      );
     }
 
     // 2. Update provider verification status
@@ -76,18 +92,24 @@ export async function PATCH(
       .single();
 
     if (updateErr) {
-      console.error('[API/admin/providers/[id] PATCH] Update error:', updateErr);
-      return NextResponse.json({ error: 'Failed to update provider status' }, { status: 500 });
+      console.error(
+        '[API/admin/providers/[id] PATCH] Update error:',
+        updateErr
+      );
+      return NextResponse.json(
+        { error: 'Failed to update provider status' },
+        { status: 500 }
+      );
     }
 
     const actionVerb =
       targetStatus === 'verified'
         ? 'approved and verified'
         : targetStatus === 'banned'
-        ? 'banned'
-        : targetStatus === 'rejected'
-        ? 'rejected'
-        : 'marked as pending';
+          ? 'banned'
+          : targetStatus === 'rejected'
+            ? 'rejected'
+            : 'marked as pending';
 
     return NextResponse.json({
       success: true,
@@ -96,6 +118,9 @@ export async function PATCH(
     });
   } catch (err: any) {
     console.error('[API/admin/providers/[id] PATCH] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

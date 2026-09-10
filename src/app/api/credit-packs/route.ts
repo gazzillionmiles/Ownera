@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAllPacks } from '@/src/config/creditPacks';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const basePacks = getAllPacks();
 
   let hasDiscount = false;
@@ -11,7 +12,7 @@ export async function GET() {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (user) {
       const serviceSupabase = createAdminClient();
@@ -32,7 +33,7 @@ export async function GET() {
 
   const packs = basePacks.map((pack) => {
     if (!hasDiscount) return pack;
-    const discountedPrice = Math.floor(pack.price * 0.80);
+    const discountedPrice = Math.floor(pack.price * 0.8);
     return {
       ...pack,
       originalPrice: pack.price,

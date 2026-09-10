@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { recordAndCheckFingerprint } from '@/lib/fingerprint/server';
 import { checkAndGrantWelcomeCredits } from '@/lib/welcome-credits';
-import { getClientIp, checkRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +15,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,20 +28,32 @@ export async function POST(request: NextRequest) {
       windowSeconds: 600,
     });
     if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many requests. Please try again later.');
+      return createRateLimitResponse(
+        'Too many requests. Please try again later.'
+      );
     }
 
     let body: any;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid JSON payload' },
+        { status: 400 }
+      );
     }
 
     const { fingerprint, client_id } = body || {};
 
-    if (!fingerprint || typeof fingerprint !== 'string' || fingerprint.trim() === '') {
-      return NextResponse.json({ error: 'fingerprint is required' }, { status: 400 });
+    if (
+      !fingerprint ||
+      typeof fingerprint !== 'string' ||
+      fingerprint.trim() === ''
+    ) {
+      return NextResponse.json(
+        { error: 'fingerprint is required' },
+        { status: 400 }
+      );
     }
 
     const cleanFp = fingerprint.trim();
@@ -65,7 +82,9 @@ export async function POST(request: NextRequest) {
       flagged: result.flagged,
       fingerprintCount: result.fingerprintCount,
       welcomeCredits: welcomeResult,
-      credits: updatedProfile?.credits ?? (welcomeResult.granted ? welcomeResult.creditsGranted : 0),
+      credits:
+        updatedProfile?.credits ??
+        (welcomeResult.granted ? welcomeResult.creditsGranted : 0),
     });
   } catch (err: any) {
     console.error('[API/auth/fingerprint] Error recording fingerprint:', err);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { joinSocietySchema } from '@/src/shared/validations/ownera';
 import { setOnboardStatusCookie } from '@/lib/supabase/middleware';
@@ -10,18 +11,25 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized. Please log in first.' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized. Please log in first.' },
+        { status: 401 }
+      );
     }
 
     const json = await request.json().catch(() => ({}));
     const parsed = joinSocietySchema.safeParse(json);
 
     if (!parsed.success) {
-      const errorMsg = parsed.error.issues?.[0]?.message || 'Invalid join details';
-      return NextResponse.json({ error: errorMsg, details: parsed.error.format() }, { status: 400 });
+      const errorMsg =
+        parsed.error.issues?.[0]?.message || 'Invalid join details';
+      return NextResponse.json(
+        { error: errorMsg, details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const { propertyType = 'apartment' } = parsed.data;
@@ -33,18 +41,21 @@ export async function POST(request: NextRequest) {
       ''
     ).trim();
 
-    const unitNumber = (
-      parsed.data.flatNumber ||
-      parsed.data.unitNumber ||
-      ''
-    ).trim() || 'Unit 1';
+    const unitNumber =
+      (parsed.data.flatNumber || parsed.data.unitNumber || '').trim() ||
+      'Unit 1';
 
     if (!rawInput) {
-      return NextResponse.json({ error: 'Please enter a society invite code or invitation token' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Please enter a society invite code or invitation token' },
+        { status: 400 }
+      );
     }
 
     // Guard against users pasting their 64-char Supabase email verification token into the society invite code input
-    const isHexAuthToken = /^[0-9a-f]{32,}$/i.test(rawInput) || (rawInput.length > 25 && !rawInput.startsWith('inv_'));
+    const isHexAuthToken =
+      /^[0-9a-f]{32,}$/i.test(rawInput) ||
+      (rawInput.length > 25 && !rawInput.startsWith('inv_'));
     if (isHexAuthToken) {
       return NextResponse.json(
         {
@@ -73,12 +84,20 @@ export async function POST(request: NextRequest) {
           .from('society_invitations')
           .update({ status: 'expired' })
           .eq('id', invite.id);
-        return NextResponse.json({ error: 'This invitation has expired. Please ask the secretary for a new link.' }, { status: 400 });
+        return NextResponse.json(
+          {
+            error:
+              'This invitation has expired. Please ask the secretary for a new link.',
+          },
+          { status: 400 }
+        );
       }
 
       if (invite.status !== 'pending') {
         return NextResponse.json(
-          { error: `This invitation token has already been ${invite.status}. Please request a new invite code or token from your secretary.` },
+          {
+            error: `This invitation token has already been ${invite.status}. Please request a new invite code or token from your secretary.`,
+          },
           { status: 400 }
         );
       }
@@ -91,7 +110,12 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (socErr || !inviteSociety) {
-        return NextResponse.json({ error: 'The society linked to this invitation could not be found.' }, { status: 404 });
+        return NextResponse.json(
+          {
+            error: 'The society linked to this invitation could not be found.',
+          },
+          { status: 404 }
+        );
       }
 
       if (invite.role === 'secretary') {
@@ -130,8 +154,14 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (mErr || !member) {
-        console.error('[API/societies/join] Error recording invitation membership:', mErr);
-        return NextResponse.json({ error: 'Failed to join society with invitation' }, { status: 500 });
+        console.error(
+          '[API/societies/join] Error recording invitation membership:',
+          mErr
+        );
+        return NextResponse.json(
+          { error: 'Failed to join society with invitation' },
+          { status: 500 }
+        );
       }
 
       await serviceSupabase
@@ -139,7 +169,12 @@ export async function POST(request: NextRequest) {
         .update({ status: 'accepted' })
         .eq('id', invite.id);
 
-      const inviteRole = (invite.role === 'secretary' || invite.role === 'committee' || invite.role === 'organizer') ? 'organizer' : 'resident';
+      const inviteRole =
+        invite.role === 'secretary' ||
+        invite.role === 'committee' ||
+        invite.role === 'organizer'
+          ? 'organizer'
+          : 'resident';
       await serviceSupabase
         .from('profiles')
         .update({
@@ -166,23 +201,31 @@ export async function POST(request: NextRequest) {
 
     // 2. Check if input matches a society invite code, slug, or ID
     const cleanCode = rawInput.replace(/[^a-zA-Z0-9_-]/g, '');
-    let socQuery = serviceSupabase
-      .from('societies')
-      .select('*');
+    let socQuery = serviceSupabase.from('societies').select('*');
 
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawInput);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        rawInput
+      );
     if (isUuid) {
-      socQuery = socQuery.or(`id.eq.${rawInput},invite_code.ilike.${rawInput},slug.ilike.${rawInput}`);
+      socQuery = socQuery.or(
+        `id.eq.${rawInput},invite_code.ilike.${rawInput},slug.ilike.${rawInput}`
+      );
     } else {
-      socQuery = socQuery.or(`invite_code.ilike.${cleanCode},slug.ilike.${cleanCode}`);
+      socQuery = socQuery.or(
+        `invite_code.ilike.${cleanCode},slug.ilike.${cleanCode}`
+      );
     }
 
     const { data: societiesList, error: socFetchErr } = await socQuery;
-    const society = societiesList && societiesList.length > 0 ? societiesList[0] : null;
+    const society =
+      societiesList && societiesList.length > 0 ? societiesList[0] : null;
 
     if (socFetchErr || !society) {
       return NextResponse.json(
-        { error: `Society not found for code "${rawInput}". Please check the code shared by your secretary.` },
+        {
+          error: `Society not found for code "${rawInput}". Please check the code shared by your secretary.`,
+        },
         { status: 404 }
       );
     }
@@ -196,7 +239,8 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     const isCreator = society.created_by === user.id;
-    const assignedRole = existingMember?.role || (isCreator ? 'secretary' : 'resident');
+    const assignedRole =
+      existingMember?.role || (isCreator ? 'secretary' : 'resident');
 
     // Upsert membership
     const { data: member, error: memberError } = await serviceSupabase
@@ -218,11 +262,19 @@ export async function POST(request: NextRequest) {
 
     if (memberError || !member) {
       console.error('[API/societies/join] Error joining society:', memberError);
-      return NextResponse.json({ error: 'Failed to join society' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to join society' },
+        { status: 500 }
+      );
     }
 
     // Update primary_society_id in profile
-    const profileRole = (assignedRole === 'secretary' || assignedRole === 'committee' || assignedRole === 'organizer') ? 'organizer' : 'resident';
+    const profileRole =
+      assignedRole === 'secretary' ||
+      assignedRole === 'committee' ||
+      assignedRole === 'organizer'
+        ? 'organizer'
+        : 'resident';
     await serviceSupabase
       .from('profiles')
       .update({
@@ -247,6 +299,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies/join] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

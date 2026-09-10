@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { createSocietySchema } from '@/src/shared/validations/ownera';
 import { isPlatformAdmin } from '@/lib/ownera/rbac';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,7 +31,10 @@ export async function GET(request: NextRequest) {
         .select('*')
         .order('name', { ascending: true });
 
-      return NextResponse.json({ societies: allSocieties || [], memberships: [] });
+      return NextResponse.json({
+        societies: allSocieties || [],
+        memberships: [],
+      });
     }
 
     // Get societies user belongs to using service client to bypass any RLS join issues
@@ -40,7 +44,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .eq('status', 'active');
 
-    let memberships = rawMemberships || [];
+    const memberships = rawMemberships || [];
 
     // Only run auto-heal reconciliation if user has 0 memberships or explicitly requested
     const heal = searchParams.get('heal') === 'true';
@@ -51,7 +55,9 @@ export async function GET(request: NextRequest) {
         .eq('created_by', user.id);
 
       if (createdSocieties && createdSocieties.length > 0) {
-        const existingSocietyIds = new Set(memberships.map((m) => m.society_id));
+        const existingSocietyIds = new Set(
+          memberships.map((m) => m.society_id)
+        );
         for (const soc of createdSocieties) {
           if (!existingSocietyIds.has(soc.id)) {
             const { data: healedMem } = await serviceSupabase
@@ -78,7 +84,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Compute active member counts for each society
-    const societyIds = Array.from(new Set(memberships.map((m) => m.society_id).filter(Boolean)));
+    const societyIds = Array.from(
+      new Set(memberships.map((m) => m.society_id).filter(Boolean))
+    );
     const memberCountMap = new Map<string, number>();
 
     if (societyIds.length > 0) {
@@ -89,7 +97,10 @@ export async function GET(request: NextRequest) {
         .eq('status', 'active');
 
       (allMembersInSocieties || []).forEach((m) => {
-        memberCountMap.set(m.society_id, (memberCountMap.get(m.society_id) || 0) + 1);
+        memberCountMap.set(
+          m.society_id,
+          (memberCountMap.get(m.society_id) || 0) + 1
+        );
       });
     }
 
@@ -113,7 +124,9 @@ export async function GET(request: NextRequest) {
     if (!userProfile?.primary_society_id && societiesList.length > 0) {
       const elevatedSoc =
         societiesList.find((s) => s.user_role === 'secretary') ||
-        societiesList.find((s) => s.user_role === 'organizer' || s.user_role === 'committee');
+        societiesList.find(
+          (s) => s.user_role === 'organizer' || s.user_role === 'committee'
+        );
 
       const targetSoc = elevatedSoc || societiesList[0];
       const isElevated = Boolean(elevatedSoc);
@@ -133,7 +146,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -143,7 +159,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -155,7 +171,10 @@ export async function POST(request: NextRequest) {
     const parsed = createSocietySchema.safeParse(json);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid society data', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid society data', details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const {
@@ -171,8 +190,13 @@ export async function POST(request: NextRequest) {
       propertyType = 'apartment',
     } = parsed.data;
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const inviteCode = rawInviteCode || `SOC${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+    const inviteCode =
+      rawInviteCode ||
+      `SOC${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     // Check if inviteCode is taken
     const { data: existingCode } = await serviceSupabase
@@ -182,7 +206,10 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingCode) {
-      return NextResponse.json({ error: 'Invite code is already taken. Please choose another.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invite code is already taken. Please choose another.' },
+        { status: 400 }
+      );
     }
 
     // Insert society
@@ -204,7 +231,10 @@ export async function POST(request: NextRequest) {
 
     if (insertError || !society) {
       console.error('[API/societies] Error inserting society:', insertError);
-      return NextResponse.json({ error: 'Failed to create society' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to create society' },
+        { status: 500 }
+      );
     }
 
     // Assign initial primary secretary
@@ -229,7 +259,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (memberError) {
-      console.warn('[API/societies] Retrying basic secretary membership insert:', memberError.message);
+      console.warn(
+        '[API/societies] Retrying basic secretary membership insert:',
+        memberError.message
+      );
       const { data: retryMember, error: retryErr } = await serviceSupabase
         .from('society_members')
         .upsert(
@@ -246,7 +279,10 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (retryErr) {
-        console.error('[API/societies] Error inserting secretary membership:', retryErr);
+        console.error(
+          '[API/societies] Error inserting secretary membership:',
+          retryErr
+        );
       } else {
         member = retryMember;
       }
@@ -266,7 +302,10 @@ export async function POST(request: NextRequest) {
       .eq('id', targetSecretaryId);
 
     if (profileUpdateError) {
-      console.error('[API/societies] Error updating creator profile:', profileUpdateError);
+      console.error(
+        '[API/societies] Error updating creator profile:',
+        profileUpdateError
+      );
       // Attempt safe fallback update for primary_society_id and active_role
       const { error: fallbackError } = await serviceSupabase
         .from('profiles')
@@ -277,9 +316,15 @@ export async function POST(request: NextRequest) {
         .eq('id', targetSecretaryId);
 
       if (fallbackError) {
-        console.error('[API/societies] Fallback profile update failed:', fallbackError);
+        console.error(
+          '[API/societies] Fallback profile update failed:',
+          fallbackError
+        );
         return NextResponse.json(
-          { error: 'Society was created, but failed to link profile. Please refresh or rejoin.' },
+          {
+            error:
+              'Society was created, but failed to link profile. Please refresh or rejoin.',
+          },
           { status: 500 }
         );
       }
@@ -303,6 +348,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

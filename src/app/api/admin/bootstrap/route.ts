@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { bootstrapPlatformAdmin, isPlatformAdmin, getPlatformAdminRecord } from '@/lib/ownera/rbac';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
+import {
+  bootstrapPlatformAdmin,
+  isPlatformAdmin,
+  getPlatformAdminRecord,
+} from '@/lib/ownera/rbac';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +13,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -21,7 +26,10 @@ export async function POST(request: NextRequest) {
 
     if (!admin) {
       return NextResponse.json(
-        { error: 'Access denied. Administrator privileges are managed strictly via the database (platform_admins table).' },
+        {
+          error:
+            'Access denied. Administrator privileges are managed strictly via the database (platform_admins table).',
+        },
         { status: 403 }
       );
     }
@@ -46,13 +54,10 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const admin = await getPlatformAdminRecord(user.id);

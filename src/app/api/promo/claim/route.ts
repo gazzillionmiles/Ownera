@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { recordAndCheckFingerprint, logFingerprintEvent } from '@/lib/fingerprint/server';
+import {
+  recordAndCheckFingerprint,
+  logFingerprintEvent,
+} from '@/lib/fingerprint/server';
 import { log } from '@/lib/logger';
-import { getClientIp, checkPromoClaimRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkPromoClaimRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +19,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,26 +28,41 @@ export async function POST(request: NextRequest) {
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkPromoClaimRateLimit(user.id, clientIp);
     if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many claim attempts. Please try again later.');
+      return createRateLimitResponse(
+        'Too many claim attempts. Please try again later.'
+      );
     }
 
     let body: any;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid JSON payload' },
+        { status: 400 }
+      );
     }
 
-    const { promo_code, referral_code, device_fingerprint: bodyFp, client_id: bodyClientId } = body || {};
+    const {
+      promo_code,
+      referral_code,
+      device_fingerprint: bodyFp,
+      client_id: bodyClientId,
+    } = body || {};
     const code = (promo_code || referral_code || '').trim();
 
     if (!code) {
-      return NextResponse.json({ error: 'promo_code or referral_code is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'promo_code or referral_code is required' },
+        { status: 400 }
+      );
     }
 
     let fingerprint = bodyFp || request.headers.get('x-device-fingerprint');
     const appCookiePrefix = process.env.APP_COOKIE_PREFIX || 'saas';
-    let clientId = bodyClientId || request.cookies.get(`${appCookiePrefix}_client_id`)?.value;
+    const clientId =
+      bodyClientId ||
+      request.cookies.get(`${appCookiePrefix}_client_id`)?.value;
 
     const serviceSupabase = createAdminClient();
 
@@ -75,7 +98,9 @@ export async function POST(request: NextRequest) {
 
         if (recentPromoLogs && recentPromoLogs.length > 0) {
           isFlagged = true;
-          matchingUserIds = recentPromoLogs.map((l) => l.user_id).filter(Boolean) as string[];
+          matchingUserIds = recentPromoLogs
+            .map((l) => l.user_id)
+            .filter(Boolean) as string[];
         }
       }
     } else {
@@ -92,7 +117,10 @@ export async function POST(request: NextRequest) {
 
     if (referrerProfile) {
       if (referrerProfile.id === user.id) {
-        return NextResponse.json({ error: 'Self-referral is not allowed' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Self-referral is not allowed' },
+          { status: 400 }
+        );
       }
 
       const { data: existingRef } = await serviceSupabase
@@ -105,13 +133,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           status: existingRef.status,
-          message: existingRef.status === 'active'
-            ? '20% Referral discount is already active on your account!'
-            : 'Your referral claim is under review by admin.',
+          message:
+            existingRef.status === 'active'
+              ? '20% Referral discount is already active on your account!'
+              : 'Your referral claim is under review by admin.',
         });
       }
 
-      if (referrerProfile.device_fingerprint && referrerProfile.device_fingerprint === fingerprint) {
+      if (
+        referrerProfile.device_fingerprint &&
+        referrerProfile.device_fingerprint === fingerprint
+      ) {
         isFlagged = true;
       }
       if (matchingUserIds.includes(referrerProfile.id)) {
@@ -165,7 +197,8 @@ export async function POST(request: NextRequest) {
         success: true,
         status: 'approved',
         flagged: false,
-        message: '20% Referral discount applied successfully! All credit packs are now 20% off.',
+        message:
+          '20% Referral discount applied successfully! All credit packs are now 20% off.',
       });
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 
 export async function POST(request: NextRequest) {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,10 +25,17 @@ export async function POST(request: NextRequest) {
       isMock,
     } = body;
 
-    const secret = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_API_SECRET;
+    const secret =
+      process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_API_SECRET;
 
     // Cryptographic signature verification with timing-safe comparison
-    if (!isMock && secret && razorpay_signature && razorpay_order_id && razorpay_payment_id) {
+    if (
+      !isMock &&
+      secret &&
+      razorpay_signature &&
+      razorpay_order_id &&
+      razorpay_payment_id
+    ) {
       const generated_signature = crypto
         .createHmac('sha256', secret)
         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -40,7 +48,10 @@ export async function POST(request: NextRequest) {
         expectedBuffer.length !== signatureBuffer.length ||
         !crypto.timingSafeEqual(expectedBuffer, signatureBuffer)
       ) {
-        return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Invalid payment signature' },
+          { status: 400 }
+        );
       }
     }
 
@@ -55,12 +66,18 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (bError || !booking) {
-        return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Booking not found' },
+          { status: 404 }
+        );
       }
 
       if (booking.user_id !== user.id) {
         return NextResponse.json(
-          { error: 'Forbidden: Cannot verify payment for another resident’s booking.' },
+          {
+            error:
+              'Forbidden: Cannot verify payment for another resident’s booking.',
+          },
           { status: 403 }
         );
       }
@@ -84,11 +101,17 @@ export async function POST(request: NextRequest) {
 
     if (rpcError) {
       console.error('[API/payment/verify] RPC error:', rpcError);
-      return NextResponse.json({ error: 'Payment processing failed', details: rpcError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Payment processing failed', details: rpcError.message },
+        { status: 500 }
+      );
     }
 
     // If this was a balance payment, decrement or clear balance_amount on booking
-    if (bookingId && (body.paymentType === 'balance' || body.payment_type === 'balance')) {
+    if (
+      bookingId &&
+      (body.paymentType === 'balance' || body.payment_type === 'balance')
+    ) {
       const amountRupees = body.amount ? Number(body.amount) : 0;
       const { data: b } = await serviceSupabase
         .from('bookings')
@@ -98,7 +121,10 @@ export async function POST(request: NextRequest) {
 
       if (b) {
         const currentBalance = Number(b.balance_amount) || 0;
-        const newBalance = Math.max(0, currentBalance - (amountRupees > 0 ? amountRupees : currentBalance));
+        const newBalance = Math.max(
+          0,
+          currentBalance - (amountRupees > 0 ? amountRupees : currentBalance)
+        );
         await serviceSupabase
           .from('bookings')
           .update({
@@ -117,6 +143,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/payment/verify] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { getAffiliateConsentStatus, recordAffiliateConsent } from '@/lib/affiliate-consent';
+import {
+  getAffiliateConsentStatus,
+  recordAffiliateConsent,
+} from '@/lib/affiliate-consent';
 
 const affiliateEnrollSchema = z.object({
   instagram_username: z.string().trim().optional().default(''),
@@ -16,21 +20,32 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = affiliateEnrollSchema.safeParse(await request.json().catch(() => null));
+    const body = affiliateEnrollSchema.safeParse(
+      await request.json().catch(() => null)
+    );
     if (!body.success) {
-      return NextResponse.json({ error: 'Invalid affiliate enrollment payload' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid affiliate enrollment payload' },
+        { status: 400 }
+      );
     }
 
     const consentStatus = await getAffiliateConsentStatus(user.id);
-    if (consentStatus.needsReacceptance && body.data.affiliateAgreementAccepted !== true) {
+    if (
+      consentStatus.needsReacceptance &&
+      body.data.affiliateAgreementAccepted !== true
+    ) {
       return NextResponse.json(
-        { error: 'You must accept the current Affiliate Agreement before joining or updating affiliate details' },
+        {
+          error:
+            'You must accept the current Affiliate Agreement before joining or updating affiliate details',
+        },
         { status: 400 }
       );
     }
@@ -54,8 +69,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('[API/affiliate/enroll] Profile update failed:', updateError);
-      return NextResponse.json({ error: 'Failed to save affiliate details' }, { status: 500 });
+      console.error(
+        '[API/affiliate/enroll] Profile update failed:',
+        updateError
+      );
+      return NextResponse.json(
+        { error: 'Failed to save affiliate details' },
+        { status: 500 }
+      );
     }
 
     const refreshedConsentStatus = await getAffiliateConsentStatus(user.id);
@@ -73,6 +94,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[API/affiliate/enroll] Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { submitRatingSchema } from '@/src/shared/validations/ownera';
 
@@ -13,7 +14,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,10 @@ export async function POST(
     const parsed = submitRatingSchema.safeParse({ ...json, bookingId: id });
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid rating payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid rating payload', details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const { campaignId, providerId, rating, review } = parsed.data;
@@ -61,7 +65,10 @@ export async function POST(
 
     if (rError) {
       console.error('[API/bookings/[id]/rate] Rating error:', rError);
-      return NextResponse.json({ error: 'Failed to record rating' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to record rating' },
+        { status: 500 }
+      );
     }
 
     // Recompute provider's average rating
@@ -71,7 +78,9 @@ export async function POST(
       .eq('provider_id', providerId);
 
     if (allRatings && allRatings.length > 0) {
-      const avg = allRatings.reduce((acc, curr) => acc + curr.rating, 0) / allRatings.length;
+      const avg =
+        allRatings.reduce((acc, curr) => acc + curr.rating, 0) /
+        allRatings.length;
       await serviceSupabase
         .from('providers')
         .update({ rating: Math.round(avg * 10) / 10 })
@@ -85,6 +94,9 @@ export async function POST(
     });
   } catch (err: any) {
     console.error('[API/bookings/[id]/rate] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

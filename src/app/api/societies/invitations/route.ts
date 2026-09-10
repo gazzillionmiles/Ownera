@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { inviteSocietyMemberSchema } from '@/src/shared/validations/ownera';
 import { isPlatformAdmin, isSecretary } from '@/lib/ownera/rbac';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,7 +22,10 @@ export async function GET(request: NextRequest) {
     const societyId = searchParams.get('societyId');
 
     if (!societyId) {
-      return NextResponse.json({ error: 'societyId query parameter required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'societyId query parameter required' },
+        { status: 400 }
+      );
     }
 
     const isPlatform = await isPlatformAdmin(user.id);
@@ -29,7 +33,10 @@ export async function GET(request: NextRequest) {
 
     if (!isPlatform && !isSec) {
       return NextResponse.json(
-        { error: 'Forbidden: Only the society secretary or platform admin can view invitations' },
+        {
+          error:
+            'Forbidden: Only the society secretary or platform admin can view invitations',
+        },
         { status: 403 }
       );
     }
@@ -42,13 +49,19 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (fetchErr) {
-      return NextResponse.json({ error: 'Failed to fetch invitations' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch invitations' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ invitations: invitations || [] });
   } catch (err: any) {
     console.error('[API/societies/invitations GET] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -58,7 +71,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -83,13 +96,21 @@ export async function POST(request: NextRequest) {
 
     if (!isPlatform && !isSec) {
       return NextResponse.json(
-        { error: 'Forbidden: Only the society secretary or a platform admin can issue invitations' },
+        {
+          error:
+            'Forbidden: Only the society secretary or a platform admin can issue invitations',
+        },
         { status: 403 }
       );
     }
 
     // Generate secure unique token
-    const prefix = role === 'secretary' ? 'inv_sec_' : role === 'committee' ? 'inv_com_' : 'inv_res_';
+    const prefix =
+      role === 'secretary'
+        ? 'inv_sec_'
+        : role === 'committee'
+          ? 'inv_com_'
+          : 'inv_res_';
     const token = `${prefix}${crypto.randomBytes(16).toString('hex')}`;
 
     const { data: invitation, error: insertError } = await serviceSupabase
@@ -108,7 +129,10 @@ export async function POST(request: NextRequest) {
 
     if (insertError || !invitation) {
       console.error('[API/societies/invitations POST] Error:', insertError);
-      return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to create invitation' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -119,6 +143,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies/invitations POST] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

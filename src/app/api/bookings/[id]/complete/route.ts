@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { markCompleteSchema } from '@/src/shared/validations/ownera';
 
@@ -13,7 +14,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,10 @@ export async function POST(
     const parsed = markCompleteSchema.safeParse({ ...json, bookingId: id });
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid payload', details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const { notes } = parsed.data;
@@ -45,7 +49,12 @@ export async function POST(
     const isProvider = booking.provider?.user_id === user.id;
 
     if (!isResident && !isProvider) {
-      return NextResponse.json({ error: 'You are not authorized to update completion for this booking' }, { status: 403 });
+      return NextResponse.json(
+        {
+          error: 'You are not authorized to update completion for this booking',
+        },
+        { status: 403 }
+      );
     }
 
     if (isProvider) {
@@ -59,15 +68,13 @@ export async function POST(
         .eq('id', id);
 
       // Record in service_completions
-      await serviceSupabase
-        .from('service_completions')
-        .insert({
-          booking_id: id,
-          provider_id: booking.provider_id,
-          marked_completed_at: new Date().toISOString(),
-          resident_status: 'unconfirmed',
-          notes,
-        });
+      await serviceSupabase.from('service_completions').insert({
+        booking_id: id,
+        provider_id: booking.provider_id,
+        marked_completed_at: new Date().toISOString(),
+        resident_status: 'unconfirmed',
+        notes,
+      });
 
       // Update participant status
       await serviceSupabase
@@ -87,7 +94,9 @@ export async function POST(
         if (prov) {
           await serviceSupabase
             .from('providers')
-            .update({ total_jobs_completed: (prov.total_jobs_completed || 0) + 1 })
+            .update({
+              total_jobs_completed: (prov.total_jobs_completed || 0) + 1,
+            })
             .eq('id', booking.provider_id);
         }
       }
@@ -103,7 +112,8 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        message: 'Job marked as completed. Resident has been prompted for confirmation & rating.',
+        message:
+          'Job marked as completed. Resident has been prompted for confirmation & rating.',
       });
     }
 
@@ -134,6 +144,9 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('[API/bookings/[id]/complete] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

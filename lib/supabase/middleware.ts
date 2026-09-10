@@ -7,16 +7,32 @@ export const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
 export const CONSENT_COOKIE_NAME = `${APP_PREFIX}_terms_ok`;
 export const STATUS_COOKIE_NAME = `${APP_PREFIX}_onboard_status`;
 
-export function evaluateOnboardingCacheHit(cachedStatusValue: string | undefined, userId: string): boolean {
-  const parts = cachedStatusValue && cachedStatusValue.startsWith(`${userId}:`) ? cachedStatusValue.split(':') : null;
+export function evaluateOnboardingCacheHit(
+  cachedStatusValue: string | undefined,
+  userId: string
+): boolean {
+  const parts =
+    cachedStatusValue && cachedStatusValue.startsWith(`${userId}:`)
+      ? cachedStatusValue.split(':')
+      : null;
   return parts !== null && parts[1] === '1';
 }
 
 export function setOnboardStatusCookie(
   response: NextResponse,
-  params: { userId: string; activeRole?: string; primarySocietyId?: string; deletionStatus?: string }
+  params: {
+    userId: string;
+    activeRole?: string;
+    primarySocietyId?: string;
+    deletionStatus?: string;
+  }
 ) {
-  const { userId, activeRole = 'resident', primarySocietyId = '', deletionStatus = 'active' } = params;
+  const {
+    userId,
+    activeRole = 'resident',
+    primarySocietyId = '',
+    deletionStatus = 'active',
+  } = params;
   response.cookies.set(
     STATUS_COOKIE_NAME,
     `${userId}:1:${activeRole}:${primarySocietyId}:${deletionStatus}`,
@@ -30,7 +46,10 @@ export function setOnboardStatusCookie(
   return response;
 }
 
-export function createRedirectResponse(url: URL | string, sourceResponse: NextResponse): NextResponse {
+export function createRedirectResponse(
+  url: URL | string,
+  sourceResponse: NextResponse
+): NextResponse {
   const redirectResponse = NextResponse.redirect(url);
   sourceResponse.cookies.getAll().forEach((cookie) => {
     redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
@@ -62,32 +81,62 @@ export function resolveAuthRedirectTarget({
   );
 
   if (!hasCompletedOnboarding) {
-    if (pathname === '/login' || pathname === '/signup' || pathname === '/public') {
+    if (
+      pathname === '/login' ||
+      pathname === '/signup' ||
+      pathname === '/public'
+    ) {
       if (isSafeNext && nextParam!.startsWith('/join/')) {
         return nextParam!;
       }
       return '/onboarding';
     }
   } else {
-    if (pathname === '/onboarding' || pathname === '/login' || pathname === '/signup' || pathname === '/public') {
-      const isTargetableNext = isSafeNext && (nextParam!.startsWith('/join/') || nextParam!.startsWith('/s/'));
+    if (
+      pathname === '/onboarding' ||
+      pathname === '/login' ||
+      pathname === '/signup' ||
+      pathname === '/public'
+    ) {
+      const isTargetableNext =
+        isSafeNext &&
+        (nextParam!.startsWith('/join/') || nextParam!.startsWith('/s/'));
       if (pathname !== '/onboarding' && isTargetableNext) {
         return nextParam!;
       }
-      return (profile?.active_role === 'provider' || isPartnerPath) ? '/partner' : '/home';
+      return profile?.active_role === 'provider' || isPartnerPath
+        ? '/partner'
+        : '/home';
     }
   }
 
   return null;
 }
 
+// Headers used to forward the verified identity from this middleware to
+// route handlers, so they don't have to pay for a second network round-trip
+// to Supabase Auth's getUser() endpoint on every request. Always stripped
+// from the incoming request first so a client can never spoof them.
+export const VERIFIED_USER_ID_HEADER = 'x-ownera-verified-user-id';
+export const VERIFIED_USER_EMAIL_HEADER = 'x-ownera-verified-user-email';
+
 export async function updateSession(request: NextRequest) {
+  // Never trust these headers if a client sent them directly.
+  request.headers.delete(VERIFIED_USER_ID_HEADER);
+  request.headers.delete(VERIFIED_USER_EMAIL_HEADER);
+
   let supabaseResponse = NextResponse.next({
     request,
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    'https://placeholder.supabase.co';
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -95,7 +144,9 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
         supabaseResponse = NextResponse.next({
           request,
         });
@@ -106,23 +157,47 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Fetch current user
+  // Fetch current user (the one Supabase Auth network round-trip per
+  // request — everything downstream reuses this result instead of calling
+  // getUser() again).
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Forward the verified identity to route handlers via request headers.
+  // supabase.auth.getUser() may have already queued session-refresh cookies
+  // onto supabaseResponse via the setAll() callback above, so we rebuild the
+  // response from the header-mutated request and copy those cookies over
+  // rather than dropping them.
+  if (user) {
+    request.headers.set(VERIFIED_USER_ID_HEADER, user.id);
+    if (user.email) {
+      request.headers.set(VERIFIED_USER_EMAIL_HEADER, user.email);
+    }
+  }
+  const rebuiltResponse = NextResponse.next({ request });
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    rebuiltResponse.cookies.set(cookie.name, cookie.value, cookie);
+  });
+  supabaseResponse = rebuiltResponse;
 
   const { pathname, searchParams } = request.nextUrl;
   const refCode = searchParams.get('ref')?.trim();
 
   // Distinguish society invite codes from Supabase auth exchange codes (which are 32+ hex/base64 strings on auth routes)
-  const isAuthRoute = pathname.startsWith('/auth') || pathname === '/callback' || pathname === '/login';
+  const isAuthRoute =
+    pathname.startsWith('/auth') ||
+    pathname === '/callback' ||
+    pathname === '/login';
   const rawCode = (
     searchParams.get('invite_code') ||
     searchParams.get('inviteCode') ||
     (!isAuthRoute ? searchParams.get('code') : null)
   )?.trim();
 
-  const isAuthToken = Boolean(rawCode && (rawCode.length > 25 || /^[0-9a-f]{32,}$/i.test(rawCode)));
+  const isAuthToken = Boolean(
+    rawCode && (rawCode.length > 25 || /^[0-9a-f]{32,}$/i.test(rawCode))
+  );
   const inviteCodeParam = isAuthToken ? null : rawCode;
 
   if (refCode) {
@@ -134,11 +209,15 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (inviteCodeParam) {
-    supabaseResponse.cookies.set(INVITE_COOKIE_NAME, inviteCodeParam.toUpperCase(), {
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60,
-      sameSite: 'lax',
-    });
+    supabaseResponse.cookies.set(
+      INVITE_COOKIE_NAME,
+      inviteCodeParam.toUpperCase(),
+      {
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60,
+        sameSite: 'lax',
+      }
+    );
   }
 
   // Allowed unauthenticated paths
@@ -164,13 +243,13 @@ export async function updateSession(request: NextRequest) {
     '/vendor-quote',
   ];
   const isPublicRoute = publicRoutes.some((route) =>
-    route === '/' ? pathname === '/' : pathname === route || pathname.startsWith(route + '/')
+    route === '/'
+      ? pathname === '/'
+      : pathname === route || pathname.startsWith(route + '/')
   );
 
   // Static files bypassing auth middleware
-  const isStatic =
-    pathname.startsWith('/_next') ||
-    pathname.includes('.');
+  const isStatic = pathname.startsWith('/_next') || pathname.includes('.');
 
   // API route protection & Consent locking
   const isApiRoute = pathname.startsWith('/api');
@@ -186,7 +265,9 @@ export async function updateSession(request: NextRequest) {
     '/api/societies/invite-link/validate',
     '/api/vendor-quote/',
   ];
-  const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
+  const isPublicApi = publicApiPrefixes.some((prefix) =>
+    pathname.startsWith(prefix)
+  );
 
   if (isApiRoute && !isPublicApi) {
     if (!user) {
@@ -195,7 +276,8 @@ export async function updateSession(request: NextRequest) {
 
     const currentTermsVersion = process.env.TERMS_CONSENT_VERSION || '2026-v1';
     const cachedConsent = request.cookies.get(CONSENT_COOKIE_NAME)?.value;
-    const isConsentCached = cachedConsent === `${user.id}:${currentTermsVersion}`;
+    const isConsentCached =
+      cachedConsent === `${user.id}:${currentTermsVersion}`;
 
     if (!isConsentCached) {
       const { data: consentEvent } = await supabase
@@ -211,18 +293,23 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'TERMS_CONSENT_REQUIRED',
-            message: 'You must accept the Terms & Conditions and Privacy Policy to continue.',
+            message:
+              'You must accept the Terms & Conditions and Privacy Policy to continue.',
           },
           { status: 403 }
         );
       }
 
-      supabaseResponse.cookies.set(CONSENT_COOKIE_NAME, `${user.id}:${currentTermsVersion}`, {
-        path: '/',
-        httpOnly: true,
-        maxAge: 3600,
-        sameSite: 'lax',
-      });
+      supabaseResponse.cookies.set(
+        CONSENT_COOKIE_NAME,
+        `${user.id}:${currentTermsVersion}`,
+        {
+          path: '/',
+          httpOnly: true,
+          maxAge: 3600,
+          sameSite: 'lax',
+        }
+      );
     }
   }
 
@@ -252,7 +339,8 @@ export async function updateSession(request: NextRequest) {
     let hasCompletedOnboarding = false;
 
     const cachedStatus = request.cookies.get(STATUS_COOKIE_NAME)?.value;
-    const isStatusCached = cachedStatus && cachedStatus.startsWith(`${user.id}:`);
+    const isStatusCached =
+      cachedStatus && cachedStatus.startsWith(`${user.id}:`);
 
     if (isStatusCached) {
       const parts = cachedStatus.split(':');
@@ -318,15 +406,26 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    if (deletionStatus === 'pending_deletion' && pathname !== '/account-deleted') {
+    if (
+      deletionStatus === 'pending_deletion' &&
+      pathname !== '/account-deleted'
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = '/account-deleted';
       return createRedirectResponse(url, supabaseResponse);
     }
 
-    if (deletionStatus !== 'pending_deletion' && pathname === '/account-deleted') {
+    if (
+      deletionStatus !== 'pending_deletion' &&
+      pathname === '/account-deleted'
+    ) {
       const url = request.nextUrl.clone();
-      url.pathname = activeRole === 'provider' ? '/partner' : primarySocietyId ? '/home' : '/onboarding';
+      url.pathname =
+        activeRole === 'provider'
+          ? '/partner'
+          : primarySocietyId
+            ? '/home'
+            : '/onboarding';
       return createRedirectResponse(url, supabaseResponse);
     }
 
@@ -344,12 +443,19 @@ export async function updateSession(request: NextRequest) {
         url.pathname = '/onboarding';
         return createRedirectResponse(url, supabaseResponse);
       }
-      if (pathname === '/login' || pathname === '/signup' || pathname === '/public') {
+      if (
+        pathname === '/login' ||
+        pathname === '/signup' ||
+        pathname === '/public'
+      ) {
         const target = resolveAuthRedirectTarget({
           pathname,
           searchParams,
           hasCompletedOnboarding,
-          profile: { active_role: activeRole as any, primary_society_id: primarySocietyId },
+          profile: {
+            active_role: activeRole as any,
+            primary_society_id: primarySocietyId,
+          },
           isPartnerPath,
         });
         if (target) {
@@ -359,12 +465,20 @@ export async function updateSession(request: NextRequest) {
       }
     } else {
       // Completed onboarding users attempting to visit /onboarding or auth entry pages
-      if (pathname === '/onboarding' || pathname === '/login' || pathname === '/signup' || pathname === '/public') {
+      if (
+        pathname === '/onboarding' ||
+        pathname === '/login' ||
+        pathname === '/signup' ||
+        pathname === '/public'
+      ) {
         const target = resolveAuthRedirectTarget({
           pathname,
           searchParams,
           hasCompletedOnboarding,
-          profile: { active_role: activeRole as any, primary_society_id: primarySocietyId },
+          profile: {
+            active_role: activeRole as any,
+            primary_society_id: primarySocietyId,
+          },
           isPartnerPath,
         });
         if (target) {

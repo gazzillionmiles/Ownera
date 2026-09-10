@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { approvePollSchema } from '@/src/shared/validations/ownera';
 import { isCommittee, isPlatformAdmin } from '@/lib/ownera/rbac';
@@ -14,7 +15,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -46,11 +47,18 @@ export async function POST(
 
     // Verify authority: Must be Secretary/Committee in this society or platform_admin
     const isPlatform = await isPlatformAdmin(user.id, serviceSupabase);
-    const isSecOrCom = await isCommittee(user.id, poll.society_id, serviceSupabase);
+    const isSecOrCom = await isCommittee(
+      user.id,
+      poll.society_id,
+      serviceSupabase
+    );
 
     if (!isPlatform && !isSecOrCom) {
       return NextResponse.json(
-        { error: 'Forbidden: Only the Society Secretary or Committee can approve society campaigns' },
+        {
+          error:
+            'Forbidden: Only the Society Secretary or Committee can approve society campaigns',
+        },
         { status: 403 }
       );
     }
@@ -81,27 +89,40 @@ export async function POST(
       .single();
 
     if (updateError || !updatedPoll) {
-      return NextResponse.json({ error: 'Failed to update campaign approval' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to update campaign approval' },
+        { status: 500 }
+      );
     }
 
     // Notify poll creator
     await serviceSupabase.from('notifications').insert({
       user_id: poll.organizer_id,
-      title: action === 'approve' ? 'Society Campaign Approved! 🎉' : 'Campaign Update ℹ️',
-      message: action === 'approve'
-        ? `The Secretary approved "${poll.title}". You can now invite and review vendor quotes.`
-        : `The Secretary rejected "${poll.title}": ${rejectionReason || 'No specific reason provided.'}`,
+      title:
+        action === 'approve'
+          ? 'Society Campaign Approved! 🎉'
+          : 'Campaign Update ℹ️',
+      message:
+        action === 'approve'
+          ? `The Secretary approved "${poll.title}". You can now invite and review vendor quotes.`
+          : `The Secretary rejected "${poll.title}": ${rejectionReason || 'No specific reason provided.'}`,
       link: `/home`,
       type: 'poll',
     });
 
     return NextResponse.json({
       success: true,
-      message: action === 'approve' ? 'Campaign approved for vendor outreach!' : 'Campaign rejected.',
+      message:
+        action === 'approve'
+          ? 'Campaign approved for vendor outreach!'
+          : 'Campaign rejected.',
       poll: updatedPoll,
     });
   } catch (err: any) {
     console.error('[API/polls/[id]/approve] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

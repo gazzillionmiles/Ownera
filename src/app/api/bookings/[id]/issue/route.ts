@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { reportIssueSchema } from '@/src/shared/validations/ownera';
 
@@ -13,7 +14,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,10 @@ export async function POST(
     const parsed = reportIssueSchema.safeParse({ ...json, bookingId: id });
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid issue payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid issue payload', details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const { description, category, photoUrl, providerId } = parsed.data;
@@ -60,7 +64,10 @@ export async function POST(
 
     if (issueError) {
       console.error('[API/bookings/[id]/issue] Insert error:', issueError);
-      return NextResponse.json({ error: 'Failed to record issue report' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to record issue report' },
+        { status: 500 }
+      );
     }
 
     // Update booking status to disputed
@@ -89,11 +96,15 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: 'Issue report submitted. The organizer and provider have been notified to assist.',
+      message:
+        'Issue report submitted. The organizer and provider have been notified to assist.',
       issue,
     });
   } catch (err: any) {
     console.error('[API/bookings/[id]/issue] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { findLatestTermsConsentEvent, isTermsConsentCurrent } from '@/lib/consent';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
+import {
+  findLatestTermsConsentEvent,
+  isTermsConsentCurrent,
+} from '@/lib/consent';
 
 export async function GET() {
   const supabase = await createClient();
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getVerifiedUser(request, supabase);
 
   if (authError || !user) {
     return NextResponse.json({ hasConsent: false, consentVersion: null });

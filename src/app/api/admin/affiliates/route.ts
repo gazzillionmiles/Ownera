@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { isUserAdmin } from '@/lib/admin/auth';
-import { getClientIp, checkAdminRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkAdminRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 interface AdminProfile {
   id: string;
@@ -37,7 +42,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -47,7 +52,9 @@ export async function GET(request: NextRequest) {
 
     if (!(await isUserAdmin(user, serviceSupabase))) {
       return NextResponse.json(
-        { error: 'Forbidden. Access restricted to administrator account only.' },
+        {
+          error: 'Forbidden. Access restricted to administrator account only.',
+        },
         { status: 403 }
       );
     }
@@ -76,7 +83,10 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (commErr) {
-      console.error('[Admin/Affiliates] Error fetching commission ledger:', commErr);
+      console.error(
+        '[Admin/Affiliates] Error fetching commission ledger:',
+        commErr
+      );
     }
 
     (rawLedger || []).forEach((c) => {
@@ -96,7 +106,9 @@ export async function GET(request: NextRequest) {
     if (userIds.size > 0) {
       const { data: profiles } = await serviceSupabase
         .from('profiles')
-        .select('id, email, name, device_fingerprint, disputed_payment_flag, dispute_count, instagram_username, upi_id')
+        .select(
+          'id, email, name, device_fingerprint, disputed_payment_flag, dispute_count, instagram_username, upi_id'
+        )
         .in('id', Array.from(userIds));
 
       if (profiles) {
@@ -126,7 +138,9 @@ export async function GET(request: NextRequest) {
     if (affiliateUserIds.length > 0) {
       const { data: consentRows } = await serviceSupabase
         .from('affiliate_consents')
-        .select('user_id, agreement_version, agreement_effective_date, agreement_hash, accepted_at, ip_address')
+        .select(
+          'user_id, agreement_version, agreement_effective_date, agreement_hash, accepted_at, ip_address'
+        )
         .in('user_id', affiliateUserIds)
         .order('accepted_at', { ascending: false });
 
@@ -139,24 +153,40 @@ export async function GET(request: NextRequest) {
 
     // Format pending/flagged referrals
     const pendingReferrals = (rawReferrals || [])
-      .filter((r) => r.status === 'pending' || r.status === 'flagged' || r.status === 'rejected')
+      .filter(
+        (r) =>
+          r.status === 'pending' ||
+          r.status === 'flagged' ||
+          r.status === 'rejected'
+      )
       .map((r) => {
-        const referrer = profilesMap[r.referrer_user_id] || { id: r.referrer_user_id, email: 'Unknown', name: 'Unknown' };
-        const referred = profilesMap[r.referred_user_id] || { id: r.referred_user_id, email: 'Unknown', name: 'Unknown' };
+        const referrer = profilesMap[r.referrer_user_id] || {
+          id: r.referrer_user_id,
+          email: 'Unknown',
+          name: 'Unknown',
+        };
+        const referred = profilesMap[r.referred_user_id] || {
+          id: r.referred_user_id,
+          email: 'Unknown',
+          name: 'Unknown',
+        };
         const flagLog = flagLogsMap[r.referred_user_id];
 
-        let flagReason = 'Device fingerprint match or repeat account signal detected';
+        let flagReason =
+          'Device fingerprint match or repeat account signal detected';
         if (flagLog?.details?.reason) {
           flagReason = flagLog.details.reason;
         } else if (r.fingerprint_flagged) {
-          flagReason = 'Shared device fingerprint with referrer or flagged account';
+          flagReason =
+            'Shared device fingerprint with referrer or flagged account';
         }
 
         return {
           id: r.id,
           referrer: {
             ...referrer,
-            affiliate_consent: latestConsentByUserId[r.referrer_user_id] || null,
+            affiliate_consent:
+              latestConsentByUserId[r.referrer_user_id] || null,
           },
           referred,
           referral_code_used: r.referral_code_used,
@@ -169,8 +199,16 @@ export async function GET(request: NextRequest) {
 
     // Format commission ledger entries
     const commissionLedger = (rawLedger || []).map((c) => {
-      const referrer = profilesMap[c.referrer_user_id] || { id: c.referrer_user_id, email: 'Unknown', name: 'Unknown' };
-      const referred = profilesMap[c.referred_user_id] || { id: c.referred_user_id, email: 'Unknown', name: 'Unknown' };
+      const referrer = profilesMap[c.referrer_user_id] || {
+        id: c.referrer_user_id,
+        email: 'Unknown',
+        name: 'Unknown',
+      };
+      const referred = profilesMap[c.referred_user_id] || {
+        id: c.referred_user_id,
+        email: 'Unknown',
+        name: 'Unknown',
+      };
 
       return {
         id: c.id,
@@ -202,7 +240,9 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const totalActiveReferrals = (rawReferrals || []).filter((r) => r.status === 'active').length;
+    const totalActiveReferrals = (rawReferrals || []).filter(
+      (r) => r.status === 'active'
+    ).length;
     const totalPendingFlagged = pendingReferrals.length;
 
     return NextResponse.json({
@@ -215,7 +255,11 @@ export async function GET(request: NextRequest) {
       pending_referrals: pendingReferrals,
       commission_ledger: commissionLedger,
       affiliate_consents: affiliateUserIds.map((userId) => {
-        const profile = profilesMap[userId] || { id: userId, email: 'Unknown', name: 'Unknown' };
+        const profile = profilesMap[userId] || {
+          id: userId,
+          email: 'Unknown',
+          name: 'Unknown',
+        };
         return {
           user: profile,
           consent: latestConsentByUserId[userId] || null,
@@ -224,6 +268,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('[API/admin/affiliates] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
