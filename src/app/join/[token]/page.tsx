@@ -22,18 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { APP_NAME } from '@/src/constants';
-import { PropertyType } from '@/src/types/ownera';
-
-const PROPERTY_TYPES: { id: PropertyType; label: string; desc: string }[] = [
-  { id: 'flat', label: 'Flat', desc: 'Standalone building / residential flat' },
-  { id: 'apartment', label: 'Apartment', desc: 'Gated apartment complex unit' },
-  { id: 'tenement', label: 'Tenement', desc: 'Community tenement unit' },
-  { id: 'row_house', label: 'Row House', desc: 'Townhouse / row house unit' },
-  { id: 'bungalow', label: 'Bungalow', desc: 'Independent villa or bungalow' },
-  { id: 'villa', label: 'Villa', desc: 'Community luxury villa' },
-  { id: 'shop', label: 'Shop', desc: 'Commercial retail or society shop' },
-  { id: 'other', label: 'Other', desc: 'Residential or other unit' },
-];
+import { TermsConsentModal } from '@/src/shared/components/TermsConsentModal';
 
 interface SocietyPreview {
   id: string;
@@ -54,14 +43,13 @@ export default function JoinSocietyPage({
   const router = useRouter();
   const token = resolvedParams.token;
 
-  const { uiUser, loading: authLoading, updateProfile, refreshProfile } = useAuth();
+  const { uiUser, loading: authLoading, updateProfile, refreshProfile, hasTermsConsent } = useAuth();
 
   const [validationState, setValidationState] = useState<'loading' | 'valid' | 'invalid' | 'inactive' | 'error'>('loading');
   const [society, setSociety] = useState<SocietyPreview | null>(null);
   const [isAlreadyMember, setIsAlreadyMember] = useState(false);
 
   // Form State
-  const [propertyType, setPropertyType] = useState<PropertyType>('apartment');
   const [unitNumber, setUnitNumber] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -127,11 +115,8 @@ export default function JoinSocietyPage({
       if (uiUser.unitNumber) {
         setUnitNumber((prev) => prev || uiUser.unitNumber || '');
       }
-      if (uiUser.propertyType) {
-        setPropertyType((prev) => (uiUser.propertyType as PropertyType) || prev);
-      }
     }
-  }, [uiUser.isLoggedIn, uiUser.name, uiUser.phone, uiUser.unitNumber, uiUser.propertyType]);
+  }, [uiUser.isLoggedIn, uiUser.name, uiUser.phone, uiUser.unitNumber]);
 
   // 3. Check if authenticated user is already a member of this society
   useEffect(() => {
@@ -159,6 +144,11 @@ export default function JoinSocietyPage({
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!hasTermsConsent) {
+      toast.error('Please accept the Terms & Conditions and Privacy Policy to continue.');
+      return;
+    }
+
     if (!unitNumber.trim()) {
       toast.error('Please enter your unit or flat number');
       return;
@@ -172,7 +162,6 @@ export default function JoinSocietyPage({
           name: name.trim() || undefined,
           phone: phone.trim() || undefined,
           unit_number: unitNumber.trim(),
-          property_type: propertyType,
         });
       }
 
@@ -182,13 +171,16 @@ export default function JoinSocietyPage({
         body: JSON.stringify({
           token: token.trim(),
           unitNumber: unitNumber.trim(),
-          propertyType,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        if (res.status === 403 && data.error === 'TERMS_CONSENT_REQUIRED') {
+          toast.error('Please accept the Terms & Conditions and Privacy Policy to continue.');
+          return;
+        }
         throw new Error(data.error || 'Failed to join society. Please try again.');
       }
 
@@ -413,9 +405,10 @@ export default function JoinSocietyPage({
     );
   }
 
-  // State: Authenticated User — Show Unit & Property Setup Form
+  // State: Authenticated User — Show Unit & Contact Setup Form
   return (
     <div className="min-h-screen bg-[#121316] text-[#FAF8F5] flex flex-col justify-between p-4 sm:p-6 selection:bg-[#2CB7A5]/30">
+      <TermsConsentModal />
       <div className="max-w-lg mx-auto w-full pt-6 pb-12 space-y-6">
         {/* Header */}
         <div className="text-center space-y-1.5">
@@ -426,46 +419,16 @@ export default function JoinSocietyPage({
             {society.name}
           </h1>
           <p className="text-xs text-zinc-400">
-            {society.city}{society.state ? `, ${society.state}` : ''} • Complete your property details to enter
+            {society.city}{society.state ? `, ${society.state}` : ''} • Enter your unit number to join
           </p>
         </div>
 
         {/* Form Card */}
         <form onSubmit={handleJoinSubmit} className="p-6 sm:p-8 rounded-3xl bg-[#18191D] border border-white/10 shadow-2xl space-y-6">
-          {/* Step 1: Property Type */}
+          {/* Step 1: Unit / House Number */}
           <div className="space-y-2.5">
             <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-              1. Select Property Type
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {PROPERTY_TYPES.map((pt) => {
-                const isSelected = propertyType === pt.id;
-                return (
-                  <button
-                    type="button"
-                    key={pt.id}
-                    onClick={() => setPropertyType(pt.id)}
-                    className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between min-h-[64px] ${
-                      isSelected
-                        ? 'border-[#2CB7A5] bg-[#2CB7A5]/10 text-white font-bold shadow-sm'
-                        : 'border-white/5 bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold">{pt.label}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#2CB7A5]" />}
-                    </div>
-                    <span className="text-[10px] text-zinc-500 line-clamp-1">{pt.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Step 2: Unit / House Number */}
-          <div className="space-y-2.5 pt-2 border-t border-white/5">
-            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-              2. Your House / Flat / Unit Number
+              1. Your Flat / House / Unit Number
             </label>
             <div className="relative">
               <Home className="w-4 h-4 absolute left-3.5 top-3.5 text-zinc-500" />
@@ -483,10 +446,10 @@ export default function JoinSocietyPage({
             </p>
           </div>
 
-          {/* Step 3: Contact Confirmation */}
+          {/* Step 2: Contact Confirmation */}
           <div className="space-y-3 pt-2 border-t border-white/5">
             <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-              3. Resident Contact
+              2. Resident Contact
             </label>
             <div className="grid sm:grid-cols-2 gap-3">
               <div>

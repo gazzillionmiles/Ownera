@@ -41,7 +41,7 @@ export interface JoinByInviteTokenParams {
   token: string;
   userId: string;
   unitNumber?: string | null;
-  propertyType?: PropertyType;
+  propertyType?: PropertyType | null;
 }
 
 export interface JoinByInviteTokenSuccessResult {
@@ -342,7 +342,19 @@ export async function joinSocietyByInviteToken(
 
   const targetSociety = validation.society;
   const cleanUnitNumber = (unitNumber || '').trim() || 'Unit 1';
-  const cleanPropertyType = propertyType || 'apartment';
+
+  // Inherit property_type from the society's secretary if not explicitly provided
+  let cleanPropertyType = propertyType;
+  if (!cleanPropertyType) {
+    const { data: secMember } = await db
+      .from('society_members')
+      .select('property_type')
+      .eq('society_id', targetSociety.id)
+      .eq('role', 'secretary')
+      .maybeSingle();
+
+    cleanPropertyType = (secMember?.property_type as PropertyType) || 'apartment';
+  }
 
   // 2. Check if user is already an active member of this society
   const { data: existingMember, error: fetchMemErr } = await db

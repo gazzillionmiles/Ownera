@@ -68,7 +68,7 @@ export const joinByInviteTokenSchema = z.object({
   token: z.string().min(10, 'Invalid invite token').max(128, 'Invalid invite token'),
   flatNumber: z.string().max(50).optional().nullable(),
   unitNumber: z.string().max(50).optional().nullable(),
-  propertyType: propertyTypeSchema.default('apartment'),
+  propertyType: propertyTypeSchema.optional().nullable(),
 });
 
 export const transferSecretarySchema = z.object({
