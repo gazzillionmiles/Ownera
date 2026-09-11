@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import {
   requirePlatformPermission,
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,7 +23,11 @@ export async function GET(request: NextRequest) {
     // Requires at least support_admin or platform_admin view permission
     const serviceSupabase = createAdminClient();
     try {
-      await requirePlatformPermission(serviceSupabase, user.id, 'platform.view');
+      await requirePlatformPermission(
+        serviceSupabase,
+        user.id,
+        'platform.view'
+      );
     } catch (authErr: any) {
       return NextResponse.json(
         { error: authErr.message || 'Platform administrator access required' },
@@ -36,7 +41,10 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (fetchErr) {
-      return NextResponse.json({ error: 'Failed to fetch platform admins' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch platform admins' },
+        { status: 500 }
+      );
     }
 
     // Enrich with user profile info
@@ -57,7 +65,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ admins: enrichedAdmins });
   } catch (err: any) {
     console.error('[API/admin/admins] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -67,7 +78,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -80,7 +91,10 @@ export async function POST(request: NextRequest) {
       await requirePlatformAdmin(serviceSupabase, user.id);
     } catch (authErr: any) {
       return NextResponse.json(
-        { error: 'Forbidden: Only full platform_admin can manage platform administrator roles' },
+        {
+          error:
+            'Forbidden: Only full platform_admin can manage platform administrator roles',
+        },
         { status: 403 }
       );
     }
@@ -89,19 +103,31 @@ export async function POST(request: NextRequest) {
     const { targetUserId, role, status } = body;
 
     if (!targetUserId) {
-      return NextResponse.json({ error: 'Target user ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Target user ID is required' },
+        { status: 400 }
+      );
     }
 
     if (role && !['platform_admin', 'support_admin'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid platform role' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid platform role' },
+        { status: 400 }
+      );
     }
 
     if (status && !['active', 'suspended'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid admin status' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid admin status' },
+        { status: 400 }
+      );
     }
 
     // Prevent self-suspension or self-demotion if the caller is the target
-    if (targetUserId === user.id && (status === 'suspended' || (role && role !== 'platform_admin'))) {
+    if (
+      targetUserId === user.id &&
+      (status === 'suspended' || (role && role !== 'platform_admin'))
+    ) {
       return NextResponse.json(
         { error: 'Cannot demote or suspend your own platform_admin account' },
         { status: 400 }
@@ -123,8 +149,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (upsertError) {
-      console.error('[API/admin/admins POST] Error upserting admin:', upsertError);
-      return NextResponse.json({ error: 'Failed to update platform admin' }, { status: 500 });
+      console.error(
+        '[API/admin/admins POST] Error upserting admin:',
+        upsertError
+      );
+      return NextResponse.json(
+        { error: 'Failed to update platform admin' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -134,6 +166,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/admin/admins POST] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { recordAndCheckFingerprint, logFingerprintEvent } from '@/lib/fingerprint/server';
+import {
+  recordAndCheckFingerprint,
+  logFingerprintEvent,
+} from '@/lib/fingerprint/server';
 import { log } from '@/lib/logger';
-import { getClientIp, checkReferralAssociateRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkReferralAssociateRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,16 +19,21 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const clientIp = getClientIp(request);
-    const rateLimitResult = await checkReferralAssociateRateLimit(user.id, clientIp);
+    const rateLimitResult = await checkReferralAssociateRateLimit(
+      user.id,
+      clientIp
+    );
     if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many attempts. Please try again later.');
+      return createRateLimitResponse(
+        'Too many attempts. Please try again later.'
+      );
     }
 
     let body: any;
@@ -30,10 +43,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    const referralCode = typeof body.referral_code === 'string' ? body.referral_code.trim().toUpperCase() : '';
+    const referralCode =
+      typeof body.referral_code === 'string'
+        ? body.referral_code.trim().toUpperCase()
+        : '';
 
     if (!referralCode) {
-      return NextResponse.json({ error: 'referral_code is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'referral_code is required' },
+        { status: 400 }
+      );
     }
 
     const serviceSupabase = createAdminClient();
@@ -62,11 +81,17 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (!referrerProfile) {
-      return NextResponse.json({ error: 'Invalid referral code' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid referral code' },
+        { status: 400 }
+      );
     }
 
     if (referrerProfile.id === user.id) {
-      return NextResponse.json({ error: 'Self-referral is not allowed' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Self-referral is not allowed' },
+        { status: 400 }
+      );
     }
 
     // 3. Fetch user's own profile and fingerprint info
@@ -76,9 +101,14 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    const fingerprint = body.device_fingerprint || request.headers.get('x-device-fingerprint') || userProfile?.device_fingerprint;
+    const fingerprint =
+      body.device_fingerprint ||
+      request.headers.get('x-device-fingerprint') ||
+      userProfile?.device_fingerprint;
     const appCookiePrefix = process.env.APP_COOKIE_PREFIX || 'saas';
-    const clientId = body.client_id || request.cookies.get(`${appCookiePrefix}_client_id`)?.value;
+    const clientId =
+      body.client_id ||
+      request.cookies.get(`${appCookiePrefix}_client_id`)?.value;
 
     let isFlagged = false;
     let matchingUserIds: string[] = [];
@@ -93,7 +123,10 @@ export async function POST(request: NextRequest) {
       matchingUserIds = checkResult.matchingUserIds;
 
       // Direct device match with referrer?
-      if (referrerProfile.device_fingerprint && referrerProfile.device_fingerprint === fingerprint) {
+      if (
+        referrerProfile.device_fingerprint &&
+        referrerProfile.device_fingerprint === fingerprint
+      ) {
         isFlagged = true;
       }
       if (matchingUserIds.includes(referrerProfile.id)) {
@@ -102,7 +135,10 @@ export async function POST(request: NextRequest) {
     }
 
     // If either referrer or user profile was flagged previously
-    if (userProfile?.fingerprint_flagged || referrerProfile.fingerprint_flagged) {
+    if (
+      userProfile?.fingerprint_flagged ||
+      referrerProfile.fingerprint_flagged
+    ) {
       isFlagged = true;
     }
 
@@ -123,7 +159,10 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error('[Referral/Associate] DB Insert Error:', insertError);
-      return NextResponse.json({ error: 'Failed to associate referral' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to associate referral' },
+        { status: 500 }
+      );
     }
 
     if (isFlagged) {
@@ -136,7 +175,8 @@ export async function POST(request: NextRequest) {
         details: {
           referralCode,
           referrerUserId: referrerProfile.id,
-          reason: 'Referral flagged due to fingerprint match or prior account flags',
+          reason:
+            'Referral flagged due to fingerprint match or prior account flags',
         },
       });
 
@@ -145,7 +185,12 @@ export async function POST(request: NextRequest) {
         step: 'Referral Flagged',
         level: 'WARN',
         explanation: `User ${user.id} referral via code ${referralCode} flagged immediately due to fingerprint signals.`,
-        data: { userId: user.id, referrerId: referrerProfile.id, referralCode, fingerprint },
+        data: {
+          userId: user.id,
+          referrerId: referrerProfile.id,
+          referralCode,
+          fingerprint,
+        },
       });
     } else {
       log({
@@ -165,6 +210,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/referral/associate] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

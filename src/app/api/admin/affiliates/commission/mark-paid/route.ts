@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { isUserAdmin } from '@/lib/admin/auth';
 import { getAffiliateConsentStatus } from '@/lib/affiliate-consent';
-import { getClientIp, checkAdminRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkAdminRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 interface MarkPaidPayload {
   commission_id?: string;
@@ -17,7 +22,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -27,7 +32,9 @@ export async function POST(request: NextRequest) {
 
     if (!(await isUserAdmin(user, serviceSupabase))) {
       return NextResponse.json(
-        { error: 'Forbidden. Access restricted to administrator account only.' },
+        {
+          error: 'Forbidden. Access restricted to administrator account only.',
+        },
         { status: 403 }
       );
     }
@@ -35,7 +42,9 @@ export async function POST(request: NextRequest) {
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkAdminRateLimit(user.id, clientIp);
     if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many admin requests. Please slow down.');
+      return createRateLimitResponse(
+        'Too many admin requests. Please slow down.'
+      );
     }
 
     let body: MarkPaidPayload;
@@ -48,27 +57,39 @@ export async function POST(request: NextRequest) {
     const { commission_id, referrer_user_id, note } = body || {};
 
     if (!commission_id && !referrer_user_id) {
-      return NextResponse.json({ error: 'Either commission_id or referrer_user_id is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Either commission_id or referrer_user_id is required' },
+        { status: 400 }
+      );
     }
 
     const paidAt = new Date().toISOString();
     const noteText = typeof note === 'string' ? note.trim() : null;
 
     if (commission_id) {
-      const { data: commissionRow, error: commissionLookupError } = await serviceSupabase
-        .from('commission_ledger')
-        .select('referrer_user_id')
-        .eq('id', commission_id)
-        .maybeSingle();
+      const { data: commissionRow, error: commissionLookupError } =
+        await serviceSupabase
+          .from('commission_ledger')
+          .select('referrer_user_id')
+          .eq('id', commission_id)
+          .maybeSingle();
 
       if (commissionLookupError || !commissionRow) {
-        return NextResponse.json({ error: 'Commission entry not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Commission entry not found' },
+          { status: 404 }
+        );
       }
 
-      const consentStatus = await getAffiliateConsentStatus(commissionRow.referrer_user_id);
+      const consentStatus = await getAffiliateConsentStatus(
+        commissionRow.referrer_user_id
+      );
       if (!consentStatus.hasCurrentConsent) {
         return NextResponse.json(
-          { error: 'Affiliate must accept the current Affiliate Agreement before payout can be recorded' },
+          {
+            error:
+              'Affiliate must accept the current Affiliate Agreement before payout can be recorded',
+          },
           { status: 409 }
         );
       }
@@ -83,14 +104,23 @@ export async function POST(request: NextRequest) {
         .eq('id', commission_id);
 
       if (error) {
-        console.error('[Admin/Commission/MarkPaid] Error marking single commission paid:', error);
-        return NextResponse.json({ error: 'Failed to update commission payout status' }, { status: 500 });
+        console.error(
+          '[Admin/Commission/MarkPaid] Error marking single commission paid:',
+          error
+        );
+        return NextResponse.json(
+          { error: 'Failed to update commission payout status' },
+          { status: 500 }
+        );
       }
     } else if (referrer_user_id) {
       const consentStatus = await getAffiliateConsentStatus(referrer_user_id);
       if (!consentStatus.hasCurrentConsent) {
         return NextResponse.json(
-          { error: 'Affiliate must accept the current Affiliate Agreement before payout can be recorded' },
+          {
+            error:
+              'Affiliate must accept the current Affiliate Agreement before payout can be recorded',
+          },
           { status: 409 }
         );
       }
@@ -106,8 +136,14 @@ export async function POST(request: NextRequest) {
         .eq('payout_status', 'unpaid');
 
       if (error) {
-        console.error('[Admin/Commission/MarkPaid] Error batch marking paid:', error);
-        return NextResponse.json({ error: 'Failed to batch update commission payout status' }, { status: 500 });
+        console.error(
+          '[Admin/Commission/MarkPaid] Error batch marking paid:',
+          error
+        );
+        return NextResponse.json(
+          { error: 'Failed to batch update commission payout status' },
+          { status: 500 }
+        );
       }
     }
 
@@ -119,6 +155,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[Admin/Commission/MarkPaid] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

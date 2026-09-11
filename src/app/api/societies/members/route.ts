@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { updateMemberRoleSchema } from '@/src/shared/validations/ownera';
-import { isPlatformAdmin, isSecretary, requireSocietyMember } from '@/lib/ownera/rbac';
+import {
+  isPlatformAdmin,
+  isSecretary,
+  requireSocietyMember,
+} from '@/lib/ownera/rbac';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +15,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +25,10 @@ export async function GET(request: NextRequest) {
     const societyId = searchParams.get('societyId');
 
     if (!societyId) {
-      return NextResponse.json({ error: 'societyId query parameter required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'societyId query parameter required' },
+        { status: 400 }
+      );
     }
 
     const serviceSupabase = createAdminClient();
@@ -32,7 +40,10 @@ export async function GET(request: NextRequest) {
         await requireSocietyMember(supabase, user.id, societyId);
       } catch (authErr: any) {
         return NextResponse.json(
-          { error: 'You must be a member of this society to view its member list.' },
+          {
+            error:
+              'You must be a member of this society to view its member list.',
+          },
           { status: 403 }
         );
       }
@@ -46,7 +57,10 @@ export async function GET(request: NextRequest) {
       .order('joined_at', { ascending: true });
 
     if (membersError) {
-      return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch members' },
+        { status: 500 }
+      );
     }
 
     // Fetch user profile info
@@ -69,7 +83,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies/members GET] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -79,7 +96,7 @@ export async function PATCH(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -90,7 +107,10 @@ export async function PATCH(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid update role payload', details: parsed.error.format() },
+        {
+          error: 'Invalid update role payload',
+          details: parsed.error.format(),
+        },
         { status: 400 }
       );
     }
@@ -104,7 +124,10 @@ export async function PATCH(request: NextRequest) {
 
     if (!isPlatform && !isSec) {
       return NextResponse.json(
-        { error: 'Forbidden: Only the society secretary or a platform admin can manage member roles' },
+        {
+          error:
+            'Forbidden: Only the society secretary or a platform admin can manage member roles',
+        },
         { status: 403 }
       );
     }
@@ -112,7 +135,10 @@ export async function PATCH(request: NextRequest) {
     // Secretary cannot demote themselves through this route (must use transfer-secretary)
     if (targetUserId === user.id && isSec && newRole !== 'committee') {
       return NextResponse.json(
-        { error: 'To change secretary role, use the transfer secretary function' },
+        {
+          error:
+            'To change secretary role, use the transfer secretary function',
+        },
         { status: 400 }
       );
     }
@@ -126,7 +152,10 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (updateError || !updatedMember) {
-      return NextResponse.json({ error: 'Failed to update member role' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to update member role' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -136,6 +165,9 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies/members PATCH] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

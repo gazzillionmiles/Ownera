@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { selectSlotSchema } from '@/src/shared/validations/ownera';
 
@@ -13,7 +14,7 @@ export async function GET(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,8 @@ export async function GET(
 
     const { data: booking, error } = await serviceSupabase
       .from('bookings')
-      .select(`
+      .select(
+        `
         *,
         campaign:service_campaigns(
           *,
@@ -34,7 +36,8 @@ export async function GET(
         slot:booking_slots(*),
         service_issue:service_issues(*),
         service_rating:service_ratings(*)
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -45,7 +48,10 @@ export async function GET(
     return NextResponse.json({ booking });
   } catch (err: any) {
     console.error('[API/bookings/[id]] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -59,7 +65,7 @@ export async function PATCH(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -79,12 +85,20 @@ export async function PATCH(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+    const updates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
 
     if (json.slotId) {
-      const parsed = selectSlotSchema.safeParse({ bookingId: id, slotId: json.slotId });
+      const parsed = selectSlotSchema.safeParse({
+        bookingId: id,
+        slotId: json.slotId,
+      });
       if (!parsed.success) {
-        return NextResponse.json({ error: 'Invalid slot selection' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Invalid slot selection' },
+          { status: 400 }
+        );
       }
 
       // Check slot changing cutoff time (12 hours before scheduled service day)
@@ -105,7 +119,8 @@ export async function PATCH(
           return NextResponse.json(
             {
               error: 'SLOT_CHANGE_LOCKED',
-              message: 'Time slot modifications close 12 hours before service day so the provider can organize technician dispatch.',
+              message:
+                'Time slot modifications close 12 hours before service day so the provider can organize technician dispatch.',
             },
             { status: 400 }
           );
@@ -123,7 +138,9 @@ export async function PATCH(
         if (oldSlot && (oldSlot.booked_count || 0) > 0) {
           await serviceSupabase
             .from('booking_slots')
-            .update({ booked_count: Math.max(0, (oldSlot.booked_count || 1) - 1) })
+            .update({
+              booked_count: Math.max(0, (oldSlot.booked_count || 1) - 1),
+            })
             .eq('id', existingBooking.slot_id);
         }
       }
@@ -154,21 +171,29 @@ export async function PATCH(
       .from('bookings')
       .update(updates)
       .eq('id', id)
-      .select(`
+      .select(
+        `
         *,
         campaign:service_campaigns(*),
         provider:providers(*),
         slot:booking_slots(*)
-      `)
+      `
+      )
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to update booking' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true, booking: updatedBooking });
   } catch (err: any) {
     console.error('[API/bookings/[id]] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

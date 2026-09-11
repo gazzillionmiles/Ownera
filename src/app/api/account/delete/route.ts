@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { logError } from '@/lib/logger';
 
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -39,7 +40,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      );
     }
 
     if (profile.deletion_status === 'pending_deletion') {
@@ -49,9 +53,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-                      request.headers.get('x-real-ip') ||
-                      'unknown';
+    const ipAddress =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
     const now = new Date();
@@ -71,8 +76,17 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
 
     if (updateError) {
-      logError('Database', 'requestAccountDeletion', updateError, { userId: user.id }, 'Failed to set deletion_status');
-      return NextResponse.json({ error: 'Failed to request account deletion' }, { status: 500 });
+      logError(
+        'Database',
+        'requestAccountDeletion',
+        updateError,
+        { userId: user.id },
+        'Failed to set deletion_status'
+      );
+      return NextResponse.json(
+        { error: 'Failed to request account deletion' },
+        { status: 500 }
+      );
     }
 
     // 2. Append immutable audit log
@@ -98,7 +112,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    logError('API', 'deleteAccountException', err, {}, 'Unhandled deletion request exception');
-    return NextResponse.json({ error: 'Internal server error', details: message }, { status: 500 });
+    logError(
+      'API',
+      'deleteAccountException',
+      err,
+      {},
+      'Unhandled deletion request exception'
+    );
+    return NextResponse.json(
+      { error: 'Internal server error', details: message },
+      { status: 500 }
+    );
   }
 }

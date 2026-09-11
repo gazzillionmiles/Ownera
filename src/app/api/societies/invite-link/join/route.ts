@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { joinByInviteTokenSchema } from '@/src/shared/validations/ownera';
 import { joinSocietyByInviteToken } from '@/lib/ownera/invite-links';
 import { setOnboardStatusCookie } from '@/lib/supabase/middleware';
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -26,8 +27,12 @@ export async function POST(request: NextRequest) {
     const parsed = joinByInviteTokenSchema.safeParse(body);
 
     if (!parsed.success) {
-      const errorMsg = parsed.error.issues?.[0]?.message || 'Invalid join request payload';
-      return NextResponse.json({ error: errorMsg, details: parsed.error.format() }, { status: 400 });
+      const errorMsg =
+        parsed.error.issues?.[0]?.message || 'Invalid join request payload';
+      return NextResponse.json(
+        { error: errorMsg, details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const { token, flatNumber, unitNumber, propertyType } = parsed.data;
@@ -47,7 +52,12 @@ export async function POST(request: NextRequest) {
     }
 
     const memberRole = result.member?.role || 'resident';
-    const profileRole = (memberRole === 'secretary' || memberRole === 'committee' || memberRole === 'organizer') ? 'organizer' : 'resident';
+    const profileRole =
+      memberRole === 'secretary' ||
+      memberRole === 'committee' ||
+      memberRole === 'organizer'
+        ? 'organizer'
+        : 'resident';
 
     const response = NextResponse.json({
       success: true,
@@ -64,6 +74,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies/invite-link/join POST] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

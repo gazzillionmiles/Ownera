@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { expressInterestSchema } from '@/src/shared/validations/ownera';
 import { calculateTierPrice } from '@/lib/ownera/campaigns';
@@ -15,17 +16,26 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized. Please sign in to participate.' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in to participate.' },
+        { status: 401 }
+      );
     }
 
     const json = await request.json().catch(() => ({}));
     const parsed = expressInterestSchema.safeParse({ ...json, campaignId: id });
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid participation payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Invalid participation payload',
+          details: parsed.error.format(),
+        },
+        { status: 400 }
+      );
     }
 
     const { quantity, unitIdentifier, notes } = parsed.data;
@@ -39,14 +49,20 @@ export async function POST(
       .maybeSingle();
 
     if (campErr || !campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      );
     }
 
     try {
       await requireSocietyMember(supabase, user.id, campaign.society_id);
     } catch (memErr: any) {
       return NextResponse.json(
-        { error: 'You must be a member of this society to participate in its campaigns.' },
+        {
+          error:
+            'You must be a member of this society to participate in its campaigns.',
+        },
         { status: 403 }
       );
     }
@@ -71,9 +87,12 @@ export async function POST(
         newStatus = 'interested';
         message = 'You are now interested in this campaign!';
       } else {
-        return NextResponse.json({
-          error: `Cannot toggle interest while in state: ${existing.status}`,
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: `Cannot toggle interest while in state: ${existing.status}`,
+          },
+          { status: 400 }
+        );
       }
 
       await serviceSupabase
@@ -87,16 +106,14 @@ export async function POST(
         })
         .eq('id', existing.id);
     } else {
-      await serviceSupabase
-        .from('campaign_participants')
-        .insert({
-          campaign_id: id,
-          user_id: user.id,
-          quantity,
-          unit_identifier: unitIdentifier,
-          status: 'interested',
-          notes,
-        });
+      await serviceSupabase.from('campaign_participants').insert({
+        campaign_id: id,
+        user_id: user.id,
+        quantity,
+        unit_identifier: unitIdentifier,
+        status: 'interested',
+        notes,
+      });
     }
 
     // Recalculate interested counts and update pricing
@@ -108,8 +125,12 @@ export async function POST(
 
     const totalCount = allParticipants?.length || 0;
 
-    const priceInfo = calculateTierPrice(totalCount, campaign.pricing_tiers || [], campaign.current_price);
-    
+    const priceInfo = calculateTierPrice(
+      totalCount,
+      campaign.pricing_tiers || [],
+      campaign.current_price
+    );
+
     let campaignStatus = campaign.status;
     if (totalCount >= campaign.minimum_customers && campaignStatus === 'open') {
       campaignStatus = 'threshold_reached';
@@ -118,7 +139,10 @@ export async function POST(
         campaign_id: id,
         society_id: campaign.society_id,
         event_type: 'threshold_reached',
-        metadata: { total_participants: totalCount, unlocked_price: priceInfo.currentPrice },
+        metadata: {
+          total_participants: totalCount,
+          unlocked_price: priceInfo.currentPrice,
+        },
       });
     }
 
@@ -135,7 +159,8 @@ export async function POST(
     await serviceSupabase.from('campaign_events').insert({
       campaign_id: id,
       society_id: campaign.society_id,
-      event_type: newStatus === 'interested' ? 'interest_added' : 'interest_removed',
+      event_type:
+        newStatus === 'interested' ? 'interest_added' : 'interest_removed',
       metadata: { user_id: user.id, quantity, unit_identifier: unitIdentifier },
     });
 
@@ -146,6 +171,9 @@ export async function POST(
     });
   } catch (err: any) {
     console.error('[API/campaigns/[id]/interest] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

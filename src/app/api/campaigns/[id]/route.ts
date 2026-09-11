@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { calculateTierPrice } from '@/lib/ownera/campaigns';
 import { isPlatformAdmin } from '@/lib/ownera/rbac';
@@ -13,26 +14,31 @@ export async function GET(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     const serviceSupabase = createAdminClient();
 
     // Fetch campaign with related entities
     const { data: campaign, error: campaignError } = await serviceSupabase
       .from('service_campaigns')
-      .select(`
+      .select(
+        `
         *,
         society:societies(*),
         service:services(*),
         pricing_tiers:campaign_pricing_tiers(*),
         selected_provider:providers(*),
         selected_bid:provider_bids(*)
-      `)
+      `
+      )
       .eq('id', id)
       .maybeSingle();
 
     if (campaignError || !campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      );
     }
 
     // Check if current user is an active member of this society, secretary/committee, or authorized provider
@@ -109,7 +115,9 @@ export async function GET(
         status: p.status,
         quantity: p.quantity,
         created_at: p.created_at,
-        profile: p.profile ? { name: p.profile.name, avatar_url: p.profile.avatar_url } : null,
+        profile: p.profile
+          ? { name: p.profile.name, avatar_url: p.profile.avatar_url }
+          : null,
       };
     });
 
@@ -125,17 +133,20 @@ export async function GET(
     let userBooking = null;
 
     if (user) {
-      userParticipant = participantsList.find((p) => p.user_id === user.id) || null;
+      userParticipant =
+        participantsList.find((p) => p.user_id === user.id) || null;
 
       const { data: booking } = await serviceSupabase
         .from('bookings')
-        .select(`
+        .select(
+          `
           *,
           provider:providers(*),
           slot:booking_slots(*),
           service_issue:service_issues(*),
           service_rating:service_ratings(*)
-        `)
+        `
+        )
         .eq('campaign_id', id)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -143,9 +154,15 @@ export async function GET(
       userBooking = booking || null;
     }
 
-    const interestedCount = participantsList.filter((p) => p.status === 'interested' || p.status === 'confirmed').length;
-    const confirmedCount = participantsList.filter((p) => p.status === 'confirmed').length;
-    const completedCount = participantsList.filter((p) => p.status === 'completed').length;
+    const interestedCount = participantsList.filter(
+      (p) => p.status === 'interested' || p.status === 'confirmed'
+    ).length;
+    const confirmedCount = participantsList.filter(
+      (p) => p.status === 'confirmed'
+    ).length;
+    const completedCount = participantsList.filter(
+      (p) => p.status === 'completed'
+    ).length;
 
     const priceInfo = calculateTierPrice(
       confirmedCount > 0 ? confirmedCount : interestedCount,
@@ -172,6 +189,9 @@ export async function GET(
     });
   } catch (err: any) {
     console.error('[API/campaigns/[id]] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

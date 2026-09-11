@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { votePollSchema } from '@/src/shared/validations/ownera';
 import { calculateTierPrice } from '@/lib/ownera/campaigns';
@@ -15,7 +16,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -53,7 +54,10 @@ export async function POST(
       await requireSocietyMember(supabase, user.id, poll.society_id);
     } catch {
       return NextResponse.json(
-        { error: 'You must be a member of this society to participate in its polls.' },
+        {
+          error:
+            'You must be a member of this society to participate in its polls.',
+        },
         { status: 403 }
       );
     }
@@ -82,7 +86,10 @@ export async function POST(
         .single();
 
       if (uErr) {
-        return NextResponse.json({ error: 'Failed to update vote' }, { status: 500 });
+        return NextResponse.json(
+          { error: 'Failed to update vote' },
+          { status: 500 }
+        );
       }
       voteRecord = updated;
     } else {
@@ -99,26 +106,28 @@ export async function POST(
         .single();
 
       if (cErr) {
-        return NextResponse.json({ error: 'Failed to record vote' }, { status: 500 });
+        return NextResponse.json(
+          { error: 'Failed to record vote' },
+          { status: 500 }
+        );
       }
       voteRecord = created;
     }
 
     // Also sync campaign_participants for backwards compatibility
-    await serviceSupabase
-      .from('campaign_participants')
-      .upsert(
-        {
-          campaign_id: id,
-          user_id: user.id,
-          quantity: 1,
-          unit_identifier: unitIdentifier,
-          status: optionSelected.toLowerCase() === 'no' ? 'cancelled' : 'interested',
-          notes: `Voted: ${optionSelected}`,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'campaign_id,user_id' }
-      );
+    await serviceSupabase.from('campaign_participants').upsert(
+      {
+        campaign_id: id,
+        user_id: user.id,
+        quantity: 1,
+        unit_identifier: unitIdentifier,
+        status:
+          optionSelected.toLowerCase() === 'no' ? 'cancelled' : 'interested',
+        notes: `Voted: ${optionSelected}`,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'campaign_id,user_id' }
+    );
 
     // Recalculate affirmative vote count and pricing
     const { data: allVotes } = await serviceSupabase
@@ -160,6 +169,9 @@ export async function POST(
     });
   } catch (err: any) {
     console.error('[API/polls/[id]/vote] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

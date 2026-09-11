@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { isUserSupportAdmin } from '@/lib/admin/auth';
 import { logError } from '@/lib/logger';
-import { getClientIp, checkAdminRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkAdminRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 export async function PATCH(
   request: NextRequest,
@@ -15,7 +20,7 @@ export async function PATCH(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,7 +31,9 @@ export async function PATCH(
 
     if (!hasAdminAccess) {
       return NextResponse.json(
-        { error: 'Forbidden. Access restricted to administrator account only.' },
+        {
+          error: 'Forbidden. Access restricted to administrator account only.',
+        },
         { status: 403 }
       );
     }
@@ -34,18 +41,26 @@ export async function PATCH(
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkAdminRateLimit(user.id, clientIp);
     if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many admin requests. Please slow down.');
+      return createRateLimitResponse(
+        'Too many admin requests. Please slow down.'
+      );
     }
 
     if (!id) {
-      return NextResponse.json({ error: 'Missing issue report ID' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing issue report ID' },
+        { status: 400 }
+      );
     }
 
     let body: any;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid JSON payload' },
+        { status: 400 }
+      );
     }
 
     const { status, admin_note } = body || {};
@@ -56,7 +71,9 @@ export async function PATCH(
     if (status) {
       if (!allowedStatuses.includes(status)) {
         return NextResponse.json(
-          { error: `Invalid status value. Allowed: ${allowedStatuses.join(', ')}` },
+          {
+            error: `Invalid status value. Allowed: ${allowedStatuses.join(', ')}`,
+          },
           { status: 400 }
         );
       }
@@ -68,7 +85,10 @@ export async function PATCH(
     }
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: 'No valid fields provided for update' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'No valid fields provided for update' },
+        { status: 400 }
+      );
     }
 
     const { data: updatedReport, error: updateError } = await serviceSupabase
@@ -79,14 +99,32 @@ export async function PATCH(
       .single();
 
     if (updateError || !updatedReport) {
-      logError('Database', 'updateIssueReport', updateError, { id }, 'Failed to update issue report');
-      return NextResponse.json({ error: 'Issue report not found or update failed' }, { status: 500 });
+      logError(
+        'Database',
+        'updateIssueReport',
+        updateError,
+        { id },
+        'Failed to update issue report'
+      );
+      return NextResponse.json(
+        { error: 'Issue report not found or update failed' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true, report: updatedReport });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    logError('API', 'updateIssueReportException', err, {}, 'Exception updating issue report');
-    return NextResponse.json({ error: 'Internal server error', details: message }, { status: 500 });
+    logError(
+      'API',
+      'updateIssueReportException',
+      err,
+      {},
+      'Exception updating issue report'
+    );
+    return NextResponse.json(
+      { error: 'Internal server error', details: message },
+      { status: 500 }
+    );
   }
 }

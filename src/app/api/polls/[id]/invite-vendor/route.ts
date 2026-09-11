@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { inviteVendorSchema } from '@/src/shared/validations/ownera';
 import { isCommittee, isPlatformAdmin } from '@/lib/ownera/rbac';
@@ -15,7 +16,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -31,7 +32,8 @@ export async function POST(
       );
     }
 
-    const { option, providerId, businessName, phone, whatsappNumber } = parsed.data;
+    const { option, providerId, businessName, phone, whatsappNumber } =
+      parsed.data;
     const serviceSupabase = createAdminClient();
 
     // Fetch poll
@@ -47,20 +49,33 @@ export async function POST(
 
     // Verify caller is the creator or secretary/committee
     const isPlatform = await isPlatformAdmin(user.id, serviceSupabase);
-    const isSecOrCom = await isCommittee(user.id, poll.society_id, serviceSupabase);
+    const isSecOrCom = await isCommittee(
+      user.id,
+      poll.society_id,
+      serviceSupabase
+    );
     const isCreator = poll.organizer_id === user.id;
 
     if (!isCreator && !isSecOrCom && !isPlatform) {
       return NextResponse.json(
-        { error: 'Forbidden: Only the campaign creator or society secretary can invite vendors' },
+        {
+          error:
+            'Forbidden: Only the campaign creator or society secretary can invite vendors',
+        },
         { status: 403 }
       );
     }
 
     // Unapproved society campaigns cannot invite providers
-    if (poll.scope === 'society' && poll.secretary_approval_status === 'pending') {
+    if (
+      poll.scope === 'society' &&
+      poll.secretary_approval_status === 'pending'
+    ) {
       return NextResponse.json(
-        { error: 'Society campaign must be approved by the Secretary before inviting providers' },
+        {
+          error:
+            'Society campaign must be approved by the Secretary before inviting providers',
+        },
         { status: 400 }
       );
     }
@@ -70,7 +85,10 @@ export async function POST(
 
     if (option === 'existing_provider') {
       if (!providerId) {
-        return NextResponse.json({ error: 'providerId required for existing provider' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'providerId required for existing provider' },
+          { status: 400 }
+        );
       }
 
       const { data: provider } = await serviceSupabase
@@ -80,7 +98,10 @@ export async function POST(
         .single();
 
       if (!provider) {
-        return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Provider not found' },
+          { status: 404 }
+        );
       }
 
       // Record in campaign_vendor_invites
@@ -101,20 +122,21 @@ export async function POST(
 
       if (invErr) {
         console.error('[API/polls/[id]/invite-vendor] Insert error:', invErr);
-        return NextResponse.json({ error: 'Failed to record provider invitation' }, { status: 500 });
+        return NextResponse.json(
+          { error: 'Failed to record provider invitation' },
+          { status: 500 }
+        );
       }
 
       // Backwards-compatible campaign_provider_invites
-      await serviceSupabase
-        .from('campaign_provider_invites')
-        .upsert(
-          {
-            campaign_id: id,
-            provider_id: provider.id,
-            status: 'invited',
-          },
-          { onConflict: 'campaign_id,provider_id' }
-        );
+      await serviceSupabase.from('campaign_provider_invites').upsert(
+        {
+          campaign_id: id,
+          provider_id: provider.id,
+          status: 'invited',
+        },
+        { onConflict: 'campaign_id,provider_id' }
+      );
 
       // Notify provider user if registered
       if (provider.user_id) {
@@ -128,10 +150,17 @@ export async function POST(
       }
 
       // Update campaign status
-      if (poll.status === 'poll_active' || poll.status === 'approved' || poll.status === 'open') {
+      if (
+        poll.status === 'poll_active' ||
+        poll.status === 'approved' ||
+        poll.status === 'open'
+      ) {
         await serviceSupabase
           .from('service_campaigns')
-          .update({ status: 'quotes_invited', updated_at: new Date().toISOString() })
+          .update({
+            status: 'quotes_invited',
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', id);
       }
 
@@ -144,7 +173,10 @@ export async function POST(
       // Option B: Custom local vendor
       if (!businessName || !phone) {
         return NextResponse.json(
-          { error: 'Business name and phone number are required to invite a vendor' },
+          {
+            error:
+              'Business name and phone number are required to invite a vendor',
+          },
           { status: 400 }
         );
       }
@@ -165,7 +197,9 @@ export async function POST(
           provider_id: matchedProvider?.id || null,
           business_name: businessName.trim(),
           phone: phone.trim(),
-          whatsapp_number: whatsappNumber ? whatsappNumber.trim() : phone.trim(),
+          whatsapp_number: whatsappNumber
+            ? whatsappNumber.trim()
+            : phone.trim(),
           invited_by: user.id,
           status: 'invited',
           invite_token: inviteToken,
@@ -174,22 +208,26 @@ export async function POST(
         .single();
 
       if (invErr) {
-        console.error('[API/polls/[id]/invite-vendor] Custom vendor insert error:', invErr);
-        return NextResponse.json({ error: 'Failed to create vendor invitation' }, { status: 500 });
+        console.error(
+          '[API/polls/[id]/invite-vendor] Custom vendor insert error:',
+          invErr
+        );
+        return NextResponse.json(
+          { error: 'Failed to create vendor invitation' },
+          { status: 500 }
+        );
       }
 
       // If matched existing provider, also populate campaign_provider_invites and notify
       if (matchedProvider) {
-        await serviceSupabase
-          .from('campaign_provider_invites')
-          .upsert(
-            {
-              campaign_id: id,
-              provider_id: matchedProvider.id,
-              status: 'invited',
-            },
-            { onConflict: 'campaign_id,provider_id' }
-          );
+        await serviceSupabase.from('campaign_provider_invites').upsert(
+          {
+            campaign_id: id,
+            provider_id: matchedProvider.id,
+            status: 'invited',
+          },
+          { onConflict: 'campaign_id,provider_id' }
+        );
 
         if (matchedProvider.user_id) {
           await serviceSupabase.from('notifications').insert({
@@ -203,10 +241,17 @@ export async function POST(
       }
 
       // Update campaign status
-      if (poll.status === 'poll_active' || poll.status === 'approved' || poll.status === 'open') {
+      if (
+        poll.status === 'poll_active' ||
+        poll.status === 'approved' ||
+        poll.status === 'open'
+      ) {
         await serviceSupabase
           .from('service_campaigns')
-          .update({ status: 'quotes_invited', updated_at: new Date().toISOString() })
+          .update({
+            status: 'quotes_invited',
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', id);
       }
 
@@ -224,6 +269,9 @@ export async function POST(
     }
   } catch (err: any) {
     console.error('[API/polls/[id]/invite-vendor] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

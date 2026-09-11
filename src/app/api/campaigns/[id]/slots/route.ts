@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 
 export async function GET(
@@ -18,13 +19,19 @@ export async function GET(
 
     if (error) {
       console.error('[API/campaigns/[id]/slots] Error:', error);
-      return NextResponse.json({ error: 'Failed to fetch slots' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch slots' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ slots: slots || [] });
   } catch (err: any) {
     console.error('[API/campaigns/[id]/slots] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -38,7 +45,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,7 +55,10 @@ export async function POST(
     const { slotTime, maxCapacity = 5 } = json;
 
     if (!slotTime || typeof slotTime !== 'string') {
-      return NextResponse.json({ error: 'slotTime is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'slotTime is required' },
+        { status: 400 }
+      );
     }
 
     const serviceSupabase = createAdminClient();
@@ -66,12 +76,18 @@ export async function POST(
 
     if (error) {
       console.error('[API/campaigns/[id]/slots] Insert error:', error);
-      return NextResponse.json({ error: 'Failed to create slot' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to create slot' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true, slot });
   } catch (err: any) {
     console.error('[API/campaigns/[id]/slots] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

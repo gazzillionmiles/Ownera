@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { selectQuoteSchema } from '@/src/shared/validations/ownera';
 import { isCommittee, isPlatformAdmin } from '@/lib/ownera/rbac';
@@ -14,7 +15,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -41,17 +42,27 @@ export async function POST(
       .single();
 
     if (campErr || !campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      );
     }
 
     // Verify caller is campaign creator or secretary/committee or platform_admin
     const isPlatform = await isPlatformAdmin(user.id, serviceSupabase);
-    const isSecOrCom = await isCommittee(user.id, campaign.society_id, serviceSupabase);
+    const isSecOrCom = await isCommittee(
+      user.id,
+      campaign.society_id,
+      serviceSupabase
+    );
     const isCreator = campaign.organizer_id === user.id;
 
     if (!isCreator && !isSecOrCom && !isPlatform) {
       return NextResponse.json(
-        { error: 'Forbidden: Only the campaign creator or society secretary can select the winning quote' },
+        {
+          error:
+            'Forbidden: Only the campaign creator or society secretary can select the winning quote',
+        },
         { status: 403 }
       );
     }
@@ -93,8 +104,12 @@ export async function POST(
 
     // Dynamic Slot Generation based on Provider Capacity
     // If provider has simultaneous_capacity = 5, duration = 30 min, start = 10:00 AM
-    const slotDuration = selectedBid.estimated_duration_minutes || selectedBid.service_duration_minutes || 30;
-    const simultaneousCap = selectedBid.simultaneous_capacity || selectedBid.technicians_count || 5;
+    const slotDuration =
+      selectedBid.estimated_duration_minutes ||
+      selectedBid.service_duration_minutes ||
+      30;
+    const simultaneousCap =
+      selectedBid.simultaneous_capacity || selectedBid.technicians_count || 5;
 
     // Remove old slots
     await serviceSupabase.from('booking_slots').delete().eq('campaign_id', id);
@@ -137,6 +152,9 @@ export async function POST(
     });
   } catch (err: any) {
     console.error('[API/polls/[id]/select-quote] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

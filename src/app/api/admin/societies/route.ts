@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { requirePlatformPermission } from '@/lib/ownera/rbac';
 import { createSocietySchema } from '@/src/shared/validations/ownera';
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,7 +19,11 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createAdminClient();
     try {
-      await requirePlatformPermission(serviceSupabase, user.id, 'platform.societies.manage');
+      await requirePlatformPermission(
+        serviceSupabase,
+        user.id,
+        'platform.societies.manage'
+      );
     } catch (authErr: any) {
       return NextResponse.json(
         { error: authErr.message || 'Platform administrator access required' },
@@ -33,7 +38,10 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (fetchErr) {
-      return NextResponse.json({ error: 'Failed to fetch societies' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch societies' },
+        { status: 500 }
+      );
     }
 
     // Fetch active member counts
@@ -44,7 +52,10 @@ export async function GET(request: NextRequest) {
 
     const memberCountMap = new Map<string, number>();
     (allMembers || []).forEach((m) => {
-      memberCountMap.set(m.society_id, (memberCountMap.get(m.society_id) || 0) + 1);
+      memberCountMap.set(
+        m.society_id,
+        (memberCountMap.get(m.society_id) || 0) + 1
+      );
     });
 
     // Fetch campaign counts
@@ -55,9 +66,24 @@ export async function GET(request: NextRequest) {
     const campaignCountMap = new Map<string, number>();
     const activeCampaignCountMap = new Map<string, number>();
     (allCampaigns || []).forEach((c) => {
-      campaignCountMap.set(c.society_id, (campaignCountMap.get(c.society_id) || 0) + 1);
-      if (['open', 'threshold_reached', 'quotes_invited', 'quote_selected', 'booking_open', 'scheduled'].includes(c.status)) {
-        activeCampaignCountMap.set(c.society_id, (activeCampaignCountMap.get(c.society_id) || 0) + 1);
+      campaignCountMap.set(
+        c.society_id,
+        (campaignCountMap.get(c.society_id) || 0) + 1
+      );
+      if (
+        [
+          'open',
+          'threshold_reached',
+          'quotes_invited',
+          'quote_selected',
+          'booking_open',
+          'scheduled',
+        ].includes(c.status)
+      ) {
+        activeCampaignCountMap.set(
+          c.society_id,
+          (activeCampaignCountMap.get(c.society_id) || 0) + 1
+        );
       }
     });
 
@@ -68,8 +94,14 @@ export async function GET(request: NextRequest) {
 
     const bookingCountMap = new Map<string, number>();
     (allBookings || []).forEach((b) => {
-      if (b.society_id && ['confirmed', 'scheduled', 'completed'].includes(b.status)) {
-        bookingCountMap.set(b.society_id, (bookingCountMap.get(b.society_id) || 0) + 1);
+      if (
+        b.society_id &&
+        ['confirmed', 'scheduled', 'completed'].includes(b.status)
+      ) {
+        bookingCountMap.set(
+          b.society_id,
+          (bookingCountMap.get(b.society_id) || 0) + 1
+        );
       }
     });
 
@@ -109,7 +141,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ societies: enrichedSocieties });
   } catch (err: any) {
     console.error('[API/admin/societies GET] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -119,7 +154,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -127,7 +162,11 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createAdminClient();
     try {
-      await requirePlatformPermission(serviceSupabase, user.id, 'platform.societies.create');
+      await requirePlatformPermission(
+        serviceSupabase,
+        user.id,
+        'platform.societies.create'
+      );
     } catch (authErr: any) {
       return NextResponse.json(
         { error: 'Only platform administrators can create societies' },
@@ -139,7 +178,10 @@ export async function POST(request: NextRequest) {
     const parsed = createSocietySchema.safeParse(json);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid society data', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid society data', details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const {
@@ -155,7 +197,10 @@ export async function POST(request: NextRequest) {
       flatNumber,
     } = parsed.data;
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
 
     // Check unique invite code
     const { data: existingCode } = await serviceSupabase
@@ -165,7 +210,10 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingCode) {
-      return NextResponse.json({ error: 'Invite code is already taken. Please choose another.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invite code is already taken. Please choose another.' },
+        { status: 400 }
+      );
     }
 
     // Insert society
@@ -186,7 +234,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError || !society) {
-      return NextResponse.json({ error: 'Failed to create society' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to create society' },
+        { status: 500 }
+      );
     }
 
     // If initial secretary specified by user_id
@@ -225,6 +276,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/admin/societies POST] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { getAffiliateConsentStatus } from '@/lib/affiliate-consent';
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -41,7 +42,10 @@ export async function GET(request: NextRequest) {
       referralCode = generateCode();
       await serviceSupabase
         .from('profiles')
-        .update({ referral_code: referralCode, updated_at: new Date().toISOString() })
+        .update({
+          referral_code: referralCode,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', user.id);
     }
 
@@ -52,8 +56,10 @@ export async function GET(request: NextRequest) {
       .eq('referrer_user_id', user.id);
 
     const totalReferrals = userReferrals?.length || 0;
-    const activeReferrals = userReferrals?.filter((r) => r.status === 'active').length || 0;
-    const flaggedReferrals = userReferrals?.filter((r) => r.status === 'flagged').length || 0;
+    const activeReferrals =
+      userReferrals?.filter((r) => r.status === 'active').length || 0;
+    const flaggedReferrals =
+      userReferrals?.filter((r) => r.status === 'flagged').length || 0;
 
     // Check if current user is a referred user with an active discount
     const { data: userDiscountRef } = await serviceSupabase
@@ -65,7 +71,10 @@ export async function GET(request: NextRequest) {
 
     const hasDiscount = !!userDiscountRef;
 
-    const origin = request.nextUrl.origin || process.env.NEXT_PUBLIC_APP_URL || 'https://example.com';
+    const origin =
+      request.nextUrl.origin ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'https://example.com';
     const shareUrl = `${origin}/?ref=${referralCode}`;
 
     return NextResponse.json({
@@ -90,6 +99,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/referral/info] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { getInviteLinkQuerySchema } from '@/src/shared/validations/ownera';
 import { getOrCreateActiveInviteLink } from '@/lib/ownera/invite-links';
 import { AuthorizationError } from '@/lib/ownera/rbac';
@@ -10,10 +11,13 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized. Please sign in first.' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in first.' },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -27,7 +31,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await getOrCreateActiveInviteLink(parsed.data.societyId, user.id);
+    const result = await getOrCreateActiveInviteLink(
+      parsed.data.societyId,
+      user.id
+    );
 
     return NextResponse.json({
       success: true,
@@ -37,9 +44,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (err: any) {
     if (err instanceof AuthorizationError) {
-      return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      return NextResponse.json(
+        { error: err.message },
+        { status: err.statusCode }
+      );
     }
     console.error('[API/societies/invite-link GET] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

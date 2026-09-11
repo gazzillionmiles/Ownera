@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { transferSecretarySchema } from '@/src/shared/validations/ownera';
 import { isPlatformAdmin } from '@/lib/ownera/rbac';
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,7 +43,10 @@ export async function POST(request: NextRequest) {
 
     if (!isPlatform && !currentSecretaryMember) {
       return NextResponse.json(
-        { error: 'Forbidden: Only the primary society secretary or a platform admin can transfer secretary role' },
+        {
+          error:
+            'Forbidden: Only the primary society secretary or a platform admin can transfer secretary role',
+        },
         { status: 403 }
       );
     }
@@ -58,7 +62,10 @@ export async function POST(request: NextRequest) {
 
     if (targetErr || !targetMember) {
       return NextResponse.json(
-        { error: 'The new secretary must already be an active member of this society.' },
+        {
+          error:
+            'The new secretary must already be an active member of this society.',
+        },
         { status: 400 }
       );
     }
@@ -99,7 +106,10 @@ export async function POST(request: NextRequest) {
         .eq('society_id', societyId)
         .eq('user_id', newSecretaryUserId);
     } else if (rpcResult && rpcResult.success === false) {
-      return NextResponse.json({ error: rpcResult.error || 'Transfer failed' }, { status: 400 });
+      return NextResponse.json(
+        { error: rpcResult.error || 'Transfer failed' },
+        { status: 400 }
+      );
     }
 
     // Audit event
@@ -122,6 +132,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[API/societies/transfer-secretary] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

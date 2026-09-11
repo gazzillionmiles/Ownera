@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { requirePlatformPermission } from '@/lib/ownera/rbac';
 
@@ -15,7 +16,7 @@ export async function GET(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,11 @@ export async function GET(
 
     const serviceSupabase = createAdminClient();
     try {
-      await requirePlatformPermission(serviceSupabase, user.id, 'platform.societies.manage');
+      await requirePlatformPermission(
+        serviceSupabase,
+        user.id,
+        'platform.societies.manage'
+      );
     } catch (authErr: any) {
       return NextResponse.json(
         { error: authErr.message || 'Platform administrator access required' },
@@ -64,7 +69,9 @@ export async function GET(
     // 3. Fetch campaigns for this society
     const { data: campaigns } = await serviceSupabase
       .from('service_campaigns')
-      .select('id, title, status, event_date, current_price, target_customers, created_at, service:services(name)')
+      .select(
+        'id, title, status, event_date, current_price, target_customers, created_at, service:services(name)'
+      )
       .eq('society_id', societyId)
       .order('created_at', { ascending: false });
 
@@ -85,6 +92,9 @@ export async function GET(
     });
   } catch (err: any) {
     console.error('[API/admin/societies/[id]] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

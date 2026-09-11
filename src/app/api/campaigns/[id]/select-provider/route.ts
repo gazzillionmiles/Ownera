@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { selectProviderBidSchema } from '@/src/shared/validations/ownera';
 import { requireOrganizer } from '@/lib/ownera/auth';
@@ -14,17 +15,23 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const json = await request.json();
-    const parsed = selectProviderBidSchema.safeParse({ ...json, campaignId: id });
+    const parsed = selectProviderBidSchema.safeParse({
+      ...json,
+      campaignId: id,
+    });
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid selection payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid selection payload', details: parsed.error.format() },
+        { status: 400 }
+      );
     }
 
     const { bidId, providerId } = parsed.data;
@@ -38,7 +45,10 @@ export async function POST(
       .single();
 
     if (campError || !campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      );
     }
 
     // Check that user is an organizer of this society or the creator
@@ -46,7 +56,10 @@ export async function POST(
       await requireOrganizer(supabase, user.id, campaign.society_id);
     } catch {
       if (campaign.organizer_id !== user.id) {
-        return NextResponse.json({ error: 'Only the society organizer can select a provider' }, { status: 403 });
+        return NextResponse.json(
+          { error: 'Only the society organizer can select a provider' },
+          { status: 403 }
+        );
       }
     }
 
@@ -115,7 +128,13 @@ export async function POST(
       selectedBid: bid,
     });
   } catch (err: any) {
-    console.error('[API/campaigns/[id]/select-provider] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error(
+      '[API/campaigns/[id]/select-provider] Unexpected error:',
+      err
+    );
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

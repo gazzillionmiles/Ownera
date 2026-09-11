@@ -21,6 +21,7 @@ import {
   trackReferralSignupCompleted,
 } from '@/src/shared/lib/analytics';
 import { getSafePostAuthRedirect } from '@/lib/consent';
+import type { InitialAuthData } from '@/lib/auth/initial-auth';
 
 const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
 const REF_COOKIE_NAME = `${APP_PREFIX}_ref_code`;
@@ -53,7 +54,10 @@ interface AuthContextType {
   loading: boolean;
   hasTermsConsent: boolean;
   signInWithGoogle: (nextParam?: string) => Promise<{ error: Error | null }>;
-  signInWithEmailOtp: (email: string, nextParam?: string) => Promise<{ error: Error | null }>;
+  signInWithEmailOtp: (
+    email: string,
+    nextParam?: string
+  ) => Promise<{ error: Error | null }>;
   signUpWithEmail: (
     email: string,
     password: string,
@@ -117,20 +121,41 @@ const AuthContext = createContext<AuthContextType>({
   acceptTermsConsent: async () => ({ error: null }),
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider: React.FC<{
+  children: React.ReactNode;
+  initialAuth?: InitialAuthData;
+}> = ({ children, initialAuth }) => {
   const [supabase] = useState(() => createClient());
-  const [user, setUser] = useState<User | null>(null);
+  // Seed from the server-resolved auth state (see lib/auth/initial-auth.ts)
+  // when available, instead of always starting from null/loading. `user`
+  // here is a minimal stand-in (id/email only, no user_metadata/
+  // app_metadata) — it's replaced with the real Supabase User object once
+  // the background getSession() call below resolves, but it's enough for
+  // uiUser/isLoggedIn checks to be correct on first paint.
+  const [user, setUser] = useState<User | null>(
+    initialAuth?.userId
+      ? ({
+          id: initialAuth.userId,
+          email: initialAuth.userEmail ?? undefined,
+        } as User)
+      : null
+  );
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<ProfileRecord | null>(null);
+  const [profile, setProfile] = useState<ProfileRecord | null>(
+    (initialAuth?.profile as ProfileRecord | null) ?? null
+  );
   const [hasTermsConsent, setHasTermsConsent] = useState<boolean>(true);
-  const [loading, setLoading] = useState(true);
+  // If the server already resolved auth state (initialAuth is defined,
+  // whether logged in or not), we don't need to block rendering on the
+  // client-side fetch chain below — it still runs, but purely in the
+  // background to reconcile the full session object.
+  const [loading, setLoading] = useState(initialAuth === undefined);
 
   const checkTermsConsent = useCallback(
     async (userId: string) => {
       try {
-        const currentTermsVersion = process.env.TERMS_CONSENT_VERSION || '2026-v1';
+        const currentTermsVersion =
+          process.env.TERMS_CONSENT_VERSION || '2026-v1';
         const { data, error } = await supabase
           .from('consent_events')
           .select('id')
@@ -199,9 +224,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         });
         const data = await res.json().catch(() => null);
         if (data && typeof data.credits === 'number') {
-          setProfile((prev) => (prev ? { ...prev, credits: data.credits } : null));
+          setProfile((prev) =>
+            prev ? { ...prev, credits: data.credits } : null
+          );
         } else if (data?.welcomeCredits?.granted) {
-          setProfile((prev) => (prev ? { ...prev, credits: (prev.credits ?? 0) + (data.welcomeCredits.creditsGranted || 5) } : null));
+          setProfile((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  credits:
+                    (prev.credits ?? 0) +
+                    (data.welcomeCredits.creditsGranted || 5),
+                }
+              : null
+          );
         }
       }
     } catch (err) {
@@ -215,7 +251,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       let refCode = window.localStorage.getItem(REF_COOKIE_NAME)?.trim();
       if (!refCode) {
-        const match = document.cookie.match(new RegExp(`(?:^|; )${REF_COOKIE_NAME}=([^;]*)`));
+        const match = document.cookie.match(
+          new RegExp(`(?:^|; )${REF_COOKIE_NAME}=([^;]*)`)
+        );
         if (match) refCode = decodeURIComponent(match[1])?.trim();
       }
 
@@ -237,8 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (res.ok) {
         trackReferralSignupCompleted(refCode);
         window.localStorage.removeItem(REF_COOKIE_NAME);
-        document.cookie =
-          `${REF_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        document.cookie = `${REF_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       }
     } catch (err) {
       console.error('Error linking referral code:', err);
@@ -344,35 +381,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [user, supabase]);
 
-  const signInWithGoogle = useCallback(async (nextParam?: string) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const safeNext = getSafePostAuthRedirect(nextParam || null);
-    const redirectTo = safeNext && safeNext !== '/home'
-      ? `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
-      : `${origin}/auth/callback`;
+  const signInWithGoogle = useCallback(
+    async (nextParam?: string) => {
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : '';
+      const safeNext = getSafePostAuthRedirect(nextParam || null);
+      const redirectTo =
+        safeNext && safeNext !== '/home'
+          ? `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
+          : `${origin}/auth/callback`;
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
-      },
-    });
+      });
 
-    return { error };
-  }, [supabase]);
+      return { error };
+    },
+    [supabase]
+  );
 
   const signInWithEmailOtp = useCallback(
     async (email: string, nextParam?: string) => {
       const origin =
         typeof window !== 'undefined' ? window.location.origin : '';
       const safeNext = getSafePostAuthRedirect(nextParam || null);
-      const emailRedirectTo = safeNext && safeNext !== '/home'
-        ? `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
-        : `${origin}/auth/callback`;
+      const emailRedirectTo =
+        safeNext && safeNext !== '/home'
+          ? `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
+          : `${origin}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -387,17 +430,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const signUpWithEmail = useCallback(
-    async (email: string, password: string, inviteCode?: string, nextParam?: string) => {
+    async (
+      email: string,
+      password: string,
+      inviteCode?: string,
+      nextParam?: string
+    ) => {
       const clientId = getAppClientId();
       const fp = await getVisitorFingerprint();
       const safeNext = getSafePostAuthRedirect(nextParam || null);
 
       let effectiveCode = inviteCode?.trim().toUpperCase();
       if (!effectiveCode && typeof document !== 'undefined') {
-        const match = document.cookie.match(/(?:^|; )ownera_invite_code=([^;]*)/);
-        if (match) effectiveCode = decodeURIComponent(match[1])?.trim().toUpperCase();
+        const match = document.cookie.match(
+          /(?:^|; )ownera_invite_code=([^;]*)/
+        );
+        if (match)
+          effectiveCode = decodeURIComponent(match[1])?.trim().toUpperCase();
         if (!effectiveCode) {
-          effectiveCode = window.localStorage.getItem('ownera_invite_code')?.trim().toUpperCase() || undefined;
+          effectiveCode =
+            window.localStorage
+              .getItem('ownera_invite_code')
+              ?.trim()
+              .toUpperCase() || undefined;
         }
       }
 

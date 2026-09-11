@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { logError } from '@/lib/logger';
-import { getClientIp, checkHistoryRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkHistoryRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 /**
  * Universal Activity History Detail API (GET /api/history/[generation_id] & DELETE)
@@ -13,7 +18,10 @@ export async function GET(
 ) {
   const { generation_id } = await params;
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await getVerifiedUser(request, supabase);
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,11 +30,16 @@ export async function GET(
   const clientIp = getClientIp(request);
   const rateLimitResult = await checkHistoryRateLimit(user.id, clientIp);
   if (!rateLimitResult.success) {
-    return createRateLimitResponse('Too many history requests. Please try again later.');
+    return createRateLimitResponse(
+      'Too many history requests. Please try again later.'
+    );
   }
 
   if (!generation_id) {
-    return NextResponse.json({ error: 'Missing reference_id parameter' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing reference_id parameter' },
+      { status: 400 }
+    );
   }
 
   const serviceSupabase = createAdminClient();
@@ -39,7 +52,10 @@ export async function GET(
       .single();
 
     if (fetchError || !row) {
-      return NextResponse.json({ error: 'Activity record not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Activity record not found' },
+        { status: 404 }
+      );
     }
 
     if (row.user_id !== user.id) {
@@ -59,8 +75,17 @@ export async function GET(
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    logError('API', 'getActivityDetailException', err, { generation_id, userId: user.id }, 'Detail view error');
-    return NextResponse.json({ error: 'Failed to retrieve activity detail', details: message }, { status: 500 });
+    logError(
+      'API',
+      'getActivityDetailException',
+      err,
+      { generation_id, userId: user.id },
+      'Detail view error'
+    );
+    return NextResponse.json(
+      { error: 'Failed to retrieve activity detail', details: message },
+      { status: 500 }
+    );
   }
 }
 
@@ -70,7 +95,10 @@ export async function DELETE(
 ) {
   const { generation_id } = await params;
   const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await getVerifiedUser(request, supabase);
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -79,11 +107,16 @@ export async function DELETE(
   const clientIp = getClientIp(request);
   const rateLimitResult = await checkHistoryRateLimit(user.id, clientIp);
   if (!rateLimitResult.success) {
-    return createRateLimitResponse('Too many history requests. Please try again later.');
+    return createRateLimitResponse(
+      'Too many history requests. Please try again later.'
+    );
   }
 
   if (!generation_id) {
-    return NextResponse.json({ error: 'Missing reference_id parameter' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing reference_id parameter' },
+      { status: 400 }
+    );
   }
 
   const serviceSupabase = createAdminClient();
@@ -96,7 +129,10 @@ export async function DELETE(
       .single();
 
     if (fetchError || !row) {
-      return NextResponse.json({ error: 'Activity record not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Activity record not found' },
+        { status: 404 }
+      );
     }
 
     if (row.user_id !== user.id) {
@@ -110,14 +146,32 @@ export async function DELETE(
       .eq('user_id', user.id);
 
     if (deleteError) {
-      logError('Database', 'deleteSingleHistory', deleteError, { generation_id, userId: user.id }, 'DB delete failed');
-      return NextResponse.json({ error: 'Failed to delete record' }, { status: 500 });
+      logError(
+        'Database',
+        'deleteSingleHistory',
+        deleteError,
+        { generation_id, userId: user.id },
+        'DB delete failed'
+      );
+      return NextResponse.json(
+        { error: 'Failed to delete record' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true, deleted_id: generation_id });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    logError('API', 'deleteActivityException', err, { generation_id, userId: user.id }, 'Delete exception');
-    return NextResponse.json({ error: 'Failed to delete record', details: message }, { status: 500 });
+    logError(
+      'API',
+      'deleteActivityException',
+      err,
+      { generation_id, userId: user.id },
+      'Delete exception'
+    );
+    return NextResponse.json(
+      { error: 'Failed to delete record', details: message },
+      { status: 500 }
+    );
   }
 }

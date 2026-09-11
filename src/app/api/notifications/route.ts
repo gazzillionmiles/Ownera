@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,13 +26,19 @@ export async function GET() {
 
     if (error) {
       console.error('[API/notifications] Error:', error);
-      return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch notifications' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ notifications: notifications || [] });
   } catch (err: any) {
     console.error('[API/notifications] Unexpected error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -66,6 +73,9 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('[API/notifications] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

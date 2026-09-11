@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { isUserAdmin } from '@/lib/admin/auth';
-import { getClientIp, checkAdminRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+import {
+  getClientIp,
+  checkAdminRateLimit,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +15,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getVerifiedUser(request, supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +25,9 @@ export async function POST(request: NextRequest) {
 
     if (!(await isUserAdmin(user, serviceSupabase))) {
       return NextResponse.json(
-        { error: 'Forbidden. Access restricted to administrator account only.' },
+        {
+          error: 'Forbidden. Access restricted to administrator account only.',
+        },
         { status: 403 }
       );
     }
@@ -28,7 +35,9 @@ export async function POST(request: NextRequest) {
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkAdminRateLimit(user.id, clientIp);
     if (!rateLimitResult.success) {
-      return createRateLimitResponse('Too many admin requests. Please slow down.');
+      return createRateLimitResponse(
+        'Too many admin requests. Please slow down.'
+      );
     }
 
     let body: any;
@@ -41,7 +50,12 @@ export async function POST(request: NextRequest) {
     const { referral_id, action } = body || {};
 
     if (!referral_id || (action !== 'approve' && action !== 'reject')) {
-      return NextResponse.json({ error: 'referral_id and valid action (approve | reject) are required' }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'referral_id and valid action (approve | reject) are required',
+        },
+        { status: 400 }
+      );
     }
 
     const newStatus = action === 'approve' ? 'active' : 'rejected';
@@ -57,8 +71,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('[Admin/Referrals/Action] Error updating referral:', updateError);
-      return NextResponse.json({ error: 'Failed to update referral status' }, { status: 500 });
+      console.error(
+        '[Admin/Referrals/Action] Error updating referral:',
+        updateError
+      );
+      return NextResponse.json(
+        { error: 'Failed to update referral status' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -69,6 +89,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[Admin/Referrals/Action] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
