@@ -200,21 +200,42 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
-    // Insert society
-    const { data: society, error: insertError } = await serviceSupabase
+    // Insert society (backward-compatible if remote DB still has NOT NULL on legacy invite_code)
+    const societyPayload: Record<string, any> = {
+      name,
+      slug: `${slug}-${Math.random().toString(36).substring(2, 6)}`,
+      address,
+      city,
+      state,
+      pincode,
+      total_homes: totalHomes,
+      created_by: user.id,
+    };
+
+    let { data: society, error: insertError } = await serviceSupabase
       .from('societies')
-      .insert({
-        name,
-        slug: `${slug}-${Math.random().toString(36).substring(2, 6)}`,
-        address,
-        city,
-        state,
-        pincode,
-        total_homes: totalHomes,
-        created_by: user.id,
-      })
+      .insert(societyPayload)
       .select()
       .single();
+
+    if (
+      insertError &&
+      insertError.code === '23502' &&
+      (insertError.message?.includes('invite_code') ||
+        insertError.details?.includes('invite_code'))
+    ) {
+      const fallbackCode = `SOC${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const retryResult = await serviceSupabase
+        .from('societies')
+        .insert({
+          ...societyPayload,
+          invite_code: fallbackCode,
+        })
+        .select()
+        .single();
+      society = retryResult.data;
+      insertError = retryResult.error;
+    }
 
     if (insertError || !society) {
       return NextResponse.json(
