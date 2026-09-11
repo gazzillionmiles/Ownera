@@ -20,12 +20,37 @@ export const onboardingProfileSchema = z.object({
   societyId: z.string().optional().nullable(),
 });
 
-// NOTE: Joining an existing society happens exclusively through the
+// NOTE: Joining an existing society happens primarily through the
 // reusable secretary-managed invite link (see getInviteLinkQuerySchema /
 // rotateInviteLinkSchema / joinByInviteTokenSchema below). The legacy
-// static "invite code" and per-invitation role-token schemas
-// (joinSocietySchema, inviteSocietyMemberSchema, acceptInvitationSchema)
-// have been removed.
+// static schemas are retained for backward compatibility with existing routes.
+
+export const joinSocietySchema = z.object({
+  inviteCode: z.string().max(256).optional().nullable(),
+  code: z.string().max(256).optional().nullable(),
+  invitationToken: z.string().max(256).optional().nullable(),
+  token: z.string().max(256).optional().nullable(),
+  flatNumber: z.string().max(100).optional().nullable(),
+  unitNumber: z.string().max(100).optional().nullable(),
+  propertyType: propertyTypeSchema.default('apartment'),
+  role: z.enum(['resident', 'secretary', 'committee', 'organizer']).default('resident'),
+}).refine(
+  (data) => Boolean((data.inviteCode && data.inviteCode.trim()) || (data.code && data.code.trim()) || (data.invitationToken && data.invitationToken.trim()) || (data.token && data.token.trim())),
+  { message: 'Please provide a valid society invite code or invitation token' }
+);
+
+export const inviteSocietyMemberSchema = z.object({
+  societyId: z.string().min(1),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().min(10).max(15).optional().nullable(),
+  role: z.enum(['secretary', 'committee', 'resident']),
+});
+
+export const acceptInvitationSchema = z.object({
+  token: z.string().min(10),
+  flatNumber: z.string().min(1).max(50),
+  propertyType: propertyTypeSchema.default('apartment'),
+});
 
 export const getInviteLinkQuerySchema = z.object({
   societyId: z.string().min(1, 'Society ID is required'),
