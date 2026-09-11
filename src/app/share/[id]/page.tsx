@@ -37,13 +37,6 @@ export default function ShareCampaignPage({
       .then((data) => {
         if (data.campaign) {
           setCampaign(data.campaign);
-          if (data.campaign.society?.invite_code && typeof document !== 'undefined') {
-            const code = data.campaign.society.invite_code.toUpperCase();
-            document.cookie = `ownera_invite_code=${encodeURIComponent(code)}; path=/; max-age=2592000; SameSite=Lax`;
-            try {
-              window.localStorage.setItem('ownera_invite_code', code);
-            } catch {}
-          }
         }
       })
       .catch((err) => console.error(err))
@@ -111,7 +104,7 @@ ${typeof window !== 'undefined' ? window.location.href : ''}`;
             <span className="font-bold text-lg">{APP_NAME}</span>
           </Link>
           <Link
-            href={`/login?mode=signup&code=${campaign.society?.invite_code || ''}`}
+            href="/login?mode=signup"
             className="text-xs font-bold px-4 py-2 rounded-xl bg-[#2CB7A5] text-zinc-950"
           >
             Join Campaign
@@ -177,7 +170,7 @@ ${typeof window !== 'undefined' ? window.location.href : ''}`;
           {/* Action CTAs */}
           <div className="space-y-2.5 pt-2">
             <Link
-              href={`/login?mode=signup&code=${campaign.society?.invite_code || ''}`}
+              href="/login?mode=signup"
               className="w-full py-3.5 rounded-2xl bg-[#2CB7A5] text-zinc-950 font-bold text-xs uppercase tracking-wider hover:bg-[#25A08F] transition flex items-center justify-center gap-2 shadow-lg"
             >
               <span>Join &amp; Confirm Booking (₹49 Deposit)</span>

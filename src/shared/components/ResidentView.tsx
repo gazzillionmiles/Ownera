@@ -20,7 +20,6 @@ import {
   Star,
   AlertTriangle,
   X,
-  Copy,
   Plus,
   Vote,
   ArrowRight,
@@ -825,11 +824,6 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                     : `${activeSociety?.total_homes || 0} Households`}
                 </p>
               </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                <div className="text-xs text-slate-400 uppercase font-extrabold tracking-wider">Society Invite Code</div>
-                <div className="text-2xl font-mono font-black text-blue-600">{activeSociety?.invite_code || '—'}</div>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -852,21 +846,6 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row gap-3">
-              {activeSociety?.invite_code && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const text = `Join our society on ${APP_NAME} to get collective bulk discounts on home services: Code: ${activeSociety.invite_code} on ${window.location.origin}`;
-                    navigator.clipboard.writeText(text);
-                    toast.success('Society invite message copied!');
-                  }}
-                  className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                >
-                  <Copy className="w-4 h-4" />
-                  <span>Copy Society Invite Code</span>
-                </button>
-              )}
-
               <button
                 type="button"
                 onClick={onOpenJoinModal}

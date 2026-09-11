@@ -186,14 +186,12 @@ export async function POST(request: NextRequest) {
 
     const {
       name,
-      inviteCode,
       address,
       city,
       state,
       pincode,
       totalHomes,
       secretaryUserId,
-      secretaryEmail,
       flatNumber,
     } = parsed.data;
 
@@ -202,27 +200,12 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
-    // Check unique invite code
-    const { data: existingCode } = await serviceSupabase
-      .from('societies')
-      .select('id')
-      .eq('invite_code', inviteCode)
-      .maybeSingle();
-
-    if (existingCode) {
-      return NextResponse.json(
-        { error: 'Invite code is already taken. Please choose another.' },
-        { status: 400 }
-      );
-    }
-
     // Insert society
     const { data: society, error: insertError } = await serviceSupabase
       .from('societies')
       .insert({
         name,
         slug: `${slug}-${Math.random().toString(36).substring(2, 6)}`,
-        invite_code: inviteCode,
         address,
         city,
         state,
@@ -240,8 +223,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If initial secretary specified by user_id
+    // If an initial secretary user_id was specified, add them directly.
+    // Otherwise, generate a shareable invite link the admin can send to
+    // whoever should join first (they land as a resident and can be
+    // promoted to secretary from the society's member management screen).
     let assignedSecretary = null;
+    let inviteJoinPath: string | null = null;
     if (secretaryUserId) {
       const { data: secMember } = await serviceSupabase
         .from('society_members')
@@ -255,24 +242,30 @@ export async function POST(request: NextRequest) {
         .select()
         .single();
       assignedSecretary = secMember;
-    } else if (secretaryEmail) {
-      // Create invitation token for secretary
-      const crypto = await import('crypto');
-      const token = `inv_sec_${crypto.randomBytes(16).toString('hex')}`;
-      await serviceSupabase.from('society_invitations').insert({
-        society_id: society.id,
-        email: secretaryEmail.toLowerCase().trim(),
-        role: 'secretary',
-        token,
-        status: 'pending',
-        invited_by: user.id,
-      });
+    } else {
+      try {
+        const { getOrCreateActiveInviteLink } = await import(
+          '@/lib/ownera/invite-links'
+        );
+        const { inviteLink } = await getOrCreateActiveInviteLink(
+          society.id,
+          user.id,
+          serviceSupabase
+        );
+        inviteJoinPath = `/join/${inviteLink.token}`;
+      } catch (linkErr) {
+        console.error(
+          '[API/admin/societies POST] Error creating invite link:',
+          linkErr
+        );
+      }
     }
 
     return NextResponse.json({
       success: true,
       society,
       secretary: assignedSecretary,
+      inviteJoinPath,
     });
   } catch (err: any) {
     console.error('[API/admin/societies POST] Error:', err);

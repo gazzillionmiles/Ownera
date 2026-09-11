@@ -192,68 +192,22 @@ export async function handleAuthCallback(request: Request) {
     console.error('[AuthCallback] Error granting welcome credits:', creditErr);
   }
 
-  // Auto-join society if pending invite code exists in cookie
-  const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
-  const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(new RegExp(`(?:^|; )${INVITE_COOKIE_NAME}=([^;]*)`));
-  const rawPendingCode = match ? decodeURIComponent(match[1])?.trim().toUpperCase() : null;
-  const isAuthHexToken = Boolean(rawPendingCode && (rawPendingCode.length > 25 || /^[0-9A-F]{32,}$/.test(rawPendingCode)));
-  const pendingInviteCode = isAuthHexToken ? null : rawPendingCode;
+  // If the user has no society yet, send them to onboarding (society joining
+  // itself now happens exclusively via a secretary-shared /join/[token] link,
+  // which sets primary_society_id directly and does not rely on this callback).
+  try {
+    const serviceSupabase = createAdminClient();
+    const { data: profile } = await serviceSupabase
+      .from('profiles')
+      .select('primary_society_id')
+      .eq('id', user.id)
+      .maybeSingle();
 
-  if (pendingInviteCode) {
-    try {
-      const serviceSupabase = createAdminClient();
-      const { data: society } = await serviceSupabase
-        .from('societies')
-        .select('id, slug, name')
-        .ilike('invite_code', pendingInviteCode)
-        .maybeSingle();
-
-      if (society) {
-        await serviceSupabase
-          .from('society_members')
-          .upsert(
-            {
-              society_id: society.id,
-              user_id: user.id,
-              flat_number: 'Unassigned',
-              role: 'resident',
-              status: 'active',
-            },
-            { onConflict: 'society_id,user_id' }
-          );
-
-        await serviceSupabase
-          .from('profiles')
-          .update({
-            primary_society_id: society.id,
-            active_role: 'resident',
-          })
-          .eq('id', user.id);
-
-        if (next === '/home' || !next) {
-          next = `/s/${society.slug}`;
-        }
-      }
-    } catch (socErr) {
-      console.error('[AuthCallback] Error auto-joining society from invite code:', socErr);
+    if (!profile?.primary_society_id && (next === '/home' || !next)) {
+      next = '/onboarding';
     }
-  } else {
-    try {
-      const serviceSupabase = createAdminClient();
-      const { data: profile } = await serviceSupabase
-        .from('profiles')
-        .select('primary_society_id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!profile?.primary_society_id && (next === '/home' || !next)) {
-        next = '/onboarding';
-      }
-    } catch (profErr) {
-      console.error('[AuthCallback] Error checking primary society:', profErr);
-    }
+  } catch (profErr) {
+    console.error('[AuthCallback] Error checking primary society:', profErr);
   }
 
   const forwardedHost = request.headers.get('x-forwarded-host');
@@ -272,14 +226,6 @@ export async function handleAuthCallback(request: Request) {
     sameSite: 'lax',
     secure: process.env.NODE_ENV !== 'development',
   });
-
-  if (pendingInviteCode) {
-    response.cookies.set(INVITE_COOKIE_NAME, '', {
-      maxAge: 0,
-      path: '/',
-      sameSite: 'lax',
-    });
-  }
 
   return response;
 }

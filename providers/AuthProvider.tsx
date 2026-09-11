@@ -61,7 +61,6 @@ interface AuthContextType {
   signUpWithEmail: (
     email: string,
     password: string,
-    inviteCode?: string,
     nextParam?: string
   ) => Promise<{
     data: { user?: unknown; session?: unknown } | null;
@@ -430,31 +429,10 @@ export const AuthProvider: React.FC<{
   );
 
   const signUpWithEmail = useCallback(
-    async (
-      email: string,
-      password: string,
-      inviteCode?: string,
-      nextParam?: string
-    ) => {
+    async (email: string, password: string, nextParam?: string) => {
       const clientId = getAppClientId();
       const fp = await getVisitorFingerprint();
       const safeNext = getSafePostAuthRedirect(nextParam || null);
-
-      let effectiveCode = inviteCode?.trim().toUpperCase();
-      if (!effectiveCode && typeof document !== 'undefined') {
-        const match = document.cookie.match(
-          /(?:^|; )ownera_invite_code=([^;]*)/
-        );
-        if (match)
-          effectiveCode = decodeURIComponent(match[1])?.trim().toUpperCase();
-        if (!effectiveCode) {
-          effectiveCode =
-            window.localStorage
-              .getItem('ownera_invite_code')
-              ?.trim()
-              .toUpperCase() || undefined;
-        }
-      }
 
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -464,7 +442,6 @@ export const AuthProvider: React.FC<{
           password,
           fingerprint: fp,
           client_id: clientId,
-          invite_code: effectiveCode,
           next: safeNext,
         }),
       });
@@ -475,10 +452,6 @@ export const AuthProvider: React.FC<{
           data: null,
           error: new Error(json?.error || 'Signup failed'),
         };
-      }
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem('ownera_invite_code');
       }
 
       if (json?.data?.session) {

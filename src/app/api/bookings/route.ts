@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       id, society_id, campaign_id, user_id, provider_id, slot_id, quantity, flat_number,
       unit_price, deposit_paid, balance_amount, total_amount, payment_mode, status,
       resident_notes, created_at, updated_at,
-      society:societies(id, name, slug, invite_code, address, city, state, pincode, total_homes, created_by, created_at, updated_at),
+      society:societies(id, name, slug, address, city, state, pincode, total_homes, created_by, created_at, updated_at),
       campaign:service_campaigns(
         id, society_id, organizer_id, service_id, title, description, scope, target_property_unit,
         poll_question, poll_options, poll_deadline, secretary_approval_status, secretary_reviewed_by,
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         interest_deadline, booking_deadline, minimum_customers, target_customers, maximum_customers,
         deposit_amount, status, selected_provider_id, selected_bid_id, current_price, published_at,
         created_at, updated_at,
-        society:societies(id, name, slug, invite_code, address, city, state, pincode, total_homes, created_by, created_at, updated_at),
+        society:societies(id, name, slug, address, city, state, pincode, total_homes, created_by, created_at, updated_at),
         service:services(id, name, slug, category, description, inclusions, exclusions, typical_duration_minutes, suggested_campaign_days, suggested_slot_duration_minutes, base_price_estimate, icon, created_at)
       ),
       provider:providers(id, user_id, company_name, contact_person, phone, email, services_offered, operating_cities, verification_status, rating, total_jobs_completed, completion_rate, bio, created_at, updated_at),

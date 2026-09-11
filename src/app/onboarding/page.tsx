@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
@@ -14,11 +13,9 @@ import {
   User,
   Phone,
   Layers,
-  PlusCircle,
-  KeyRound,
   ShieldCheck,
-  MapPin,
   Users,
+  Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { APP_NAME } from '@/src/constants';
@@ -41,23 +38,16 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { updateProfile, refreshProfile, uiUser, signOut } = useAuth();
 
-  const [mode, setMode] = useState<'create' | 'join'>('create');
   const [name, setName] = useState<string>(uiUser.name || '');
   const [phone, setPhone] = useState<string>(uiUser.phone || '');
   const [propertyType, setPropertyType] = useState<PropertyType>('apartment');
   const [unitNumber, setUnitNumber] = useState<string>(uiUser.unitNumber || '');
-  
+
   // Create Society Fields
   const [societyName, setSocietyName] = useState<string>('');
-  const [customInviteCode, setCustomInviteCode] = useState<string>('');
   const [state, setState] = useState<string>('Karnataka');
   const [city, setCity] = useState<string>('Bengaluru');
   const [totalHomes, setTotalHomes] = useState<number>(100);
-
-  // Join Society Fields
-  const [inviteCode, setInviteCode] = useState<string>('');
-  const [invitationToken, setInvitationToken] = useState<string>('');
-  const [hasToken, setHasToken] = useState<boolean>(false);
 
   const [saving, setSaving] = useState(false);
 
@@ -100,6 +90,11 @@ export default function OnboardingPage() {
       toast.error('Please enter your house/flat/unit number');
       return;
     }
+    const cleanSocName = societyName.trim();
+    if (!cleanSocName) {
+      toast.error('Please enter a society name');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -111,73 +106,29 @@ export default function OnboardingPage() {
         unit_number: unitNumber.trim(),
       });
 
-      if (mode === 'create') {
-        const cleanSocName = societyName.trim();
-        if (!cleanSocName) {
-          toast.error('Please enter a society name');
-          setSaving(false);
-          return;
-        }
-
-        const cleanCode = customInviteCode.trim().toUpperCase() || undefined;
-
-        const createRes = await fetch('/api/societies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: cleanSocName,
-            inviteCode: cleanCode,
-            flatNumber: unitNumber.trim(),
-            propertyType,
-            city: city.trim() || 'Bengaluru',
-            totalHomes: Number(totalHomes) || 100,
-          }),
-        });
-
-        const createData = await createRes.json();
-        if (!createRes.ok) {
-          throw new Error(createData.error || 'Failed to create society');
-        }
-
-        invalidateSocietiesCache();
-        await refreshProfile();
-        toast.success(`Society "${createData.society?.name}" created! You are registered as Secretary.`);
-        window.location.href = `/s/${createData.society?.slug}`;
-        return;
-      } else {
-        // Mode === 'join'
-        const codeToUse = (hasToken && invitationToken.trim() ? invitationToken.trim() : inviteCode.trim());
-        if (!codeToUse) {
-          toast.error('Please enter an invite code or token');
-          setSaving(false);
-          return;
-        }
-
-        const payload: any = {
-          inviteCode: codeToUse,
-          invitationToken: codeToUse,
+      // 2. Create the society (creator becomes Secretary)
+      const createRes = await fetch('/api/societies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cleanSocName,
           flatNumber: unitNumber.trim(),
-          unitNumber: unitNumber.trim(),
           propertyType,
-        };
+          city: city.trim() || 'Bengaluru',
+          totalHomes: Number(totalHomes) || 100,
+        }),
+      });
 
-        const joinRes = await fetch('/api/societies/join', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        const joinData = await joinRes.json();
-        if (!joinRes.ok) {
-          throw new Error(joinData.error || 'Failed to join society');
-        }
-
-        invalidateSocietiesCache();
-        await refreshProfile();
-        toast.success(joinData.message || `Welcome to ${joinData.society?.name}!`);
-        window.location.href = `/s/${joinData.society?.slug}`;
-        return;
+      const createData = await createRes.json();
+      if (!createRes.ok) {
+        throw new Error(createData.error || 'Failed to create society');
       }
+
+      invalidateSocietiesCache();
+      await refreshProfile();
+      toast.success(`Society "${createData.society?.name}" created! You are registered as Secretary.`);
+      window.location.href = `/s/${createData.society?.slug}`;
+      return;
     } catch (err: any) {
       console.error('Onboarding error:', err);
       toast.error(err.message || 'An error occurred during onboarding');
@@ -199,39 +150,23 @@ export default function OnboardingPage() {
               Set Up Your Property &amp; Community
             </h1>
             <p className="text-xs text-zinc-400 max-w-md mx-auto">
-              Create your society to unlock group bulk discounts and collective services, or join an existing community.
+              Create your society to unlock group bulk discounts and collective services.
+            </p>
+          </div>
+
+          {/* Already-invited notice */}
+          <div className="p-3.5 rounded-2xl bg-zinc-900/70 border border-white/10 flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#2CB7A5]/10 border border-[#2CB7A5]/20 flex items-center justify-center text-[#2CB7A5] shrink-0">
+              <Link2 className="w-3.5 h-3.5" />
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Been sent an invite link by your society secretary? Open that
+              link directly to join their community instead — this page is
+              only for starting a brand new society.
             </p>
           </div>
 
           <form onSubmit={handleComplete} className="p-6 sm:p-8 rounded-3xl bg-[#18191D] border border-white/10 shadow-2xl space-y-6">
-            {/* Mode Selector Tabs */}
-            <div className="p-1.5 rounded-2xl bg-zinc-900/90 border border-white/10 grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setMode('create')}
-                className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition ${
-                  mode === 'create'
-                    ? 'bg-[#2CB7A5] text-zinc-950 shadow-md'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Create Society (Secretary)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('join')}
-                className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition ${
-                  mode === 'join'
-                    ? 'bg-[#2CB7A5] text-zinc-950 shadow-md'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Join Existing Society</span>
-              </button>
-            </div>
-
             {/* Step 1: Property Type Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
@@ -266,171 +201,78 @@ export default function OnboardingPage() {
             <div className="space-y-3 pt-2 border-t border-white/5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
-                  2. {mode === 'create' ? 'Society Setup & Secretary Details' : 'Society & Unit Details'}
+                  2. Society Setup &amp; Secretary Details
                 </label>
-                {mode === 'create' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2CB7A5] bg-[#2CB7A5]/10 px-2 py-0.5 rounded-md">
-                    <ShieldCheck className="w-3 h-3" /> Secretary Role Assigned
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2CB7A5] bg-[#2CB7A5]/10 px-2 py-0.5 rounded-md">
+                  <ShieldCheck className="w-3 h-3" /> Secretary Role Assigned
+                </span>
               </div>
 
-              {mode === 'create' ? (
-                <div className="space-y-3">
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] text-zinc-300 font-medium block mb-1">
-                        Society / Community Name
-                      </label>
-                      <div className="relative">
-                        <Building2 className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
-                        <input
-                          type="text"
-                          value={societyName}
-                          onChange={(e) => setSocietyName(e.target.value)}
-                          placeholder="e.g. Palm Meadows"
-                          required
-                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] text-zinc-300 font-medium block mb-1">
-                        Custom Society Invite Code
-                      </label>
-                      <input
-                        type="text"
-                        value={customInviteCode}
-                        onChange={(e) => setCustomInviteCode(e.target.value.toUpperCase())}
-                        placeholder="e.g. PALM2026"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white font-mono uppercase text-xs focus:outline-none focus:border-[#2CB7A5]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* State and City Selector with Search & Lazy Loading */}
-                  <StateCityPicker
-                    selectedCity={city}
-                    selectedState={state}
-                    onCityChange={(c, s) => {
-                      setCity(c);
-                      if (s) setState(s);
-                    }}
-                    onStateChange={(s) => setState(s)}
-                    required
-                  />
-
-                  <div>
-                    <label className="text-[11px] text-zinc-300 font-medium block mb-1">
-                      Estimated Total Homes / Units
-                    </label>
-                    <div className="relative">
-                      <Users className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
-                      <input
-                        type="number"
-                        value={totalHomes}
-                        onChange={(e) => setTotalHomes(Number(e.target.value))}
-                        min={5}
-                        max={10000}
-                        required
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] text-zinc-300 font-medium block mb-1">
-                      Your House / Flat / Unit Number (Secretary)
-                    </label>
-                    <div className="relative">
-                      <Home className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
-                      <input
-                        type="text"
-                        value={unitNumber}
-                        onChange={(e) => setUnitNumber(e.target.value)}
-                        placeholder="e.g. Flat A-101 or Villa 12"
-                        required
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
-                      />
-                    </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[11px] text-zinc-300 font-medium block mb-1">
+                    Society / Community Name
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
+                    <input
+                      type="text"
+                      value={societyName}
+                      onChange={(e) => setSocietyName(e.target.value)}
+                      placeholder="e.g. Palm Meadows"
+                      required
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                    />
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {!hasToken ? (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] text-zinc-300 font-medium">
-                          Society Invite Code
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setHasToken(true)}
-                          className="text-[11px] text-[#2CB7A5] hover:underline"
-                        >
-                          Have Secretary/Committee Token?
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        value={inviteCode}
-                        onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                        placeholder="e.g. PALM2026 or SOC1234"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white font-mono uppercase text-xs focus:outline-none focus:border-[#2CB7A5]"
-                      />
-                      <p className="text-[10px] text-zinc-500 mt-1">
-                        Enter the short code provided by your society secretary (e.g. PALM2026). Do not enter your email verification link.
-                      </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] text-zinc-300 font-medium">
-                          Invitation Token
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setHasToken(false)}
-                          className="text-[11px] text-zinc-400 hover:underline"
-                        >
-                          Use Invite Code instead
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        value={invitationToken}
-                        onChange={(e) => setInvitationToken(e.target.value)}
-                        placeholder="inv_res_..."
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white font-mono text-xs focus:outline-none focus:border-[#2CB7A5]"
-                      />
-                      <p className="text-[10px] text-zinc-500 mt-1">
-                        Direct role invitation token provided by your committee (starts with inv_).
-                      </p>
-                    </div>
-                  )}
 
-                  <div>
-                    <label className="text-[11px] text-zinc-300 font-medium block mb-1">
-                      Your House / Flat / Unit Number
-                    </label>
-                    <div className="relative">
-                      <Home className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
-                      <input
-                        type="text"
-                        value={unitNumber}
-                        onChange={(e) => setUnitNumber(e.target.value)}
-                        placeholder="e.g. Flat A-402 or Villa 12"
-                        required
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
-                      />
-                    </div>
+                {/* State and City Selector with Search & Lazy Loading */}
+                <StateCityPicker
+                  selectedCity={city}
+                  selectedState={state}
+                  onCityChange={(c, s) => {
+                    setCity(c);
+                    if (s) setState(s);
+                  }}
+                  onStateChange={(s) => setState(s)}
+                  required
+                />
+
+                <div>
+                  <label className="text-[11px] text-zinc-300 font-medium block mb-1">
+                    Estimated Total Homes / Units
+                  </label>
+                  <div className="relative">
+                    <Users className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
+                    <input
+                      type="number"
+                      value={totalHomes}
+                      onChange={(e) => setTotalHomes(Number(e.target.value))}
+                      min={5}
+                      max={10000}
+                      required
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                    />
                   </div>
                 </div>
-              )}
+
+                <div>
+                  <label className="text-[11px] text-zinc-300 font-medium block mb-1">
+                    Your House / Flat / Unit Number (Secretary)
+                  </label>
+                  <div className="relative">
+                    <Home className="w-4 h-4 absolute left-3 top-3 text-zinc-500" />
+                    <input
+                      type="text"
+                      value={unitNumber}
+                      onChange={(e) => setUnitNumber(e.target.value)}
+                      placeholder="e.g. Flat A-101 or Villa 12"
+                      required
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 bg-zinc-900 text-white text-xs focus:outline-none focus:border-[#2CB7A5]"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Step 3: Resident Contact Details */}
@@ -484,7 +326,7 @@ export default function OnboardingPage() {
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <span>{mode === 'create' ? 'Create Society & Enter Dashboard' : 'Join Society & Enter Dashboard'}</span>
+                  <span>Create Society &amp; Enter Dashboard</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
