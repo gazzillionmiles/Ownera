@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, CheckCircle2, Sparkles, Layers } from 'lucide-react';
+import {
+  ArrowLeft,
+  Loader2,
+  CheckCircle2,
+  Sparkles,
+  Layers,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { trackSignupCompleted } from '@/src/shared/lib/analytics';
@@ -57,10 +63,14 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
       searchParams.get('invite_code') ||
       searchParams.get('inviteCode') ||
       searchParams.get('code')
-    )?.trim().toUpperCase();
+    )
+      ?.trim()
+      .toUpperCase();
 
     // Only store genuine invite codes (<= 25 chars, not 32+ hex auth codes)
-    const isAuthToken = Boolean(rawCode && (rawCode.length > 25 || /^[0-9A-F]{32,}$/.test(rawCode)));
+    const isAuthToken = Boolean(
+      rawCode && (rawCode.length > 25 || /^[0-9A-F]{32,}$/.test(rawCode))
+    );
     const codeParam = isAuthToken ? null : rawCode;
 
     if (typeof document !== 'undefined') {
@@ -71,7 +81,8 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
         } catch {}
       } else if (isAuthToken) {
         // Clear any stale auth token stored in the invite cookie by mistake
-        document.cookie = 'ownera_invite_code=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie =
+          'ownera_invite_code=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         try {
           window.localStorage.removeItem('ownera_invite_code');
         } catch {}
@@ -178,7 +189,12 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
     setLoading(true);
     try {
       const targetNext = getSafePostAuthRedirect(searchParams.get('next'));
-      const { data, error } = await signUpWithEmail(email, password, undefined, targetNext);
+      const { data, error } = await signUpWithEmail(
+        email,
+        password,
+        undefined,
+        targetNext
+      );
       if (error) {
         const msg = error.message || 'Signup failed';
         setErrorMessage(msg);
