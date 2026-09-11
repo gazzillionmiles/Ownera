@@ -23,6 +23,7 @@ import {
 import { toast } from 'sonner';
 import { APP_NAME } from '@/src/constants';
 import { TermsConsentModal } from '@/src/shared/components/TermsConsentModal';
+import { invalidateSocietiesCache } from '@/src/shared/lib/api';
 
 interface SocietyPreview {
   id: string;
@@ -184,6 +185,7 @@ export default function JoinSocietyPage({
         throw new Error(data.error || 'Failed to join society. Please try again.');
       }
 
+      invalidateSocietiesCache();
       await refreshProfile();
       setJoinSuccess(true);
       toast.success(data.message || `Welcome to ${society?.name}!`);

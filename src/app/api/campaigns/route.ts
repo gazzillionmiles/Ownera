@@ -33,8 +33,16 @@ export async function GET(request: NextRequest) {
     const rangeStart = (page - 1) * limit;
     const rangeEnd = rangeStart + limit - 1;
 
+    const isUuid = (val?: string | null) =>
+      Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
     if (societySlug && !societyId) {
       const soc = await getSocietyBySlug(supabase, societySlug);
+      if (soc) {
+        societyId = soc.id;
+      }
+    } else if (societyId && !isUuid(societyId)) {
+      const soc = await getSocietyBySlug(supabase, societyId);
       if (soc) {
         societyId = soc.id;
       }

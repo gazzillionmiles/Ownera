@@ -355,7 +355,21 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
             </div>
 
             {(() => {
-              const actionableStatuses = ['poll_active', 'open', 'threshold_reached', 'pending_secretary_approval', 'booking_open', 'quote_selected'];
+              const actionableStatuses = [
+                'poll_active',
+                'open',
+                'threshold_reached',
+                'pending_secretary_approval',
+                'approved',
+                'quotes_invited',
+                'bidding',
+                'provider_selected',
+                'booking_open',
+                'quote_selected',
+                'confirmed',
+                'scheduled',
+                'in_progress',
+              ];
               const combined = [...activePolls, ...upcomingServices]
                 .sort((a, b) => {
                   const aAction = actionableStatuses.includes(a.status) ? 0 : 1;

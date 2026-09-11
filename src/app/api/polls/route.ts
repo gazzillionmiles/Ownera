@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/service';
 import { createPollSchema } from '@/src/shared/validations/ownera';
 import { calculateTierPrice } from '@/lib/ownera/campaigns';
 import { getSocietyBySlug, requireSocietyMember, isCommittee } from '@/lib/ownera/auth';
+import { isPlatformAdmin } from '@/lib/ownera/rbac';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,14 +24,31 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get('scope');
     const roleParam = searchParams.get('role');
 
+    const serviceSupabase = createAdminClient();
+
+    const isUuid = (val?: string | null) =>
+      Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+    // Resolve societyId safely if passed as slug or via societySlug
     if (societySlug && !societyId) {
-      const soc = await getSocietyBySlug(supabase, societySlug);
+      const { data: soc } = await serviceSupabase
+        .from('societies')
+        .select('id')
+        .ilike('slug', societySlug)
+        .maybeSingle();
+      if (soc) {
+        societyId = soc.id;
+      }
+    } else if (societyId && !isUuid(societyId)) {
+      const { data: soc } = await serviceSupabase
+        .from('societies')
+        .select('id')
+        .ilike('slug', societyId)
+        .maybeSingle();
       if (soc) {
         societyId = soc.id;
       }
     }
-
-    const serviceSupabase = createAdminClient();
 
     // 1. Check if user is a registered service provider
     const { data: providerRecord } = await serviceSupabase
@@ -249,15 +267,46 @@ export async function GET(request: NextRequest) {
     });
 
     // Categorized feeds for Home Dashboard
-    const activePolls = enrichedPolls.filter(
-      (p) => p.status === 'poll_active' || p.status === 'open' || p.status === 'threshold_reached' || p.status === 'pending_secretary_approval'
+    const activePollStatuses = [
+      'poll_active',
+      'open',
+      'threshold_reached',
+      'pending_secretary_approval',
+      'approved',
+      'quotes_invited',
+      'bidding',
+      'provider_selected',
+    ];
+    const upcomingStatuses = [
+      'quote_selected',
+      'booking_open',
+      'confirmed',
+      'scheduled',
+      'in_progress',
+    ];
+    const previousStatuses = ['completed'];
+
+    const isPlatform = await isPlatformAdmin(user.id, serviceSupabase);
+    const isSecOrCom = societyId
+      ? await isCommittee(user.id, societyId, serviceSupabase)
+      : false;
+
+    // For residents: include all society-wide campaigns (scope !== 'my_house') plus personal requests
+    const visiblePolls = enrichedPolls.filter(
+      (p) => p.scope !== 'my_house' || p.organizer_id === user.id || isSecOrCom || isPlatform
+    );
+
+    const activePolls = visiblePolls.filter((p) =>
+      activePollStatuses.includes(p.status)
     );
     const myPolls = enrichedPolls.filter((p) => p.organizer_id === user.id);
-    const societyPolls = enrichedPolls.filter((p) => p.scope === 'society');
-    const upcomingServices = enrichedPolls.filter(
-      (p) => p.status === 'quote_selected' || p.status === 'booking_open' || p.status === 'scheduled' || p.status === 'in_progress'
+    const societyPolls = enrichedPolls.filter((p) => p.scope !== 'my_house');
+    const upcomingServices = visiblePolls.filter((p) =>
+      upcomingStatuses.includes(p.status)
     );
-    const previousCampaigns = enrichedPolls.filter((p) => p.status === 'completed');
+    const previousCampaigns = visiblePolls.filter((p) =>
+      previousStatuses.includes(p.status)
+    );
 
     return NextResponse.json({
       polls: enrichedPolls,
@@ -461,7 +510,7 @@ export async function POST(request: NextRequest) {
       const { data: secretaryMember } = await serviceSupabase
         .from('society_members')
         .select('user_id')
-        .eq('society_id', societyId)
+        .eq('society_id', resolvedSocietyId)
         .eq('role', 'secretary')
         .eq('status', 'active')
         .maybeSingle();
