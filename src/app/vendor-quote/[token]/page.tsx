@@ -3,28 +3,22 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import {
+  Briefcase,
   Building2,
   Calendar,
+  Clock,
   Users,
   CheckCircle2,
+  ShieldCheck,
   Send,
   Loader2,
-  Clock,
-  Sparkles,
-  AlertCircle,
+  Layers,
+  Wrench,
+  DollarSign,
+  Award,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { APP_NAME } from '@/src/constants';
-
-const CLOSED_STATUSES = [
-  'quote_selected',
-  'booking_open',
-  'confirmed',
-  'scheduled',
-  'in_progress',
-  'completed',
-  'cancelled',
-];
 
 export default function VendorQuotePage({
   params,
@@ -40,11 +34,14 @@ export default function VendorQuotePage({
 
   // Quote form state
   const [pricePerUnit, setPricePerUnit] = useState<number>(499);
+  const [availableDate, setAvailableDate] = useState<string>('');
   const [availableStartTime, setAvailableStartTime] = useState<string>('10:00 AM');
-  const [techniciansCount, setTechniciansCount] = useState<number>(3);
+  const [simultaneousCapacity, setSimultaneousCapacity] = useState<number>(5);
+  const [techniciansCount, setTechniciansCount] = useState<number>(5);
   const [estimatedDurationMinutes, setEstimatedDurationMinutes] = useState<number>(30);
+  const [totalCapacity, setTotalCapacity] = useState<number>(40);
   const [notes, setNotes] = useState<string>(
-    'Professional team with full service tools and equipment.'
+    'Dedicated team of technicians equipped with high-pressure jet pump and testing gauges.'
   );
   const [submitting, setSubmitting] = useState(false);
   const [submittedQuote, setSubmittedQuote] = useState<any>(null);
@@ -62,20 +59,17 @@ export default function VendorQuotePage({
         const data = await res.json();
         setInviteData(data);
 
+        if (data.campaign?.event_date) {
+          setAvailableDate(data.campaign.event_date);
+        }
         if (data.campaign?.current_price) {
-          setPricePerUnit(Math.max(199, Math.round(data.campaign.current_price * 0.9)));
+          setPricePerUnit(Math.max(299, Math.round(data.campaign.current_price * 0.9)));
         }
         if (data.existing_quote) {
           setSubmittedQuote(data.existing_quote);
-          setPricePerUnit(data.existing_quote.price_per_unit || 499);
-          setTechniciansCount(data.existing_quote.technicians_count || 3);
-          setEstimatedDurationMinutes(data.existing_quote.estimated_duration_minutes || 30);
-          if (data.existing_quote.available_start_time) {
-            setAvailableStartTime(data.existing_quote.available_start_time);
-          }
-          if (data.existing_quote.notes) {
-            setNotes(data.existing_quote.notes);
-          }
+          setPricePerUnit(data.existing_quote.price_per_unit);
+          setSimultaneousCapacity(data.existing_quote.simultaneous_capacity || 5);
+          setTechniciansCount(data.existing_quote.technicians_count || 5);
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load invitation');
@@ -88,28 +82,23 @@ export default function VendorQuotePage({
 
   const handleSubmitQuote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pricePerUnit || pricePerUnit < 50) {
-      toast.error('Please enter a valid price per home');
-      return;
-    }
-
     setSubmitting(true);
     try {
       const res = await fetch(`/api/vendor-quote/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pricePerUnit: Number(pricePerUnit),
-          availableDate: inviteData.campaign?.event_date || new Date().toISOString().split('T')[0],
-          availableStartTime: availableStartTime.trim() || '10:00 AM',
-          techniciansCount: Number(techniciansCount) || 3,
-          simultaneousCapacity: Number(techniciansCount) || 3,
-          estimatedDurationMinutes: Number(estimatedDurationMinutes) || 30,
-          totalCapacity: (Number(techniciansCount) || 3) * 8,
+          pricePerUnit,
+          availableDate,
+          availableStartTime,
+          simultaneousCapacity,
+          techniciansCount,
+          estimatedDurationMinutes,
+          totalCapacity,
           warrantyDays: 0,
-          inclusions: ['Full service check', 'Standard cleaning & testing'],
+          inclusions: ['Standard full checklist servicing', 'Inspection & pressure test'],
           exclusions: ['Parts replacement'],
-          notes: notes.trim(),
+          notes,
         }),
       });
 
@@ -129,26 +118,23 @@ export default function VendorQuotePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-4 space-y-3">
-        <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
-        <p className="text-sm font-medium text-slate-500">Loading service details...</p>
+      <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col items-center justify-center p-4 space-y-3">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <p className="text-xs font-semibold text-slate-500">Loading campaign invitation...</p>
       </div>
     );
   }
 
   if (error || !inviteData) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
-          <AlertCircle className="w-7 h-7" />
+      <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
+          <Briefcase className="w-6 h-6" />
         </div>
-        <h1 className="text-xl font-bold text-slate-900">Link Not Available</h1>
-        <p className="text-sm text-slate-500 max-w-sm">{error || 'This invitation link is expired or invalid.'}</p>
-        <Link
-          href="/"
-          className="px-5 py-2.5 rounded-xl bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition shadow-sm"
-        >
-          Go to {APP_NAME}
+        <h1 className="text-xl font-black text-slate-900">Invitation Not Found</h1>
+        <p className="text-xs text-slate-500 max-w-sm">{error}</p>
+        <Link href="/" className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition">
+          Return to {APP_NAME} Home
         </Link>
       </div>
     );
@@ -156,265 +142,222 @@ export default function VendorQuotePage({
 
   const campaign = inviteData.campaign;
   const invite = inviteData.invite;
-  const targetHomes = campaign.target_customers || 20;
-  const estimatedEarnings = (pricePerUnit || 0) * targetHomes;
-  const isClosed = CLOSED_STATUSES.includes(campaign.status);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      {/* Top Bar */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+    <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col font-sans">
+      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-black">
               O
             </div>
-            <span className="font-bold text-base text-slate-900">{APP_NAME}</span>
+            <span className="font-extrabold text-base text-slate-900">{APP_NAME.toLowerCase()} Vendor Portal</span>
           </Link>
-          <div className="text-xs text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full font-medium">
-            Invited: <strong className="text-slate-900">{invite.business_name}</strong>
+          <div className="text-xs font-medium text-slate-500">
+            Invited: <strong className="text-slate-900 font-bold">{invite.business_name}</strong>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-5">
-        {/* Service Request Card */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold">
-              <Building2 className="w-3.5 h-3.5 text-teal-600" />
-              <span>{campaign.society?.name || 'Residential Society'}</span>
-              {campaign.society?.city ? <span>• {campaign.society.city}</span> : null}
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 space-y-6">
+        {/* Campaign Opportunity Card */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">
+              <Building2 className="w-3.5 h-3.5" /> {campaign.society?.name || 'Society Camp'}
             </div>
-            {campaign.event_date && (
-              <span className="text-xs text-slate-600 font-medium flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                Service Date: <strong className="text-slate-800">{campaign.event_date}</strong>
-              </span>
-            )}
+            <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" /> Service Date: {campaign.event_date || 'Upcoming Weekend'}
+            </span>
           </div>
 
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              {campaign.title}
-            </h1>
-            <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-              {campaign.description || 'The residents of this society are booking this service together on the scheduled date.'}
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{campaign.title}</h1>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+              {campaign.description || 'Residential society looking for service partners for high-density bulk camp.'}
             </p>
           </div>
 
-          {/* Simple Demand Highlight (No transit waste) */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Society Demand
-                </div>
-                <div className="text-lg font-bold text-slate-900">
-                  {targetHomes} Homes Interested
-                </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center text-xs">
+            <div>
+              <div className="text-slate-400 text-[11px] font-bold uppercase">Society Demand</div>
+              <div className="text-xl font-black font-mono text-blue-600 mt-0.5">
+                {campaign.target_customers || 30}+ Units
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-xs text-slate-500 block">Single Visit</span>
-              <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
-                Bulk Booking
-              </span>
+            <div>
+              <div className="text-slate-400 text-[11px] font-bold uppercase">Location</div>
+              <div className="text-sm font-bold text-slate-800 mt-1">
+                {campaign.society?.city || 'Bengaluru'}
+              </div>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <div className="text-slate-400 text-[11px] font-bold uppercase">Transit Waste</div>
+              <div className="text-xl font-black font-mono text-emerald-600 mt-0.5">
+                0 Hours (1 Gate)
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Closed notice */}
-        {isClosed && (
-          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-            <div>
-              <div className="font-semibold">Quotes Closed for this Date</div>
-              <div className="text-xs text-amber-800 mt-0.5">
-                The society has completed vendor selection. Thank you for your interest!
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Submitted Banner */}
-        {submittedQuote && !isClosed && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        {/* Existing Quote Banner */}
+        {submittedQuote && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
               <div>
-                <div className="font-bold text-emerald-950">
-                  Quote Submitted: ₹{submittedQuote.price_per_unit} per home
-                </div>
-                <div className="text-xs text-emerald-800 mt-0.5">
-                  The organizer has received your price. You can update your details anytime below.
-                </div>
+                <div className="font-extrabold">Your Quote of ₹{submittedQuote.price_per_unit}/unit is submitted!</div>
+                <div className="text-[11px] text-emerald-700">You can update your capacity or rate below anytime before committee acceptance.</div>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-200/60 text-emerald-900 font-medium text-xs shrink-0">
-              Active
+            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-mono font-bold uppercase text-[10px]">
+              {submittedQuote.status}
             </span>
           </div>
         )}
 
-        {/* Quote Form */}
-        {!isClosed && (
-          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-5">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                {submittedQuote ? 'Update Your Quote' : 'Send Your Price Quote'}
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Fill in your rate and team arrival time. No commission is deducted.
-              </p>
-            </div>
+        {/* Submit Offer Form */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-blue-600" />
+              <span>Submit Commercial Quote</span>
+            </h2>
+            <p className="text-xs text-slate-500 font-medium">
+              Set your bulk per-unit rate and specify how many simultaneous flats your crew can service.
+            </p>
+          </div>
 
-            <form onSubmit={handleSubmitQuote} className="space-y-5">
-              {/* Price per home */}
+          <form onSubmit={handleSubmitQuote} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Your Price Per Home (₹) <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base">
-                    ₹
-                  </span>
-                  <input
-                    type="number"
-                    value={pricePerUnit || ''}
-                    onChange={(e) => setPricePerUnit(Number(e.target.value))}
-                    required
-                    min={50}
-                    step={10}
-                    placeholder="e.g. 499"
-                    className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Amount each flat owner will pay you for this service.
-                </p>
-              </div>
-
-              {/* Dynamic Earnings Calculation */}
-              <div className="p-4 rounded-xl bg-teal-50/80 border border-teal-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-teal-900">
-                    <Sparkles className="w-4 h-4 text-teal-600" />
-                    <span>Your Estimated Total Earnings</span>
-                  </div>
-                  <span className="text-xs text-teal-700 font-medium">
-                    {targetHomes} homes
-                  </span>
-                </div>
-
-                <div className="flex items-baseline justify-between pt-1 border-t border-teal-200/60">
-                  <span className="text-xs text-teal-800">
-                    ₹{(pricePerUnit || 0).toLocaleString('en-IN')} × {targetHomes} homes
-                  </span>
-                  <span className="text-2xl font-extrabold text-teal-950 font-mono">
-                    ₹{estimatedEarnings.toLocaleString('en-IN')}
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-teal-700 pt-0.5">
-                  Paid directly to you by each resident on service day.
-                </p>
-              </div>
-
-              {/* Arrival time and crew size */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    <Clock className="w-3.5 h-3.5 inline mr-1 text-slate-500" />
-                    Arrival Time
-                  </label>
-                  <input
-                    type="text"
-                    value={availableStartTime}
-                    onChange={(e) => setAvailableStartTime(e.target.value)}
-                    placeholder="e.g. 10:00 AM"
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    What time will your team arrive at the society gate?
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    <Users className="w-3.5 h-3.5 inline mr-1 text-slate-500" />
-                    Number of Technicians
-                  </label>
-                  <input
-                    type="number"
-                    value={techniciansCount || ''}
-                    onChange={(e) => setTechniciansCount(Math.max(1, Number(e.target.value)))}
-                    min={1}
-                    max={50}
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    How many technicians will be in your team?
-                  </p>
-                </div>
-              </div>
-
-              {/* Service duration */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Time Needed per Home (Minutes)
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Quote Price per Unit (₹)
                 </label>
                 <input
                   type="number"
-                  value={estimatedDurationMinutes || ''}
-                  onChange={(e) => setEstimatedDurationMinutes(Math.max(10, Number(e.target.value)))}
-                  min={10}
-                  max={240}
+                  value={pricePerUnit}
+                  onChange={(e) => setPricePerUnit(Number(e.target.value))}
                   required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
+                  min={100}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Roughly how many minutes does one flat take (e.g. 30 or 45 mins)?
-                </p>
               </div>
 
-              {/* Notes */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Notes for Society Residents (Optional)
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Start Arrival Time
                 </label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. We bring our own ladders, pressure pumps, and cleaning materials."
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white resize-none transition"
+                <input
+                  type="text"
+                  value={availableStartTime}
+                  onChange={(e) => setAvailableStartTime(e.target.value)}
+                  placeholder="e.g. 10:00 AM"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
               </div>
+            </div>
 
-              {/* Submit CTA */}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-[0.99] text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-md shadow-teal-600/20 disabled:opacity-50 cursor-pointer"
-              >
-                {submitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>{submittedQuote ? 'Update My Quote' : 'Send Quote to Society'}</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        )}
+            {/* Crew Capacity Config */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+              <div className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-600" />
+                <span>Crew &amp; Simultaneous Capacity</span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                This dictates the scheduling slot capacity for residents (e.g. 5 technicians = 5 simultaneous flats per time slot).
+              </p>
+
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Crew Size</label>
+                  <input
+                    type="number"
+                    value={techniciansCount}
+                    onChange={(e) => {
+                      const count = Number(e.target.value);
+                      setTechniciansCount(count);
+                      setSimultaneousCapacity(count);
+                    }}
+                    min={1}
+                    max={50}
+                    className="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Simultaneous Flats</label>
+                  <input
+                    type="number"
+                    value={simultaneousCapacity}
+                    onChange={(e) => setSimultaneousCapacity(Number(e.target.value))}
+                    min={1}
+                    max={50}
+                    className="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Minutes / Unit</label>
+                  <input
+                    type="number"
+                    value={estimatedDurationMinutes}
+                    onChange={(e) => setEstimatedDurationMinutes(Number(e.target.value))}
+                    min={15}
+                    max={180}
+                    className="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Total Daily Capacity (Units)
+              </label>
+              <input
+                type="number"
+                value={totalCapacity}
+                onChange={(e) => setTotalCapacity(Number(e.target.value))}
+                min={5}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Equipment &amp; Technician Notes
+              </label>
+              <textarea
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none"
+              />
+            </div>
+
+            {/* Potential Revenue Callout */}
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-between text-xs">
+              <span className="text-slate-700 font-bold">Estimated Day Volume ({campaign.target_customers || 30} units):</span>
+              <span className="text-xl font-black font-mono text-blue-600">
+                ₹{(pricePerUnit * (campaign.target_customers || 30)).toLocaleString()}
+              </span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-md shadow-blue-500/25 disabled:opacity-50 cursor-pointer"
+            >
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>{submittedQuote ? 'Update Submitted Quote' : 'Submit Quote to Society Committee'}</span>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
       </main>
     </div>
   );

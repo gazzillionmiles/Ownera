@@ -24,6 +24,10 @@ import {
   Layers,
   ArrowRight,
   Check,
+  Copy,
+  RefreshCw,
+  Link2,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CreatePollModal } from './CreatePollModal';
@@ -65,11 +69,10 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
   const [members, setMembers] = useState<SocietyMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
-  // Invitation Form
-  const [inviteRole, setInviteRole] = useState<'secretary' | 'committee' | 'resident'>('committee');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
-  const [isInviting, setIsInviting] = useState(false);
+  // Invite Link (replaces the old role-selectable invitation token flow)
+  const [inviteJoinPath, setInviteJoinPath] = useState<string | null>(null);
+  const [loadingInviteLink, setLoadingInviteLink] = useState(false);
+  const [isRotatingLink, setIsRotatingLink] = useState(false);
 
   // Transfer Secretary Form
   const [selectedNewSecretaryId, setSelectedNewSecretaryId] = useState('');
@@ -96,31 +99,46 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
     fetchMembers();
   }, [fetchMembers]);
 
-  const handleCreateInvitation = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchInviteLink = useCallback(async () => {
     if (!activeSociety?.id) return;
-
-    setIsInviting(true);
+    setLoadingInviteLink(true);
     try {
-      const res = await fetch('/api/societies/invitations', {
+      const res = await fetch(`/api/societies/invite-link?societyId=${activeSociety.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load invite link');
+      setInviteJoinPath(data.joinPath || null);
+    } catch (err: any) {
+      toast.error(err.message || 'Error loading invite link');
+    } finally {
+      setLoadingInviteLink(false);
+    }
+  }, [activeSociety]);
+
+  useEffect(() => {
+    if (isInviteModalOpen) {
+      fetchInviteLink();
+    }
+  }, [isInviteModalOpen, fetchInviteLink]);
+
+  const handleRotateInviteLink = async () => {
+    if (!activeSociety?.id) return;
+    setIsRotatingLink(true);
+    try {
+      const res = await fetch('/api/societies/invite-link/rotate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          societyId: activeSociety.id,
-          email: inviteEmail.trim() || undefined,
-          role: inviteRole,
-        }),
+        body: JSON.stringify({ societyId: activeSociety.id }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate invitation');
+      if (!res.ok) throw new Error(data.error || 'Failed to generate a new link');
 
-      toast.success(`Invitation created for ${inviteRole}!`);
-      setGeneratedInviteLink(data.invitation?.token || null);
+      setInviteJoinPath(data.joinPath || null);
+      toast.success('New invite link generated — the old one no longer works.');
     } catch (err: any) {
-      toast.error(err.message || 'Error creating invitation');
+      toast.error(err.message || 'Error generating new link');
     } finally {
-      setIsInviting(false);
+      setIsRotatingLink(false);
     }
   };
 
@@ -208,10 +226,6 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium">
                 {members.length} Registered Members
-                {activeSociety?.invite_code ? ` • Society Code: ` : ''}
-                {activeSociety?.invite_code && (
-                  <strong className="text-blue-600 font-mono font-bold">{activeSociety.invite_code}</strong>
-                )}
               </p>
             </div>
 
@@ -699,10 +713,7 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
           <div className="relative w-full max-w-md max-h-[80vh] md:max-h-[75vh] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
             <button
               type="button"
-              onClick={() => {
-                setIsInviteModalOpen(false);
-                setGeneratedInviteLink(null);
-              }}
+              onClick={() => setIsInviteModalOpen(false)}
               className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center p-1.5 cursor-pointer"
             >
               <X className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -710,97 +721,59 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
 
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
-                <Key className="w-4 h-4 text-blue-600" />
-                <span>Invite Society Member</span>
+                <Link2 className="w-4 h-4 text-blue-600" />
+                <span>Invite Society Members</span>
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Issue an invitation token with a designated role for your society.
+                Share this link — anyone who signs up through it joins as a resident. You can promote them to committee or secretary afterwards from the Members tab.
               </p>
             </div>
 
-            {generatedInviteLink ? (
+            {loadingInviteLink ? (
+              <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Loading your invite link...
+              </div>
+            ) : inviteJoinPath ? (
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                <div className="text-xs font-bold text-emerald-700">Invitation Token Generated:</div>
+                <div className="text-xs font-bold text-emerald-700">Your Society&apos;s Invite Link:</div>
                 <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-slate-800 select-all break-all">
-                  {generatedInviteLink}
+                  {typeof window !== 'undefined' ? `${window.location.origin}${inviteJoinPath}` : inviteJoinPath}
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(generatedInviteLink);
-                    toast.success('Token copied to clipboard!');
+                    const fullLink = typeof window !== 'undefined' ? `${window.location.origin}${inviteJoinPath}` : inviteJoinPath;
+                    navigator.clipboard.writeText(fullLink);
+                    toast.success('Invite link copied to clipboard!');
                   }}
-                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Copy Token
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Invite Link</span>
                 </button>
+                {isPrimarySecretary && (
+                  <button
+                    type="button"
+                    onClick={handleRotateInviteLink}
+                    disabled={isRotatingLink}
+                    className="w-full py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isRotatingLink ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Generate New Link (old one stops working)</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             ) : (
-              <form onSubmit={handleCreateInvitation} className="space-y-3.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                    Invited Role
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setInviteRole('committee')}
-                      className={`p-2 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
-                        inviteRole === 'committee'
-                          ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-2xs'
-                          : 'border-slate-200 bg-slate-50 text-slate-600'
-                      }`}
-                    >
-                      Committee
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInviteRole('resident')}
-                      className={`p-2 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
-                        inviteRole === 'resident'
-                          ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-2xs'
-                          : 'border-slate-200 bg-slate-50 text-slate-600'
-                      }`}
-                    >
-                      Resident
-                    </button>
-                    {isPrimarySecretary && (
-                      <button
-                        type="button"
-                        onClick={() => setInviteRole('secretary')}
-                        className={`p-2 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
-                          inviteRole === 'secretary'
-                            ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-2xs'
-                            : 'border-slate-200 bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        Secretary
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                    Recipient Email (Optional)
-                  </label>
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="e.g. member@society.in"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isInviting}
-                  className="w-full min-h-[44px] py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-sm"
-                >
-                  {isInviting ? 'Generating...' : 'Create Invitation Token'}
-                </button>
-              </form>
+              <div className="p-6 text-center text-xs text-red-500">
+                Couldn&apos;t load an invite link. Please try again.
+              </div>
             )}
           </div>
         </div>

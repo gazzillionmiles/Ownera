@@ -179,7 +179,6 @@ export async function POST(request: NextRequest) {
 
     const {
       name,
-      inviteCode: rawInviteCode,
       address,
       city,
       state,
@@ -194,23 +193,6 @@ export async function POST(request: NextRequest) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
-    const inviteCode =
-      rawInviteCode ||
-      `SOC${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-
-    // Check if inviteCode is taken
-    const { data: existingCode } = await serviceSupabase
-      .from('societies')
-      .select('id')
-      .eq('invite_code', inviteCode)
-      .maybeSingle();
-
-    if (existingCode) {
-      return NextResponse.json(
-        { error: 'Invite code is already taken. Please choose another.' },
-        { status: 400 }
-      );
-    }
 
     // Insert society
     const { data: society, error: insertError } = await serviceSupabase
@@ -218,7 +200,6 @@ export async function POST(request: NextRequest) {
       .insert({
         name,
         slug: `${slug}-${Math.random().toString(36).substring(2, 6)}`,
-        invite_code: inviteCode,
         address,
         city,
         state,

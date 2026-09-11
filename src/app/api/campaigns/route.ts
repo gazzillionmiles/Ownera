@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       interest_deadline, booking_deadline, minimum_customers, target_customers, maximum_customers,
       deposit_amount, status, selected_provider_id, selected_bid_id, current_price, published_at,
       created_at, updated_at,
-      society:societies(id, name, slug, invite_code, address, city, state, pincode, total_homes, created_by, created_at, updated_at),
+      society:societies(id, name, slug, address, city, state, pincode, total_homes, created_by, created_at, updated_at),
       service:services(id, name, slug, category, description, inclusions, exclusions, typical_duration_minutes, suggested_campaign_days, suggested_slot_duration_minutes, base_price_estimate, icon, created_at),
       pricing_tiers:campaign_pricing_tiers(id, campaign_id, min_quantity, max_quantity, price_per_unit, tier_order, created_at),
       selected_provider:providers(id, user_id, company_name, contact_person, phone, email, services_offered, operating_cities, verification_status, rating, total_jobs_completed, completion_rate, bio, created_at, updated_at)

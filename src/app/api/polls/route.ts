@@ -314,13 +314,13 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createAdminClient();
 
-    // Verify society exists in database (check by id, slug, or invite code)
+    // Verify society exists in database (check by id or slug)
     const isSocietyUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(societyId);
     let socQuery = serviceSupabase.from('societies').select('id, name, slug');
     if (isSocietyUuid) {
       socQuery = socQuery.or(`id.eq.${societyId},slug.ilike.${societyId}`);
     } else {
-      socQuery = socQuery.or(`slug.ilike.${societyId},invite_code.ilike.${societyId}`);
+      socQuery = socQuery.ilike('slug', societyId);
     }
     const { data: societiesList, error: socErr } = await socQuery;
     const targetSociety = societiesList && societiesList.length > 0 ? societiesList[0] : null;

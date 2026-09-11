@@ -34,20 +34,6 @@ export interface PlatformAdmin {
   user_name?: string | null;
 }
 
-export interface SocietyInvitation {
-  id: string;
-  society_id: string;
-  email?: string | null;
-  phone?: string | null;
-  role: SocietyRole;
-  token: string;
-  status: 'pending' | 'accepted' | 'revoked' | 'expired';
-  invited_by: string;
-  created_at: string;
-  expires_at: string;
-  society?: Society;
-}
-
 export interface SocietyInviteLink {
   id: string;
   society_id: string;
@@ -64,7 +50,6 @@ export interface Society {
   id: string;
   name: string;
   slug: string;
-  invite_code: string;
   address?: string | null;
   city: string;
   state?: string | null;

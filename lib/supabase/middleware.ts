@@ -3,7 +3,6 @@ import { NextResponse, type NextRequest } from 'next/server.js';
 
 export const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
 export const REF_COOKIE_NAME = `${APP_PREFIX}_ref_code`;
-export const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
 export const CONSENT_COOKIE_NAME = `${APP_PREFIX}_terms_ok`;
 export const STATUS_COOKIE_NAME = `${APP_PREFIX}_onboard_status`;
 
@@ -184,40 +183,12 @@ export async function updateSession(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const refCode = searchParams.get('ref')?.trim();
 
-  // Distinguish society invite codes from Supabase auth exchange codes (which are 32+ hex/base64 strings on auth routes)
-  const isAuthRoute =
-    pathname.startsWith('/auth') ||
-    pathname === '/callback' ||
-    pathname === '/login';
-  const rawCode = (
-    searchParams.get('invite_code') ||
-    searchParams.get('inviteCode') ||
-    (!isAuthRoute ? searchParams.get('code') : null)
-  )?.trim();
-
-  const isAuthToken = Boolean(
-    rawCode && (rawCode.length > 25 || /^[0-9a-f]{32,}$/i.test(rawCode))
-  );
-  const inviteCodeParam = isAuthToken ? null : rawCode;
-
   if (refCode) {
     supabaseResponse.cookies.set(REF_COOKIE_NAME, refCode.toUpperCase(), {
       path: '/',
       maxAge: 30 * 24 * 60 * 60,
       sameSite: 'lax',
     });
-  }
-
-  if (inviteCodeParam) {
-    supabaseResponse.cookies.set(
-      INVITE_COOKIE_NAME,
-      inviteCodeParam.toUpperCase(),
-      {
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60,
-        sameSite: 'lax',
-      }
-    );
   }
 
   // Allowed unauthenticated paths

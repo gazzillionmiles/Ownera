@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { createAdminClient } from '@/lib/supabase/service';
 import { z } from 'zod';
 import { insertTermsConsentEvent, getSafePostAuthRedirect } from '@/lib/consent';
 import { checkAndGrantWelcomeCredits } from '@/lib/welcome-credits';
@@ -13,7 +12,6 @@ const signupSchema = z.object({
   consentAccepted: z.boolean().optional(),
   fingerprint: z.string().optional(),
   client_id: z.string().optional(),
-  invite_code: z.string().optional(),
   next: z.string().optional(),
 });
 
@@ -121,65 +119,12 @@ export async function POST(request: Request) {
     }
   }
 
-  // 4. Auto-join society if invite code provided in body or cookie
-  const APP_PREFIX = process.env.NEXT_PUBLIC_APP_COOKIE_PREFIX || 'ownera';
-  const INVITE_COOKIE_NAME = `${APP_PREFIX}_invite_code`;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(new RegExp(`(?:^|; )${INVITE_COOKIE_NAME}=([^;]*)`));
-  const effectiveInviteCode = (
-    parsedBody.invite_code || (match ? decodeURIComponent(match[1]) : '')
-  )?.trim().toUpperCase();
-
-  if (effectiveInviteCode) {
-    try {
-      const serviceSupabase = createAdminClient();
-      const { data: society } = await serviceSupabase
-        .from('societies')
-        .select('id, slug, name')
-        .ilike('invite_code', effectiveInviteCode)
-        .maybeSingle();
-
-      if (society) {
-        await serviceSupabase
-          .from('society_members')
-          .upsert(
-            {
-              society_id: society.id,
-              user_id: data.user.id,
-              flat_number: 'Unassigned',
-              role: 'resident',
-              status: 'active',
-            },
-            { onConflict: 'society_id,user_id' }
-          );
-
-        await serviceSupabase
-          .from('profiles')
-          .update({
-            primary_society_id: society.id,
-            active_role: 'resident',
-          })
-          .eq('id', data.user.id);
-      }
-    } catch (socErr) {
-      console.error('[Signup] Error auto-joining society from invite code:', socErr);
-    }
-  }
-
   const response = NextResponse.json({
     data: {
       user: data.user,
       session: data.session,
     },
   });
-
-  if (effectiveInviteCode) {
-    response.cookies.set(INVITE_COOKIE_NAME, '', {
-      maxAge: 0,
-      path: '/',
-      sameSite: 'lax',
-    });
-  }
 
   return response;
 }

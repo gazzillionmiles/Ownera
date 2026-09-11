@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, X, ArrowRight, Loader2, Key, PlusCircle, ShieldCheck, MapPin, Users } from 'lucide-react';
+import { Building2, X, ArrowRight, Loader2, PlusCircle, ShieldCheck, MapPin, Users, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PropertyType } from '@/src/types/ownera';
 import { StateCityPicker } from '@/src/shared/components/StateCityPicker';
@@ -24,15 +24,8 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<'join' | 'create'>(initialTab);
 
-  // Join state
-  const [inviteCode, setInviteCode] = useState('');
-  const [flatNumber, setFlatNumber] = useState('');
-  const [invitationToken, setInvitationToken] = useState('');
-  const [hasToken, setHasToken] = useState(false);
-
   // Create state
   const [societyName, setSocietyName] = useState('');
-  const [customInviteCode, setCustomInviteCode] = useState('');
   const [propertyType, setPropertyType] = useState<PropertyType>('apartment');
   const [createFlatNumber, setCreateFlatNumber] = useState('');
   const [state, setState] = useState('Karnataka');
@@ -47,49 +40,6 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
 
   if (!isOpen || !mounted) return null;
 
-  const handleJoinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hasToken && !inviteCode.trim()) {
-      toast.error('Please fill in society invite code');
-      return;
-    }
-    if (!flatNumber.trim()) {
-      toast.error('Please enter your flat or unit number');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const codeToUse = (hasToken && invitationToken.trim() ? invitationToken.trim() : inviteCode.trim());
-      const payload: any = {
-        inviteCode: codeToUse,
-        invitationToken: codeToUse,
-        flatNumber: flatNumber.trim(),
-        unitNumber: flatNumber.trim(),
-      };
-
-      const res = await fetch('/api/societies/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to join society');
-      }
-
-      toast.success(data.message || `Joined ${data.society?.name}!`);
-      invalidateSocietiesCache();
-      onSuccess(data.society);
-      onClose();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to join society');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!societyName.trim()) {
@@ -103,14 +53,11 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
 
     setLoading(true);
     try {
-      const cleanCode = customInviteCode.trim().toUpperCase() || undefined;
-
       const res = await fetch('/api/societies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: societyName.trim(),
-          inviteCode: cleanCode,
           flatNumber: createFlatNumber.trim(),
           propertyType,
           city: city.trim() || 'Bengaluru',
@@ -154,7 +101,7 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
           </h2>
           <p className="text-xs text-slate-500 font-medium">
             {tab === 'join'
-              ? 'Enter your society invite code to browse live camps and group pricing.'
+              ? 'Joining happens through a link your society secretary shares with you.'
               : 'Create your residential community and become the Society Secretary.'}
           </p>
         </div>
@@ -187,88 +134,35 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
         </div>
 
         {tab === 'join' ? (
-          <form onSubmit={handleJoinSubmit} className="space-y-4">
-            {!hasToken ? (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Society Invite Code
-                </label>
-                <input
-                  type="text"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. PALM2026 or SOC1234"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono uppercase tracking-wider text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Short code provided by your society secretary (e.g. PALM2026).
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
+                <Link2 className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-blue-900">
+                  Ask your society secretary for an invite link
                 </p>
-                <div className="flex items-center justify-end mt-1 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setHasToken(true)}
-                    className="text-blue-600 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                  >
-                    <Key className="w-3 h-3" /> Have Token?
-                  </button>
-                </div>
+                <p className="text-[11px] text-blue-700/80 leading-relaxed">
+                  Societies are joined through a link shared by the secretary
+                  or a committee member — there&apos;s no code to type in.
+                  Open the link they sent you, sign in or create an account,
+                  and you&apos;ll be added as a resident right away.
+                </p>
               </div>
-            ) : (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Invitation Token (Secretary / Committee)
-                </label>
-                <input
-                  type="text"
-                  value={invitationToken}
-                  onChange={(e) => setInvitationToken(e.target.value)}
-                  placeholder="inv_sec_..."
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                />
-                <div className="flex items-center justify-between mt-1 text-[11px]">
-                  <span className="text-slate-400">Issued by authorized Secretary/Admin</span>
-                  <button
-                    type="button"
-                    onClick={() => setHasToken(false)}
-                    className="text-blue-600 hover:underline font-bold cursor-pointer"
-                  >
-                    Use Society Code instead
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Your Flat / Unit Number
-              </label>
-              <input
-                type="text"
-                value={flatNumber}
-                onChange={(e) => setFlatNumber(e.target.value)}
-                placeholder="e.g. Tower B - 402"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-              />
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-md shadow-blue-500/25 disabled:opacity-50 cursor-pointer"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <span>Join Society &amp; Unlock Bulk Deals</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+            <p className="text-[11px] text-slate-400 text-center">
+              Don&apos;t have a link yet? Ask your secretary to send one, or{' '}
+              <button
+                type="button"
+                onClick={() => setTab('create')}
+                className="text-blue-600 hover:underline font-bold cursor-pointer"
+              >
+                create a new society
+              </button>{' '}
+              instead.
+            </p>
+          </div>
         ) : (
           <form onSubmit={handleCreateSubmit} className="space-y-3.5">
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2 text-xs text-amber-900 font-bold">
@@ -287,19 +181,6 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
                 placeholder="e.g. Palm Meadows"
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Invite Code (Optional)
-              </label>
-              <input
-                type="text"
-                value={customInviteCode}
-                onChange={(e) => setCustomInviteCode(e.target.value.toUpperCase())}
-                placeholder="e.g. PALM2026"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono uppercase text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
               />
             </div>
 

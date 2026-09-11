@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Building2,
   ArrowRight,
@@ -114,26 +113,8 @@ const STANDARDIZED_SERVICES = [
 ];
 
 export default function PublicLandingPage() {
-  const router = useRouter();
-  const [inviteCode, setInviteCode] = useState('');
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
-
-  const handleJoinSocietySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanCode = inviteCode.trim().toUpperCase();
-    if (cleanCode) {
-      if (typeof document !== 'undefined') {
-        document.cookie = `ownera_invite_code=${encodeURIComponent(cleanCode)}; path=/; max-age=2592000; SameSite=Lax`;
-        try {
-          window.localStorage.setItem('ownera_invite_code', cleanCode);
-        } catch {}
-      }
-      router.push(`/login?mode=signup&code=${encodeURIComponent(cleanCode)}`);
-    } else {
-      router.push('/login?mode=signup');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50/70 dark:bg-[#0b0f17] text-slate-900 dark:text-[#f8fafc] font-sans antialiased">
@@ -202,26 +183,25 @@ export default function PublicLandingPage() {
             Ownera aggregates resident demand across apartment homes to unlock volume discounts, while verified commercial service providers get dedicated full-day routes in one single building.
           </p>
 
-          {/* Quick Society Code Entry */}
-          <div className="max-w-md mx-auto mb-10">
-            <form onSubmit={handleJoinSocietySubmit} className="flex gap-2 p-1.5 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
-              <input
-                type="text"
-                placeholder="Enter society invite code (e.g. SOC1234)"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none uppercase font-mono tracking-wider font-semibold"
-              />
-              <button
-                type="submit"
-                className="min-h-[44px] px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+          {/* Get Started CTA */}
+          <div className="max-w-md mx-auto mb-10 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
+              <Link
+                href="/signup"
+                className="min-h-[44px] px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-sm"
               >
-                <span>Join</span>
+                <span>Create Your Society</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </form>
-            <p className="text-xs text-slate-400 font-medium mt-2">
-              Have an invite code from your society committee? Enter it above to join directly.
+              </Link>
+              <Link
+                href="/login"
+                className="min-h-[44px] px-6 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center"
+              >
+                Sign In
+              </Link>
+            </div>
+            <p className="text-xs text-slate-400 font-medium">
+              Been invited by your society secretary? Open the link they sent you to join directly.
             </p>
           </div>
 

@@ -59,35 +59,6 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
     if (routeMode === 'signup' || searchParams.get('signup')) {
       setMode('signup');
     }
-    const rawCode = (
-      searchParams.get('invite_code') ||
-      searchParams.get('inviteCode') ||
-      searchParams.get('code')
-    )
-      ?.trim()
-      .toUpperCase();
-
-    // Only store genuine invite codes (<= 25 chars, not 32+ hex auth codes)
-    const isAuthToken = Boolean(
-      rawCode && (rawCode.length > 25 || /^[0-9A-F]{32,}$/.test(rawCode))
-    );
-    const codeParam = isAuthToken ? null : rawCode;
-
-    if (typeof document !== 'undefined') {
-      if (codeParam) {
-        document.cookie = `ownera_invite_code=${encodeURIComponent(codeParam)}; path=/; max-age=2592000; SameSite=Lax`;
-        try {
-          window.localStorage.setItem('ownera_invite_code', codeParam);
-        } catch {}
-      } else if (isAuthToken) {
-        // Clear any stale auth token stored in the invite cookie by mistake
-        document.cookie =
-          'ownera_invite_code=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        try {
-          window.localStorage.removeItem('ownera_invite_code');
-        } catch {}
-      }
-    }
   }, [routeMode, searchParams]);
 
   useEffect(() => {
@@ -192,7 +163,6 @@ const LoginViewContent: React.FC<LoginViewProps> = ({
       const { data, error } = await signUpWithEmail(
         email,
         password,
-        undefined,
         targetNext
       );
       if (error) {
