@@ -26,7 +26,7 @@ export async function GET(
     const { token } = await context.params;
     const cleanToken = token?.trim();
 
-    if (!cleanToken || !/^vq_[a-zA-Z0-9_-]{16,64}$/.test(cleanToken)) {
+    if (!cleanToken || cleanToken.length < 4 || cleanToken.length > 128) {
       return NextResponse.json(
         { error: 'Invalid invitation link format' },
         { status: 400 }
@@ -46,43 +46,24 @@ export async function GET(
 
     const serviceSupabase = createAdminClient();
 
-    // Look up invite by token with strict column projection
+    // Look up invite by token using standard PostgREST join
     const { data: invite, error: invErr } = await serviceSupabase
       .from('campaign_vendor_invites')
       .select(`
-        id,
-        business_name,
-        phone,
-        status,
-        campaign_id,
-        invite_token,
-        created_at,
+        *,
         campaign:service_campaigns(
-          id,
-          title,
-          description,
-          event_date,
-          target_customers,
-          minimum_customers,
-          current_price,
-          status,
-          society:societies(
-            id,
-            name,
-            city,
-            locality
-          ),
-          service:services(
-            id,
-            name,
-            category
-          )
+          *,
+          society:societies(*),
+          service:services(*)
         )
       `)
       .eq('invite_token', cleanToken)
       .maybeSingle();
 
-    if (invErr || !invite || !invite.campaign) {
+    if (invErr || !invite) {
+      if (invErr) {
+        console.error('[API/vendor-quote/[token] GET] Query error:', invErr);
+      }
       return NextResponse.json(
         { error: 'Invalid or expired vendor invitation link' },
         { status: 404 }
@@ -99,20 +80,38 @@ export async function GET(
     // Check if an existing quote has already been submitted for this invite
     const { data: existingBid } = await serviceSupabase
       .from('provider_bids')
-      .select(`
-        id,
-        price_per_unit,
-        available_date,
-        available_start_time,
-        technicians_count,
-        estimated_duration_minutes,
-        simultaneous_capacity,
-        total_capacity,
-        notes,
-        status
-      `)
+      .select('*')
       .eq('vendor_invite_id', invite.id)
       .maybeSingle();
+
+    const rawCampaign = invite.campaign as any;
+    const cleanCampaign = rawCampaign
+      ? {
+          id: rawCampaign.id,
+          title: rawCampaign.title || rawCampaign.custom_service_name || 'Service Camp',
+          description: rawCampaign.description,
+          event_date: rawCampaign.event_date,
+          target_customers: rawCampaign.target_customers || 20,
+          minimum_customers: rawCampaign.minimum_customers || 5,
+          current_price: rawCampaign.current_price,
+          status: rawCampaign.status,
+          society: rawCampaign.society
+            ? {
+                id: rawCampaign.society.id,
+                name: rawCampaign.society.name,
+                city: rawCampaign.society.city,
+                address: rawCampaign.society.address,
+              }
+            : null,
+          service: rawCampaign.service
+            ? {
+                id: rawCampaign.service.id,
+                name: rawCampaign.service.name,
+                category: rawCampaign.service.category,
+              }
+            : null,
+        }
+      : null;
 
     return NextResponse.json({
       invite: {
@@ -121,8 +120,21 @@ export async function GET(
         phone: invite.phone,
         status: invite.status,
       },
-      campaign: invite.campaign,
-      existing_quote: existingBid || null,
+      campaign: cleanCampaign,
+      existing_quote: existingBid
+        ? {
+            id: existingBid.id,
+            price_per_unit: existingBid.price_per_unit,
+            available_date: existingBid.available_date,
+            available_start_time: existingBid.available_start_time,
+            technicians_count: existingBid.technicians_count,
+            estimated_duration_minutes: existingBid.estimated_duration_minutes,
+            simultaneous_capacity: existingBid.simultaneous_capacity,
+            total_capacity: existingBid.total_capacity,
+            notes: existingBid.notes,
+            status: existingBid.status,
+          }
+        : null,
     });
   } catch (err: any) {
     console.error('[API/vendor-quote/[token] GET] Error:', err);
@@ -138,7 +150,7 @@ export async function POST(
     const { token } = await context.params;
     const cleanToken = token?.trim();
 
-    if (!cleanToken || !/^vq_[a-zA-Z0-9_-]{16,64}$/.test(cleanToken)) {
+    if (!cleanToken || cleanToken.length < 4 || cleanToken.length > 128) {
       return NextResponse.json(
         { error: 'Invalid invitation link format' },
         { status: 400 }
@@ -163,25 +175,14 @@ export async function POST(
     // Verify token and fetch associated campaign status
     const { data: invite, error: invErr } = await serviceSupabase
       .from('campaign_vendor_invites')
-      .select(`
-        id,
-        campaign_id,
-        provider_id,
-        business_name,
-        phone,
-        invited_by,
-        status,
-        campaign:service_campaigns(
-          id,
-          title,
-          status,
-          event_date
-        )
-      `)
+      .select('*, campaign:service_campaigns(*)')
       .eq('invite_token', cleanToken)
       .maybeSingle();
 
-    if (invErr || !invite || !invite.campaign) {
+    if (invErr || !invite) {
+      if (invErr) {
+        console.error('[API/vendor-quote/[token] POST] Query error:', invErr);
+      }
       return NextResponse.json(
         { error: 'Invalid or expired vendor invitation link' },
         { status: 404 }
@@ -196,7 +197,7 @@ export async function POST(
     }
 
     const campaign = invite.campaign as any;
-    if (CLOSED_STATUSES.includes(campaign.status)) {
+    if (campaign && CLOSED_STATUSES.includes(campaign.status)) {
       return NextResponse.json(
         { error: 'Quote submissions are closed for this service event.' },
         { status: 400 }

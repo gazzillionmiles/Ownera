@@ -154,8 +154,8 @@ export default function VendorQuotePage({
     );
   }
 
-  const campaign = inviteData.campaign;
-  const invite = inviteData.invite;
+  const campaign = inviteData.campaign || {};
+  const invite = inviteData.invite || {};
   const targetHomes = campaign.target_customers || 20;
   const estimatedEarnings = (pricePerUnit || 0) * targetHomes;
   const isClosed = CLOSED_STATUSES.includes(campaign.status);
