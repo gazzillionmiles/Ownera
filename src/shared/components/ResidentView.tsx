@@ -930,6 +930,11 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                                     {issueObj.status || 'open'}
                                   </span>
                                 </div>
+                                {issueObj.resolution_notes && (
+                                  <p className="text-[11px] text-rose-700/90 pl-5.5">
+                                    Organizer note: {issueObj.resolution_notes}
+                                  </p>
+                                )}
                               </div>
                             )}
                           </>
