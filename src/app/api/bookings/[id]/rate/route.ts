@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { submitRatingSchema } from '@/src/shared/validations/ownera';
+import { createErrorResponse } from '@/lib/logger';
 
 export async function POST(
   request: NextRequest,
@@ -55,30 +56,62 @@ export async function POST(
       );
     }
 
-    // Insert or update rating
-    const { data: ratingRecord, error: rError } = await serviceSupabase
+    // Check if an existing rating exists for this booking (avoids 42P10 missing unique constraint)
+    const { data: existingRating } = await serviceSupabase
       .from('service_ratings')
-      .upsert(
-        {
+      .select('id')
+      .eq('booking_id', id)
+      .maybeSingle();
+
+    let ratingRecord;
+    if (existingRating) {
+      const { data, error: uError } = await serviceSupabase
+        .from('service_ratings')
+        .update({
+          rating,
+          review: review || null,
+        })
+        .eq('id', existingRating.id)
+        .select()
+        .single();
+
+      if (uError) {
+        return createErrorResponse(
+          'Database',
+          'updateRatingRecord',
+          uError,
+          'Failed to record rating',
+          500,
+          { bookingId: id }
+        );
+      }
+      ratingRecord = data;
+    } else {
+      const { data, error: iError } = await serviceSupabase
+        .from('service_ratings')
+        .insert({
           society_id: booking.society_id,
           booking_id: id,
           user_id: user.id,
           provider_id: providerId,
           campaign_id: campaignId,
           rating,
-          review,
-        },
-        { onConflict: 'booking_id' }
-      )
-      .select()
-      .single();
+          review: review || null,
+        })
+        .select()
+        .single();
 
-    if (rError) {
-      console.error('[API/bookings/[id]/rate] Rating error:', rError);
-      return NextResponse.json(
-        { error: 'Failed to record rating' },
-        { status: 500 }
-      );
+      if (iError) {
+        return createErrorResponse(
+          'Database',
+          'insertRatingRecord',
+          iError,
+          'Failed to record rating',
+          500,
+          { bookingId: id }
+        );
+      }
+      ratingRecord = data;
     }
 
     // Recompute provider's average rating

@@ -120,17 +120,31 @@ export async function POST(
 
     if (isResident) {
       // Resident confirms service completion
-      await serviceSupabase
+      // Update or insert completion record safely without relying on ON CONFLICT
+      const { data: existingComp } = await serviceSupabase
         .from('service_completions')
-        .upsert(
-          {
+        .select('id')
+        .eq('booking_id', id)
+        .maybeSingle();
+
+      if (existingComp) {
+        await serviceSupabase
+          .from('service_completions')
+          .update({
+            resident_status: 'confirmed',
+            resident_confirmed_at: new Date().toISOString(),
+          })
+          .eq('id', existingComp.id);
+      } else {
+        await serviceSupabase
+          .from('service_completions')
+          .insert({
             booking_id: id,
             provider_id: booking.provider_id,
             resident_status: 'confirmed',
             resident_confirmed_at: new Date().toISOString(),
-          },
-          { onConflict: 'booking_id' }
-        );
+          });
+      }
 
       await serviceSupabase
         .from('bookings')
