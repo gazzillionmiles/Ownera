@@ -94,6 +94,27 @@ export async function POST(
       });
     }
 
+    // Notify the vendor the issue was raised against, so the message we
+    // return below ("provider have been notified") is actually true.
+    const targetProviderId = providerId || booking.provider_id;
+    if (targetProviderId) {
+      const { data: providerRecord } = await serviceSupabase
+        .from('providers')
+        .select('user_id, company_name')
+        .eq('id', targetProviderId)
+        .maybeSingle();
+
+      if (providerRecord?.user_id) {
+        await serviceSupabase.from('notifications').insert({
+          user_id: providerRecord.user_id,
+          title: 'Issue Reported On Your Job ⚠️',
+          message: `Flat ${booking.flat_number} reported a problem with ${booking.campaign?.title || 'a completed job'}: "${description.substring(0, 80)}..."`,
+          link: `/home`,
+          type: 'general',
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message:

@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ServiceCampaign,
   Booking,
   Provider,
   ProviderBid,
+  ServiceIssue,
+  ServiceRating,
 } from '@/src/types/ownera';
 import { BaseUserProfile } from '@/src/types/auth';
 import {
@@ -30,6 +32,7 @@ import {
   Wrench,
   AlertTriangle,
   XCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -64,6 +67,45 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
   const [bidNotes, setBidNotes] = useState('Dedicated mobile crew on site with professional equipment.');
   const [isSubmittingBid, setIsSubmittingBid] = useState(false);
   const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
+
+  // Reviews & Reported Issues (shown on the Overview tab)
+  const [reviews, setReviews] = useState<ServiceRating[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [issues, setIssues] = useState<ServiceIssue[]>([]);
+  const [loadingIssues, setLoadingIssues] = useState(false);
+
+  const fetchReviews = useCallback(async () => {
+    if (!providerProfile?.id) return;
+    setLoadingReviews(true);
+    try {
+      const res = await fetch(`/api/providers/${providerProfile.id}/reviews?limit=10`);
+      const data = await res.json();
+      if (res.ok) setReviews(data.reviews || []);
+    } catch {
+      // Non-critical widget — fail silently and leave the section empty.
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, [providerProfile?.id]);
+
+  const fetchIssues = useCallback(async () => {
+    if (!providerProfile?.id) return;
+    setLoadingIssues(true);
+    try {
+      const res = await fetch(`/api/service-issues?providerId=${providerProfile.id}`);
+      const data = await res.json();
+      if (res.ok) setIssues(data.issues || []);
+    } catch {
+      // Non-critical widget — fail silently and leave the section empty.
+    } finally {
+      setLoadingIssues(false);
+    }
+  }, [providerProfile?.id]);
+
+  useEffect(() => {
+    fetchReviews();
+    fetchIssues();
+  }, [fetchReviews, fetchIssues]);
 
   const handleOpenBidModal = (camp: ServiceCampaign) => {
     setBiddingCampaign(camp);
@@ -289,6 +331,87 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                 <div className="text-xs text-emerald-600 font-bold">
                   {completedCount} of {confirmedCount} Jobs Completed
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reviews & Reported Issues Summary (Overview only) */}
+          {activeTab === 'overview' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3">
+                <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-amber-600" />
+                  <span>Recent Reviews {providerProfile?.rating ? `(${providerProfile.rating}★ avg)` : ''}</span>
+                </h3>
+                {loadingReviews ? (
+                  <p className="text-xs text-slate-400">Loading reviews...</p>
+                ) : reviews.length === 0 ? (
+                  <p className="text-xs text-slate-500 font-medium">
+                    No resident reviews yet. They&apos;ll appear here once residents rate completed jobs.
+                  </p>
+                ) : (
+                  <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                    {reviews.map((r) => (
+                      <div key={r.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <div className="flex items-center gap-1 mb-0.5">
+                          {Array.from({ length: 5 }).map((_, idx) => (
+                            <Star
+                              key={idx}
+                              className={`w-3 h-3 ${
+                                idx < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                              }`}
+                            />
+                          ))}
+                          <span className="text-[11px] font-bold text-slate-500 ml-1">
+                            {r.reviewer_name || 'Verified Resident'}
+                          </span>
+                        </div>
+                        {r.review && <p className="text-xs text-slate-700">{r.review}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3">
+                <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  <span>Issues Reported Against You ({issues.length})</span>
+                </h3>
+                {loadingIssues ? (
+                  <p className="text-xs text-slate-400">Loading issue reports...</p>
+                ) : issues.length === 0 ? (
+                  <p className="text-xs text-slate-500 font-medium">
+                    No issues reported. Keep up the great work!
+                  </p>
+                ) : (
+                  <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                    {issues.map((issue) => (
+                      <div key={issue.id} className="p-3 rounded-xl bg-rose-50/60 border border-rose-100">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span className="text-[10px] font-bold uppercase text-rose-700">{issue.category}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              issue.status === 'resolved'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : issue.status === 'investigating'
+                                ? 'bg-amber-100 text-amber-800'
+                                : issue.status === 'escalated'
+                                ? 'bg-rose-200 text-rose-900'
+                                : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {issue.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-700">{issue.description}</p>
+                        {issue.booking?.campaign?.title && (
+                          <p className="text-[11px] text-slate-400 mt-0.5">{issue.booking.campaign.title}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

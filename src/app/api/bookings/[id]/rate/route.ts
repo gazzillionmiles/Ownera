@@ -45,6 +45,16 @@ export async function POST(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
+    // Defense in depth: the UI only offers rating once a job is marked
+    // completed, but enforce it server-side too so the endpoint can't be
+    // called directly against a booking that hasn't happened yet.
+    if (booking.status !== 'completed') {
+      return NextResponse.json(
+        { error: 'You can only rate a service after it has been marked completed.' },
+        { status: 400 }
+      );
+    }
+
     // Insert or update rating
     const { data: ratingRecord, error: rError } = await serviceSupabase
       .from('service_ratings')

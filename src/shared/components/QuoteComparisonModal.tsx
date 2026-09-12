@@ -14,9 +14,12 @@ import {
   Check,
   Star,
   ArrowRight,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ServiceCampaign, ProviderBid } from '@/src/types/ownera';
+import { ServiceCampaign, ProviderBid, ServiceRating } from '@/src/types/ownera';
 
 interface QuoteComparisonModalProps {
   isOpen: boolean;
@@ -33,6 +36,9 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
 }) => {
   const [mounted, setMounted] = useState(false);
   const [selectingBidId, setSelectingBidId] = useState<string | null>(null);
+  const [expandedReviewsFor, setExpandedReviewsFor] = useState<string | null>(null);
+  const [reviewsByProvider, setReviewsByProvider] = useState<Record<string, ServiceRating[]>>({});
+  const [loadingReviewsFor, setLoadingReviewsFor] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -41,6 +47,27 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
   if (!isOpen || !campaign || !mounted) return null;
 
   const bids = campaign.bids || [];
+
+  const handleToggleReviews = async (providerId: string) => {
+    if (expandedReviewsFor === providerId) {
+      setExpandedReviewsFor(null);
+      return;
+    }
+    setExpandedReviewsFor(providerId);
+    if (reviewsByProvider[providerId]) return; // already fetched
+
+    setLoadingReviewsFor(providerId);
+    try {
+      const res = await fetch(`/api/providers/${providerId}/reviews?limit=5`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load reviews');
+      setReviewsByProvider((prev) => ({ ...prev, [providerId]: data.reviews || [] }));
+    } catch (err: any) {
+      toast.error(err.message || 'Error loading reviews');
+    } finally {
+      setLoadingReviewsFor(null);
+    }
+  };
 
   const handleAcceptQuote = async (bid: ProviderBid) => {
     setSelectingBidId(bid.id);
@@ -100,10 +127,13 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
               const isWinning = campaign.selected_bid_id === bid.id || bid.status === 'accepted';
               const providerName = bid.provider?.company_name || 'Service Provider';
               const rating = bid.provider?.rating;
+              const providerId = bid.provider?.id || bid.provider_id || '';
               const completedJobs = bid.provider?.total_jobs_completed || 0;
               const simultaneous = bid.simultaneous_capacity || bid.technicians_count;
               const teamSize = bid.technicians_count || simultaneous;
               const duration = bid.estimated_duration_minutes || bid.service_duration_minutes;
+              const isReviewsExpanded = expandedReviewsFor === providerId;
+              const reviews = reviewsByProvider[providerId] || [];
 
               return (
                 <div
@@ -127,6 +157,21 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
                           <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
                             ({completedJobs}+ completed jobs)
                           </span>
+                        )}
+                        {providerId && (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleReviews(providerId)}
+                            className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>Reviews</span>
+                            {isReviewsExpanded ? (
+                              <ChevronUp className="w-3 h-3" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3" />
+                            )}
+                          </button>
                         )}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
@@ -164,6 +209,53 @@ export const QuoteComparisonModal: React.FC<QuoteComparisonModalProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Expandable Reviews Panel */}
+                  {isReviewsExpanded && (
+                    <div className="rounded-xl bg-slate-50 dark:bg-black/25 border border-slate-100 dark:border-white/5 p-3.5 space-y-2.5">
+                      {loadingReviewsFor === providerId ? (
+                        <div className="flex items-center justify-center gap-2 text-xs text-slate-400 py-4">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Loading reviews...</span>
+                        </div>
+                      ) : reviews.length === 0 ? (
+                        <p className="text-xs text-slate-400 dark:text-zinc-500 text-center py-3">
+                          No written reviews yet for this vendor.
+                        </p>
+                      ) : (
+                        reviews.map((r) => (
+                          <div
+                            key={r.id}
+                            className="pb-2.5 border-b border-slate-200/70 dark:border-white/5 last:border-0 last:pb-0"
+                          >
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              {Array.from({ length: 5 }).map((_, idx) => (
+                                <Star
+                                  key={idx}
+                                  className={`w-3 h-3 ${
+                                    idx < r.rating
+                                      ? 'fill-amber-400 text-amber-400'
+                                      : 'text-slate-300 dark:text-zinc-600'
+                                  }`}
+                                />
+                              ))}
+                              <span className="text-[11px] font-bold text-slate-600 dark:text-zinc-300 ml-1">
+                                {r.reviewer_name || 'Verified Resident'}
+                              </span>
+                              {r.campaign_title && (
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+                                  &bull; {r.campaign_title}
+                                </span>
+                              )}
+                            </div>
+                            {r.review && (
+                              <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">{r.review}</p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
 
                   {bid.notes && (
                     <p className="text-xs text-slate-600 dark:text-zinc-300 bg-slate-50 dark:bg-black/25 p-3 rounded-xl border border-slate-100 dark:border-white/5">

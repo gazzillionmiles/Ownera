@@ -819,9 +819,31 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                             )}
 
                             {hasValidIssue && (
-                              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-center gap-1.5">
-                                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                                <span>Issue: {issueObj.description}</span>
+                              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium space-y-1">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <span className="flex items-center gap-1.5">
+                                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                                    <span>Issue: {issueObj.description}</span>
+                                  </span>
+                                  <span
+                                    className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                      issueObj.status === 'resolved'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : issueObj.status === 'investigating'
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : issueObj.status === 'escalated'
+                                        ? 'bg-rose-200 text-rose-900'
+                                        : 'bg-slate-200 text-slate-700'
+                                    }`}
+                                  >
+                                    {issueObj.status || 'open'}
+                                  </span>
+                                </div>
+                                {issueObj.resolution_notes && (
+                                  <p className="text-[11px] text-rose-700/90 pl-5.5">
+                                    Organizer note: {issueObj.resolution_notes}
+                                  </p>
+                                )}
                               </div>
                             )}
                           </>

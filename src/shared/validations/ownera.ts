@@ -203,6 +203,16 @@ export const reportIssueSchema = z.object({
   photoUrl: z.string().optional().nullable(),
 });
 
+export const updateServiceIssueSchema = z.object({
+  status: z.enum(['open', 'investigating', 'resolved', 'escalated']),
+  resolutionNotes: z.string().max(1000).optional().nullable(),
+});
+
+export const listProviderReviewsQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(50).default(20),
+  offset: z.coerce.number().int().nonnegative().default(0),
+});
+
 export const expressInterestSchema = z.object({
   campaignId: z.string().min(1),
   quantity: z.coerce.number().int().positive().default(1),
