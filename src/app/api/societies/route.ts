@@ -105,32 +105,45 @@ export async function GET(request: NextRequest) {
     }
 
     const societiesList = memberships
-      .filter((m) => m.society && m.society.id)
-      .map((m) => ({
-        ...m.society,
-        user_role: m.role || 'resident',
-        flat_number: m.flat_number || m.unit_number || '',
-        property_type: m.property_type || 'apartment',
-        member_count: memberCountMap.get(m.society_id) || 1,
-      }));
+      .filter((m) => {
+        const soc = Array.isArray(m.society) ? m.society[0] : m.society;
+        return soc && soc.id;
+      })
+      .map((m) => {
+        const soc = Array.isArray(m.society) ? m.society[0] : m.society;
+        return {
+          ...soc,
+          user_role: m.role || 'resident',
+          flat_number: m.flat_number || m.unit_number || '',
+          property_type: m.property_type || 'apartment',
+          member_count: memberCountMap.get(m.society_id) || 1,
+        };
+      });
 
-    // Auto-heal profiles.primary_society_id if user belongs to societies but primary_society_id is null
+    // Auto-heal profiles.primary_society_id and reconcile active_role if user is secretary/organizer
     const { data: userProfile } = await serviceSupabase
       .from('profiles')
       .select('primary_society_id, active_role')
       .eq('id', user.id)
       .maybeSingle();
 
-    if (!userProfile?.primary_society_id && societiesList.length > 0) {
-      const elevatedSoc =
-        societiesList.find((s) => s.user_role === 'secretary') ||
-        societiesList.find(
-          (s) => s.user_role === 'organizer' || s.user_role === 'committee'
-        );
+    const elevatedSoc =
+      societiesList.find((s) => s.user_role === 'secretary') ||
+      societiesList.find(
+        (s) => s.user_role === 'organizer' || s.user_role === 'committee'
+      );
+    const isElevated = Boolean(elevatedSoc);
 
+    if (isElevated && userProfile && userProfile.active_role !== 'organizer' && userProfile.active_role !== 'admin') {
+      await serviceSupabase
+        .from('profiles')
+        .update({
+          active_role: 'organizer',
+          ...(userProfile.primary_society_id ? {} : { primary_society_id: elevatedSoc?.id }),
+        })
+        .eq('id', user.id);
+    } else if (!userProfile?.primary_society_id && societiesList.length > 0) {
       const targetSoc = elevatedSoc || societiesList[0];
-      const isElevated = Boolean(elevatedSoc);
-
       await serviceSupabase
         .from('profiles')
         .update({

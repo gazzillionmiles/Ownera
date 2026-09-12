@@ -122,7 +122,15 @@ export const Header: React.FC<HeaderProps> = ({
     router.push('/login');
   };
 
-  const currentRole = activeRole || uiUser.activeRole || 'resident';
+  const currentRole = activeSociety
+    ? (activeSociety.user_role || activeRole || uiUser.activeRole || 'resident')
+    : (activeRole && activeRole !== 'resident')
+    ? activeRole
+    : (userSocieties.some((s) => s.user_role === 'secretary' || s.user_role === 'organizer')
+        ? 'secretary'
+        : userSocieties.some((s) => s.user_role === 'committee')
+        ? 'committee'
+        : activeRole || uiUser.activeRole || 'resident');
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0b0f17]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-xs">

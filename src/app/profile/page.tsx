@@ -27,7 +27,7 @@ import {
   Home,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Provider, PropertyType } from '@/src/types/ownera';
+import { Provider, PropertyType, UserRole } from '@/src/types/ownera';
 import { useUserSocieties } from '@/src/shared/hooks/useQueries';
 
 export default function ProfilePage() {
@@ -55,6 +55,7 @@ export default function ProfilePage() {
   // Sync user data to edit form
   useEffect(() => {
     if (uiUser.isLoggedIn) {
+      refetchSocieties();
       setFormData({
         name: uiUser.name || '',
         phone: uiUser.phone || '',
@@ -151,15 +152,68 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  const primaryRole = platformAdminInfo?.is_admin
-    ? platformAdminInfo.role
-    : societies[0]?.user_role || uiUser.activeRole || 'resident';
+  // Accurately compute user's effective role with full role prioritization
+  const detectedRole: UserRole = React.useMemo(() => {
+    if (platformAdminInfo?.is_admin) {
+      return (platformAdminInfo.role as UserRole) || 'admin';
+    }
+
+    const memberships = societiesData?.memberships || [];
+
+    // 1. Check if user is secretary in any society or membership
+    const hasSecretary =
+      societies.some(
+        (s) => s.user_role === 'secretary' || s.user_role === 'organizer'
+      ) ||
+      memberships.some(
+        (m) => m.role === 'secretary' || m.role === 'organizer'
+      );
+    if (hasSecretary) return 'secretary';
+
+    // 2. Check if user is committee in any society or membership
+    const hasCommittee =
+      societies.some((s) => s.user_role === 'committee') ||
+      memberships.some((m) => m.role === 'committee');
+    if (hasCommittee) return 'committee';
+
+    // 3. Check primary society role
+    if (uiUser.primarySocietyId) {
+      const primarySoc = societies.find((s) => s.id === uiUser.primarySocietyId);
+      if (primarySoc?.user_role) {
+        return (primarySoc.user_role as UserRole);
+      }
+      const primaryMem = memberships.find((m) => m.society_id === uiUser.primarySocietyId);
+      if (primaryMem?.role) {
+        return (primaryMem.role as UserRole);
+      }
+    }
+
+    // 4. Check first society
+    if (societies.length > 0 && societies[0]?.user_role) {
+      return (societies[0].user_role as UserRole);
+    }
+
+    // 5. Check if provider
+    if (provider) return 'provider';
+
+    // 6. Fallback to activeRole on profile
+    if (uiUser.activeRole === 'organizer') return 'secretary';
+    return uiUser.activeRole || 'resident';
+  }, [
+    platformAdminInfo,
+    societies,
+    societiesData?.memberships,
+    uiUser.primarySocietyId,
+    uiUser.activeRole,
+    provider,
+  ]);
 
   return (
     <ProtectedRoute>
       <DesktopShell
         activeTab="profile"
         onTabChange={handleTabChange}
+        activeRole={detectedRole}
         activeSociety={null}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -205,16 +259,16 @@ export default function ProfilePage() {
 
                     <span
                       className={`inline-flex items-center text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase font-mono ${
-                        primaryRole === 'secretary' || primaryRole === 'organizer'
+                        detectedRole === 'secretary' || detectedRole === 'organizer'
                           ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
-                          : primaryRole === 'committee'
+                          : detectedRole === 'committee'
                           ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30'
-                          : primaryRole === 'provider'
+                          : detectedRole === 'provider'
                           ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                       }`}
                     >
-                      {primaryRole === 'organizer' ? 'Secretary' : primaryRole}
+                      {detectedRole === 'organizer' ? 'Secretary' : detectedRole}
                     </span>
                   </div>
 
@@ -387,7 +441,15 @@ export default function ProfilePage() {
                     <span>Account Authority</span>
                   </div>
                   <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
-                    {platformAdminInfo?.is_admin ? platformAdminInfo.role : 'Standard User'}
+                    {platformAdminInfo?.is_admin
+                      ? platformAdminInfo.role
+                      : detectedRole === 'secretary' || detectedRole === 'organizer'
+                      ? 'Society Secretary'
+                      : detectedRole === 'committee'
+                      ? 'Committee Member'
+                      : detectedRole === 'provider'
+                      ? 'Service Provider'
+                      : 'Resident Member'}
                   </span>
                 </div>
 
