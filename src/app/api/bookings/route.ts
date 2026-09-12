@@ -148,6 +148,12 @@ export async function GET(request: NextRequest) {
 
     const enrichedBookings = rawBookings.map((b) => ({
       ...b,
+      service_issue: Array.isArray(b.service_issue)
+        ? (b.service_issue.length > 0 ? b.service_issue[0] : null)
+        : b.service_issue || null,
+      service_rating: Array.isArray(b.service_rating)
+        ? (b.service_rating.length > 0 ? b.service_rating[0] : null)
+        : b.service_rating || null,
       user_profile: profileMap.get(b.user_id) || null,
     }));
 

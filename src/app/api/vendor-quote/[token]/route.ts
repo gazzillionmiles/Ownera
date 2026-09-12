@@ -266,8 +266,8 @@ export async function POST(
           phone: invite.phone,
           email: `${invite.business_name.toLowerCase().replace(/[^a-z0-9]+/g, '')}_${Date.now()}@vendor.ownera.in`,
           verification_status: 'verified',
-          rating: 4.8,
-          total_jobs_completed: 10,
+          rating: null,
+          total_jobs_completed: 0,
         };
 
         // Try inserting with null user_id (unregistered provider)

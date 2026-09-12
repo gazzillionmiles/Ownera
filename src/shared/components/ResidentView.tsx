@@ -775,38 +775,58 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                         );
                       })()}
 
-                      {b.status === 'completed' && !b.service_rating && (
-                        <div className="space-y-2">
-                          <button
-                            type="button"
-                            onClick={() => setRatingBooking(b)}
-                            className="w-full min-h-[40px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer shadow-sm"
-                          >
-                            ★ Rate Service &amp; Technician
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIssueBooking(b)}
-                            className="w-full min-h-[36px] py-2 text-slate-500 hover:text-rose-600 text-xs font-semibold transition flex items-center justify-center cursor-pointer"
-                          >
-                            Report Problem
-                          </button>
-                        </div>
-                      )}
+                      {(() => {
+                        const ratingObj: any = Array.isArray(b.service_rating)
+                          ? b.service_rating[0]
+                          : b.service_rating;
+                        const issueObj: any = Array.isArray(b.service_issue)
+                          ? b.service_issue[0]
+                          : b.service_issue;
 
-                      {b.service_rating && (
-                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-xs font-semibold text-amber-900">
-                          <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
-                          <span>Rated {b.service_rating.rating}★: {b.service_rating.review || 'Completed'}</span>
-                        </div>
-                      )}
+                        const hasValidRating = Boolean(
+                          ratingObj && typeof ratingObj === 'object' && ratingObj.rating && Number(ratingObj.rating) > 0
+                        );
+                        const hasValidIssue = Boolean(
+                          issueObj && typeof issueObj === 'object' && issueObj.description && issueObj.description.trim().length > 0
+                        );
 
-                      {b.service_issue && (
-                        <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-center gap-1.5">
-                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                          <span>Issue: {b.service_issue.description}</span>
-                        </div>
-                      )}
+                        return (
+                          <>
+                            {b.status === 'completed' && !hasValidRating && (
+                              <div className="space-y-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setRatingBooking(b)}
+                                  className="w-full min-h-[40px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer shadow-sm"
+                                >
+                                  ★ Rate Service &amp; Technician
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIssueBooking(b)}
+                                  className="w-full min-h-[36px] py-2 text-slate-500 hover:text-rose-600 text-xs font-semibold transition flex items-center justify-center cursor-pointer"
+                                >
+                                  Report Problem
+                                </button>
+                              </div>
+                            )}
+
+                            {hasValidRating && (
+                              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                                <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+                                <span>Rated {ratingObj.rating}★{ratingObj.review ? `: ${ratingObj.review}` : ''}</span>
+                              </div>
+                            )}
+
+                            {hasValidIssue && (
+                              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-center gap-1.5">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                                <span>Issue: {issueObj.description}</span>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

@@ -45,7 +45,17 @@ export async function GET(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ booking });
+    const sanitizedBooking = {
+      ...booking,
+      service_issue: Array.isArray(booking.service_issue)
+        ? (booking.service_issue.length > 0 ? booking.service_issue[0] : null)
+        : booking.service_issue || null,
+      service_rating: Array.isArray(booking.service_rating)
+        ? (booking.service_rating.length > 0 ? booking.service_rating[0] : null)
+        : booking.service_rating || null,
+    };
+
+    return NextResponse.json({ booking: sanitizedBooking });
   } catch (err: any) {
     console.error('[API/bookings/[id]] Error:', err);
     return NextResponse.json(
