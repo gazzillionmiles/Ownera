@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
+import { createErrorResponse } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,10 +101,13 @@ export async function POST(request: NextRequest) {
     );
 
     if (rpcError) {
-      console.error('[API/payment/verify] RPC error:', rpcError);
-      return NextResponse.json(
-        { error: 'Payment processing failed', details: rpcError.message },
-        { status: 500 }
+      return createErrorResponse(
+        'Database',
+        'processPaymentRpc',
+        rpcError,
+        'Payment processing failed',
+        500,
+        { paymentId, orderId, userId: user.id }
       );
     }
 
@@ -142,10 +146,12 @@ export async function POST(request: NextRequest) {
       result: rpcResult,
     });
   } catch (err: any) {
-    console.error('[API/payment/verify] Error:', err);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    return createErrorResponse(
+      'API',
+      'paymentVerifyException',
+      err,
+      'Internal server error',
+      500
     );
   }
 }

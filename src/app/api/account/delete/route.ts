@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { logError } from '@/lib/logger';
+import { logError, createErrorResponse } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,17 +111,13 @@ export async function POST(request: NextRequest) {
       scheduled_purge_at: purgeDate.toISOString(),
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError(
+    return createErrorResponse(
       'API',
       'deleteAccountException',
       err,
-      {},
-      'Unhandled deletion request exception'
-    );
-    return NextResponse.json(
-      { error: 'Internal server error', details: message },
-      { status: 500 }
+      'Internal server error',
+      500,
+      { step: 'delete_account' }
     );
   }
 }

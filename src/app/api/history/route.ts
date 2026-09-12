@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { logError } from '@/lib/logger';
+import { logError, createErrorResponse } from '@/lib/logger';
 import {
   getClientIp,
   checkHistoryRateLimit,
@@ -96,17 +96,13 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError(
+    return createErrorResponse(
       'API',
       'getHistoryException',
       err,
-      { userId: user.id },
-      'Unhandled history exception'
-    );
-    return NextResponse.json(
-      { error: 'Failed to retrieve history', details: message },
-      { status: 500 }
+      'Failed to retrieve history',
+      500,
+      { userId: user.id }
     );
   }
 }
@@ -154,17 +150,13 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, deleted_count: count || 0 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError(
+    return createErrorResponse(
       'API',
       'deleteAllHistoryException',
       err,
-      { userId: user.id },
-      'Unhandled wipe history exception'
-    );
-    return NextResponse.json(
-      { error: 'Failed to wipe history', details: message },
-      { status: 500 }
+      'Failed to wipe history',
+      500,
+      { userId: user.id }
     );
   }
 }

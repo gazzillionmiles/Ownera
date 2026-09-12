@@ -5,6 +5,7 @@ import { createPollSchema } from '@/src/shared/validations/ownera';
 import { calculateTierPrice } from '@/lib/ownera/campaigns';
 import { getSocietyBySlug, requireSocietyMember, isCommittee } from '@/lib/ownera/auth';
 import { isPlatformAdmin } from '@/lib/ownera/rbac';
+import { createErrorResponse } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -492,8 +493,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (pollError || !poll) {
-      console.error('[API/polls POST] Error creating poll:', pollError);
-      return NextResponse.json({ error: pollError?.message || 'Failed to create poll' }, { status: 500 });
+      return createErrorResponse(
+        'Database',
+        'createPollInsert',
+        pollError,
+        'Failed to create poll',
+        500,
+        { societyId: resolvedSocietyId, creatorId: user.id }
+      );
     }
 
     // Automatically record vote for creator as first option

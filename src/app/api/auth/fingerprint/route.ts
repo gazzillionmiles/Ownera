@@ -8,6 +8,7 @@ import {
   checkRateLimit,
   createRateLimitResponse,
 } from '@/lib/ratelimit';
+import { createErrorResponse } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,10 +88,12 @@ export async function POST(request: NextRequest) {
         (welcomeResult.granted ? welcomeResult.creditsGranted : 0),
     });
   } catch (err: any) {
-    console.error('[API/auth/fingerprint] Error recording fingerprint:', err);
-    return NextResponse.json(
-      { error: 'Internal server error', details: err.message },
-      { status: 500 }
+    return createErrorResponse(
+      'API',
+      'authFingerprintException',
+      err,
+      'Internal server error',
+      500
     );
   }
 }

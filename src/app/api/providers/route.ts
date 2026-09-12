@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { registerProviderSchema } from '@/src/shared/validations/ownera';
+import { createErrorResponse } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -170,13 +171,13 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError) {
-        console.error('[API/providers] Update error:', updateError);
-        return NextResponse.json(
-          {
-            error: 'Failed to update provider profile',
-            details: updateError.message,
-          },
-          { status: 500 }
+        return createErrorResponse(
+          'Database',
+          'updateProviderProfile',
+          updateError,
+          'Failed to update provider profile',
+          500,
+          { providerId: existingProvider.id, userId: user.id }
         );
       }
       provider = data;
@@ -199,13 +200,13 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (insertError) {
-        console.error('[API/providers] Insert error:', insertError);
-        return NextResponse.json(
-          {
-            error: 'Failed to save provider profile',
-            details: insertError.message,
-          },
-          { status: 500 }
+        return createErrorResponse(
+          'Database',
+          'insertProviderProfile',
+          insertError,
+          'Failed to save provider profile',
+          500,
+          { userId: user.id }
         );
       }
       provider = data;

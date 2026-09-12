@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/service';
-import { logError, log } from '@/lib/logger';
+import { logError, log, createErrorResponse } from '@/lib/logger';
 import { deleteS3ObjectsBatch } from '@/lib/s3';
 
 export async function POST(request: NextRequest) {
@@ -96,9 +96,14 @@ export async function POST(request: NextRequest) {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError('API', 'purgeCronException', err, {}, 'Unhandled purge cron exception');
-    return NextResponse.json({ error: 'Failed during purge execution', details: message }, { status: 500 });
+    return createErrorResponse(
+      'API',
+      'purgeCronException',
+      err,
+      'Failed during purge execution',
+      500,
+      { step: 'purge_cron' }
+    );
   }
 }
 

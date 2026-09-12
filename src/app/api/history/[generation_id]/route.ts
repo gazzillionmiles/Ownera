@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { logError } from '@/lib/logger';
+import { logError, createErrorResponse } from '@/lib/logger';
 import {
   getClientIp,
   checkHistoryRateLimit,
@@ -74,17 +74,13 @@ export async function GET(
       payload: row.metadata,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError(
+    return createErrorResponse(
       'API',
       'getActivityDetailException',
       err,
-      { generation_id, userId: user.id },
-      'Detail view error'
-    );
-    return NextResponse.json(
-      { error: 'Failed to retrieve activity detail', details: message },
-      { status: 500 }
+      'Failed to retrieve activity detail',
+      500,
+      { generation_id, userId: user.id }
     );
   }
 }
@@ -161,17 +157,13 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, deleted_id: generation_id });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError(
+    return createErrorResponse(
       'API',
       'deleteActivityException',
       err,
-      { generation_id, userId: user.id },
-      'Delete exception'
-    );
-    return NextResponse.json(
-      { error: 'Failed to delete record', details: message },
-      { status: 500 }
+      'Failed to delete record',
+      500,
+      { generation_id, userId: user.id }
     );
   }
 }

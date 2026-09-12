@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { NextResponse } from 'next/server';
 
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'debug').toLowerCase();
 const ENABLED_LEVELS = ['debug', 'info', 'warn', 'error'];
@@ -101,4 +102,40 @@ export function logError(component: string, operation: string, error: any, input
     },
     requestId: rid,
   });
+}
+
+/**
+ * Standard server-side error response creator.
+ * - Always logs full error details, stack trace, and metadata in backend logs (stderr via logError).
+ * - In production mode (process.env.NODE_ENV === 'production'):
+ *     Returns strictly generic error without leaking internal details, stack traces, or DB schema.
+ * - In non-production mode:
+ *     Includes details for developer debugging.
+ */
+export function createErrorResponse(
+  component: string,
+  operation: string,
+  error: unknown,
+  genericMessage: string = 'Internal server error',
+  statusCode: number = 500,
+  context?: any
+): NextResponse {
+  logError(component, operation, error, context);
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (isProduction) {
+    return NextResponse.json(
+      { error: genericMessage },
+      { status: statusCode }
+    );
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  return NextResponse.json(
+    {
+      error: genericMessage,
+      details: message,
+    },
+    { status: statusCode }
+  );
 }

@@ -3,7 +3,7 @@ import { Redis } from '@upstash/redis';
 import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
-import { logError } from '@/lib/logger';
+import { logError, createErrorResponse } from '@/lib/logger';
 import {
   getClientIp,
   checkIssueBurstRateLimit,
@@ -124,17 +124,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, report });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError(
+    return createErrorResponse(
       'API',
       'createIssueReportException',
       err,
-      {},
-      'Exception in issue report submission'
-    );
-    return NextResponse.json(
-      { error: 'Internal server error', details: message },
-      { status: 500 }
+      'Internal server error',
+      500,
+      { step: 'issue_report_submission' }
     );
   }
 }

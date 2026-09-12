@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/service';
-import { logError, log } from '@/lib/logger';
+import { logError, log, createErrorResponse } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const expectedSecret = process.env.CRON_SECRET;
@@ -68,9 +68,14 @@ export async function POST(request: NextRequest) {
       ip_scrub_result: ipScrubResult,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError('API', 'hashesCleanupCronException', err, {}, 'Unhandled hashes cleanup exception');
-    return NextResponse.json({ error: 'Failed during hashes cleanup', details: message }, { status: 500 });
+    return createErrorResponse(
+      'API',
+      'hashesCleanupCronException',
+      err,
+      'Failed during hashes cleanup',
+      500,
+      { step: 'hashes_cleanup_cron' }
+    );
   }
 }
 

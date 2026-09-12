@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/service';
-import { logError } from '@/lib/logger';
+import { logError, createErrorResponse } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const expectedSecret = process.env.CRON_SECRET;
@@ -45,9 +45,13 @@ export async function POST(request: NextRequest) {
       cutoff: cutoffDate,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError('API', 'historyCleanupException', err, {}, 'Cleanup exception');
-    return NextResponse.json({ error: 'Failed during history cleanup', details: message }, { status: 500 });
+    return createErrorResponse(
+      'API',
+      'historyCleanupException',
+      err,
+      'Failed during history cleanup',
+      500
+    );
   }
 }
 

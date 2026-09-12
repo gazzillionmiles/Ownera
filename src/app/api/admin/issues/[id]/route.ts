@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUser } from '@/lib/supabase/verified-user';
 import { createAdminClient } from '@/lib/supabase/service';
 import { isUserSupportAdmin } from '@/lib/admin/auth';
-import { logError } from '@/lib/logger';
+import { logError, createErrorResponse } from '@/lib/logger';
 import {
   getClientIp,
   checkAdminRateLimit,
@@ -114,17 +114,12 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, report: updatedReport });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logError(
+    return createErrorResponse(
       'API',
       'updateIssueReportException',
       err,
-      {},
-      'Exception updating issue report'
-    );
-    return NextResponse.json(
-      { error: 'Internal server error', details: message },
-      { status: 500 }
+      'Internal server error',
+      500
     );
   }
 }

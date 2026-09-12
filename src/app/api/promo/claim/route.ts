@@ -6,7 +6,7 @@ import {
   recordAndCheckFingerprint,
   logFingerprintEvent,
 } from '@/lib/fingerprint/server';
-import { log } from '@/lib/logger';
+import { log, createErrorResponse } from '@/lib/logger';
 import {
   getClientIp,
   checkPromoClaimRateLimit,
@@ -207,10 +207,12 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (err: any) {
-    console.error('[API/promo/claim] Error processing claim:', err);
-    return NextResponse.json(
-      { error: 'Internal server error', details: err.message },
-      { status: 500 }
+    return createErrorResponse(
+      'API',
+      'promoClaimException',
+      err,
+      'Internal server error',
+      500
     );
   }
 }

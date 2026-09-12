@@ -9,6 +9,7 @@ import {
   createRateLimitResponse,
 } from '@/lib/ratelimit';
 import { requireSocietyMember } from '@/lib/ownera/auth';
+import { createErrorResponse } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -234,13 +235,13 @@ export async function POST(request: NextRequest) {
     try {
       order = await razorpay.orders.create(orderOptions);
     } catch (rzpError: any) {
-      console.error('[API/payment/create-order] Razorpay error:', rzpError);
-      return NextResponse.json(
-        {
-          error: 'Failed to create order with Razorpay',
-          details: rzpError.message,
-        },
-        { status: 502 }
+      return createErrorResponse(
+        'PaymentGateway',
+        'createRazorpayOrder',
+        rzpError,
+        'Failed to create order with Razorpay',
+        502,
+        { userId: user.id, bookingId: targetBooking?.id }
       );
     }
 
@@ -294,10 +295,12 @@ export async function POST(request: NextRequest) {
       isMock: false,
     });
   } catch (err: any) {
-    console.error('[API/payment/create-order] Unexpected error:', err);
-    return NextResponse.json(
-      { error: 'Internal server error', details: err.message },
-      { status: 500 }
+    return createErrorResponse(
+      'API',
+      'paymentCreateOrderException',
+      err,
+      'Internal server error',
+      500
     );
   }
 }

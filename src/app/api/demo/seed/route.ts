@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/service';
 import { STANDARDIZED_SERVICES_CATALOG } from '@/src/constants/serviceCategories';
+import { createErrorResponse } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -30,8 +31,13 @@ export async function POST() {
 
     const { error } = await supabase.from('services').upsert(payload, { onConflict: 'slug' });
     if (error) {
-      console.error('[API/demo/seed] Upsert error:', error);
-      return NextResponse.json({ error: 'Failed to seed services', details: error.message }, { status: 500 });
+      return createErrorResponse(
+        'Database',
+        'seedServicesUpsert',
+        error,
+        'Failed to seed services',
+        500
+      );
     }
 
     return NextResponse.json({
@@ -39,7 +45,12 @@ export async function POST() {
       message: 'Standard 12-category services catalog initialized successfully (Chimney, Mattress, and Sofa removed).',
     });
   } catch (err: any) {
-    console.error('[API/demo/seed] Error:', err);
-    return NextResponse.json({ error: 'Failed to initialize catalog', details: err.message }, { status: 500 });
+    return createErrorResponse(
+      'API',
+      'demoSeedException',
+      err,
+      'Failed to initialize catalog',
+      500
+    );
   }
 }
