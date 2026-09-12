@@ -218,6 +218,31 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
     }
   };
 
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
+
+  const handleConfirmCompletion = async (booking: Booking) => {
+    setCompletingBookingId(booking.id);
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to confirm completion');
+
+      toast.success('Service confirmed as completed! Please rate your technician.');
+      onRefresh();
+      // Open rating modal directly for immediate feedback
+      setRatingBooking(booking);
+    } catch (err: any) {
+      toast.error(err.message || 'Error confirming completion');
+    } finally {
+      setCompletingBookingId(null);
+    }
+  };
+
   const handleSubmitRating = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ratingBooking) return;
@@ -472,17 +497,49 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2.5 border-t border-slate-100">
                         <span className="text-emerald-700 font-black text-sm font-mono">₹{b.total_amount}</span>
-                        {(b.status === 'confirmed' || b.status === 'scheduled') && (
+                        <div className="flex items-center gap-1.5">
+                          {(b.status === 'confirmed' || b.status === 'scheduled' || b.status === 'in_progress') && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleConfirmCompletion(b)}
+                                disabled={completingBookingId === b.id}
+                                className="min-h-[32px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs transition cursor-pointer shadow-2xs flex items-center gap-1 disabled:opacity-50"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>{completingBookingId === b.id ? 'Confirming...' : 'Work Done'}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReschedule(b)}
+                                className="min-h-[32px] px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
+                              >
+                                Change Slot
+                              </button>
+                            </>
+                          )}
+                          {b.status === 'completed' && (
+                            <button
+                              type="button"
+                              onClick={() => setRatingBooking(b)}
+                              className="min-h-[32px] px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition cursor-pointer shadow-2xs flex items-center gap-1"
+                            >
+                              <Star className="w-3.5 h-3.5 fill-white" />
+                              <span>Rate Work</span>
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => handleOpenReschedule(b)}
-                            className="min-h-[36px] px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition cursor-pointer border border-blue-100"
+                            onClick={() => setIssueBooking(b)}
+                            className="min-h-[32px] px-2.5 py-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-xs font-semibold transition cursor-pointer flex items-center gap-1"
+                            title="Report Problem"
                           >
-                            Change Slot
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            <span>Report</span>
                           </button>
-                        )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -792,29 +849,63 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
 
                         return (
                           <>
-                            {b.status === 'completed' && !hasValidRating && (
-                              <div className="space-y-2">
+                            {(b.status === 'confirmed' || b.status === 'scheduled' || b.status === 'in_progress') && (
+                              <div className="space-y-2 pt-2 border-t border-slate-100">
                                 <button
                                   type="button"
-                                  onClick={() => setRatingBooking(b)}
-                                  className="w-full min-h-[40px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer shadow-sm"
+                                  onClick={() => handleConfirmCompletion(b)}
+                                  disabled={completingBookingId === b.id}
+                                  className="w-full min-h-[40px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
                                 >
-                                  ★ Rate Service &amp; Technician
+                                  <Check className="w-4 h-4" />
+                                  <span>{completingBookingId === b.id ? 'Confirming...' : 'Work Completed? Confirm & Rate'}</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setIssueBooking(b)}
-                                  className="w-full min-h-[36px] py-2 text-slate-500 hover:text-rose-600 text-xs font-semibold transition flex items-center justify-center cursor-pointer"
+                                  className="w-full min-h-[32px] py-1.5 text-slate-500 hover:text-rose-600 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
                                 >
-                                  Report Problem
+                                  <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                                  <span>Report Problem with Vendor</span>
+                                </button>
+                              </div>
+                            )}
+
+                            {b.status === 'completed' && !hasValidRating && (
+                              <div className="space-y-2 pt-2 border-t border-slate-100">
+                                <button
+                                  type="button"
+                                  onClick={() => setRatingBooking(b)}
+                                  className="w-full min-h-[40px] py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                                >
+                                  <Star className="w-4 h-4 fill-white text-white" />
+                                  <span>★ Rate Service &amp; Technician</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIssueBooking(b)}
+                                  className="w-full min-h-[32px] py-1.5 text-slate-500 hover:text-rose-600 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                                  <span>Report Problem</span>
                                 </button>
                               </div>
                             )}
 
                             {hasValidRating && (
-                              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-xs font-semibold text-amber-900">
-                                <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
-                                <span>Rated {ratingObj.rating}★{ratingObj.review ? `: ${ratingObj.review}` : ''}</span>
+                              <div className="space-y-2 pt-2 border-t border-slate-100">
+                                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                                  <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+                                  <span>Rated {ratingObj.rating}★{ratingObj.review ? `: ${ratingObj.review}` : ''}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setIssueBooking(b)}
+                                  className="w-full text-center py-1 text-slate-400 hover:text-rose-600 text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1"
+                                >
+                                  <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                  <span>Report a Problem with this Job</span>
+                                </button>
                               </div>
                             )}
 

@@ -79,6 +79,27 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
   const [selectedNewSecretaryId, setSelectedNewSecretaryId] = useState('');
   const [oldSecretaryRole, setOldSecretaryRole] = useState<'committee' | 'resident'>('committee');
   const [isTransferring, setIsTransferring] = useState(false);
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
+
+  const handleCompleteBooking = async (bookingId: string) => {
+    setCompletingBookingId(bookingId);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: 'Confirmed completed by Society Secretary' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to mark completion');
+
+      toast.success(data.message || 'Booking marked as completed! Resident notified for rating.');
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || 'Error updating booking');
+    } finally {
+      setCompletingBookingId(null);
+    }
+  };
 
   const fetchMembers = useCallback(async () => {
     if (!activeSociety?.id) return;
@@ -580,15 +601,29 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
                       </div>
                     </div>
 
-                    <span
-                      className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full uppercase border shrink-0 ${
-                        b.status === 'completed'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                          : 'bg-blue-50 text-blue-800 border-blue-200'
-                      }`}
-                    >
-                      {b.status}
-                    </span>
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <span
+                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full uppercase border ${
+                          b.status === 'completed'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-blue-50 text-blue-800 border-blue-200'
+                        }`}
+                      >
+                        {b.status}
+                      </span>
+                      {b.status !== 'completed' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCompleteBooking(b.id)}
+                          disabled={completingBookingId === b.id}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs transition flex items-center gap-1 shadow-2xs cursor-pointer disabled:opacity-50"
+                          title="Confirm service completed on vendor's behalf"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>{completingBookingId === b.id ? 'Marking...' : 'Mark Done'}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
