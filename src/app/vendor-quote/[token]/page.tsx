@@ -12,6 +12,8 @@ import {
   Clock,
   Sparkles,
   AlertCircle,
+  Phone,
+  CheckSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { APP_NAME } from '@/src/constants';
@@ -48,6 +50,36 @@ export default function VendorQuotePage({
   );
   const [submitting, setSubmitting] = useState(false);
   const [submittedQuote, setSubmittedQuote] = useState<any>(null);
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
+
+  const handleMarkJobCompleted = async (bookingId: string) => {
+    setCompletingBookingId(bookingId);
+    try {
+      const res = await fetch(`/api/vendor-quote/${token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update job');
+
+      toast.success(data.message || 'Job marked completed! Resident notified for rating.');
+      // Optimistically update local booking status
+      setInviteData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          bookings: (prev.bookings || []).map((b: any) =>
+            b.id === bookingId ? { ...b, status: 'completed' } : b
+          ),
+        };
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Error updating job');
+    } finally {
+      setCompletingBookingId(null);
+    }
+  };
 
   useEffect(() => {
     async function loadInvite() {
@@ -227,8 +259,152 @@ export default function VendorQuotePage({
           </div>
         </div>
 
-        {/* Closed notice */}
-        {isClosed && (
+        {/* Vendor Quote Selected & Service Day Checklist */}
+        {inviteData.is_selected ? (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            {/* Accepted Banner */}
+            <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-xs space-y-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <h2 className="font-extrabold text-base text-emerald-950">
+                  🎉 Your Quote Was Accepted by the Society!
+                </h2>
+              </div>
+              <p className="text-xs text-emerald-800 leading-relaxed">
+                You are the designated service partner for this service camp. Below is your confirmed apartment checklist. Tap &quot;Mark Done&quot; as you complete each home.
+              </p>
+            </div>
+
+            {/* Service Day Summary Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">
+                  Booked Homes
+                </span>
+                <span className="text-xl font-black text-slate-900 mt-0.5 block font-mono">
+                  {inviteData.bookings?.length || 0}
+                </span>
+              </div>
+
+              <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">
+                  Completed
+                </span>
+                <span className="text-xl font-black text-emerald-600 mt-0.5 block font-mono">
+                  {inviteData.bookings?.filter((b: any) => b.status === 'completed').length || 0} / {inviteData.bookings?.length || 0}
+                </span>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1 p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase block">
+                  Total to Collect
+                </span>
+                <span className="text-xl font-black text-teal-700 mt-0.5 block font-mono">
+                  ₹{((inviteData.bookings || []).reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0)).toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+
+            {/* Confirmed Society Jobs Checklist */}
+            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4 text-teal-600" />
+                    <span>Apartment Checklist &amp; Routing</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Visit apartments in order of their coordinated arrival slots.
+                  </p>
+                </div>
+              </div>
+
+              {!inviteData.bookings || inviteData.bookings.length === 0 ? (
+                <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                  <Clock className="w-8 h-8 text-slate-400 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700">
+                    Residents are currently booking time slots
+                  </p>
+                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
+                    Confirmed apartment visits and scheduled arrival times will appear here automatically.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {inviteData.bookings.map((b: any) => {
+                    const isDone = b.status === 'completed';
+                    const isCompleting = completingBookingId === b.id;
+
+                    return (
+                      <div
+                        key={b.id}
+                        className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                          isDone
+                            ? 'bg-emerald-50/50 border-emerald-200'
+                            : 'bg-white border-slate-200 shadow-2xs hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded-lg border border-teal-200/80">
+                              Unit {b.flat_number}
+                            </span>
+                            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1 font-mono">
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              <span>{b.slot_time}</span>
+                            </span>
+                            <span className="text-xs font-extrabold text-emerald-700 font-mono">
+                              ₹{b.total_amount}
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-slate-600 font-medium">
+                            <span>Resident: <strong className="text-slate-800">{b.resident_name}</strong></span>
+                            {b.resident_phone && (
+                              <span className="ml-2 inline-flex items-center gap-1">
+                                • <Phone className="w-3 h-3 text-teal-600" />
+                                <a
+                                  href={`tel:${b.resident_phone}`}
+                                  className="text-teal-700 hover:underline font-semibold"
+                                >
+                                  {b.resident_phone}
+                                </a>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="self-end sm:self-auto shrink-0">
+                          {isDone ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Completed</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleMarkJobCompleted(b.id)}
+                              disabled={isCompleting}
+                              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                            >
+                              {isCompleting ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              )}
+                              <span>{isCompleting ? 'Updating...' : 'Mark Done'}</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : isClosed ? (
+          /* Closed notice */
           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
             <div>
@@ -238,7 +414,7 @@ export default function VendorQuotePage({
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Submitted Banner */}
         {submittedQuote && !isClosed && (

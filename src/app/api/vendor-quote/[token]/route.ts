@@ -113,6 +113,42 @@ export async function GET(
         }
       : null;
 
+    // Check if this vendor's quote was selected
+    const isSelected = Boolean(
+      (existingBid && existingBid.status === 'accepted') ||
+      (existingBid && rawCampaign?.selected_bid_id === existingBid.id) ||
+      (invite.provider_id && rawCampaign?.selected_provider_id === invite.provider_id)
+    );
+
+    let bookings: any[] = [];
+    if (isSelected && rawCampaign?.id) {
+      const { data: rawBookings } = await serviceSupabase
+        .from('bookings')
+        .select(`
+          id,
+          flat_number,
+          quantity,
+          total_amount,
+          status,
+          slot:booking_slots(id, slot_time),
+          user_profile:profiles(name, phone)
+        `)
+        .eq('campaign_id', rawCampaign.id)
+        .in('status', ['confirmed', 'scheduled', 'completed', 'disputed', 'in_progress'])
+        .order('flat_number', { ascending: true });
+
+      bookings = (rawBookings || []).map((b: any) => ({
+        id: b.id,
+        flat_number: b.flat_number,
+        quantity: b.quantity,
+        total_amount: b.total_amount,
+        status: b.status,
+        slot_time: b.slot?.slot_time || 'Coordinated Slot',
+        resident_name: b.user_profile?.name || 'Resident',
+        resident_phone: b.user_profile?.phone || null,
+      }));
+    }
+
     return NextResponse.json({
       invite: {
         id: invite.id,
@@ -135,6 +171,8 @@ export async function GET(
             status: existingBid.status,
           }
         : null,
+      is_selected: isSelected,
+      bookings,
     });
   } catch (err: any) {
     console.error('[API/vendor-quote/[token] GET] Error:', err);
@@ -428,6 +466,116 @@ export async function POST(
     });
   } catch (err: any) {
     console.error('[API/vendor-quote/[token] POST] Error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ token: string }> }
+) {
+  try {
+    const { token } = await context.params;
+    const cleanToken = token?.trim();
+
+    if (!cleanToken) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 400 });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const { bookingId, notes } = body;
+
+    if (!bookingId) {
+      return NextResponse.json({ error: 'bookingId is required' }, { status: 400 });
+    }
+
+    const serviceSupabase = createAdminClient();
+
+    // Verify token belongs to active invite
+    const { data: invite, error: invErr } = await serviceSupabase
+      .from('campaign_vendor_invites')
+      .select('*, campaign:service_campaigns(*)')
+      .eq('invite_token', cleanToken)
+      .maybeSingle();
+
+    if (invErr || !invite) {
+      return NextResponse.json({ error: 'Invalid invitation token' }, { status: 404 });
+    }
+
+    const campaign = invite.campaign as any;
+    if (!campaign) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    }
+
+    // Verify booking belongs to this campaign
+    const { data: booking, error: bErr } = await serviceSupabase
+      .from('bookings')
+      .select('*, user_profile:profiles(name, phone)')
+      .eq('id', bookingId)
+      .eq('campaign_id', campaign.id)
+      .single();
+
+    if (bErr || !booking) {
+      return NextResponse.json({ error: 'Booking not found for this campaign' }, { status: 404 });
+    }
+
+    // Mark completed
+    await serviceSupabase
+      .from('bookings')
+      .update({
+        status: 'completed',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', bookingId);
+
+    // Record in service_completions
+    await serviceSupabase.from('service_completions').insert({
+      booking_id: bookingId,
+      provider_id: invite.provider_id || booking.provider_id,
+      marked_completed_at: new Date().toISOString(),
+      resident_status: 'unconfirmed',
+      notes: notes || 'Marked completed via outside vendor service portal',
+    });
+
+    // Update campaign participant status
+    await serviceSupabase
+      .from('campaign_participants')
+      .update({ status: 'completed' })
+      .eq('campaign_id', campaign.id)
+      .eq('user_id', booking.user_id);
+
+    // Increment provider total_jobs_completed if provider exists
+    const provId = invite.provider_id || booking.provider_id;
+    if (provId) {
+      const { data: prov } = await serviceSupabase
+        .from('providers')
+        .select('total_jobs_completed')
+        .eq('id', provId)
+        .maybeSingle();
+
+      if (prov) {
+        await serviceSupabase
+          .from('providers')
+          .update({ total_jobs_completed: (prov.total_jobs_completed || 0) + 1 })
+          .eq('id', provId);
+      }
+    }
+
+    // Send notification to resident
+    await serviceSupabase.from('notifications').insert({
+      user_id: booking.user_id,
+      title: 'Service Completed! 🌟',
+      message: `Your ${campaign.title || 'service'} has been marked completed by the technician. Please rate your experience!`,
+      link: `/home`,
+      type: 'completion',
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Unit ${booking.flat_number} marked completed! Resident has been prompted for review.`,
+    });
+  } catch (err: any) {
+    console.error('[API/vendor-quote/[token] PATCH] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
