@@ -18,8 +18,6 @@ import {
   Building2,
   Briefcase,
   Key,
-  Sun,
-  Moon,
   Edit3,
   Check,
   X,
@@ -27,8 +25,6 @@ import {
   ExternalLink,
   Plus,
   Home,
-  CheckCircle2,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Provider, PropertyType } from '@/src/types/ownera';
@@ -38,7 +34,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const { uiUser, signOut, updateProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
   const { data: societiesData, refetch: refetchSocieties } = useUserSocieties(uiUser.isLoggedIn);
   const societies = societiesData?.societies || [];
   
@@ -165,42 +160,20 @@ export default function ProfilePage() {
       <DesktopShell
         activeTab="profile"
         onTabChange={handleTabChange}
-        activeSociety={societies[0] || null}
+        activeSociety={null}
         theme={theme}
         onToggleTheme={toggleTheme}
         user={uiUser}
       >
         <div className="max-w-4xl mx-auto space-y-6 pb-12 px-3 sm:px-0 animate-in fade-in duration-200">
           {/* Header Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Account &amp; Profile
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Manage your personal identity, society memberships, and account settings.
-              </p>
-            </div>
-
-            {/* Quick Theme Toggle Action */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white dark:bg-[#141b27] border border-slate-200/80 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 shadow-2xs transition cursor-pointer"
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDark ? (
-                <>
-                  <Sun className="w-4 h-4 text-amber-400" />
-                  <span>Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4 text-slate-600" />
-                  <span>Dark Mode</span>
-                </>
-              )}
-            </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              Account &amp; Profile
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Manage your personal identity, society memberships, and account settings.
+            </p>
           </div>
 
           {/* Hero Profile Summary Card */}
@@ -262,36 +235,6 @@ export default function ProfilePage() {
                   <span>Edit Profile</span>
                 </button>
               )}
-            </div>
-
-            {/* Quick Metrics Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-5 border-t border-slate-100 dark:border-white/5">
-              <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-100 dark:border-white/5">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block">
-                  Societies
-                </span>
-                <span className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5 block">
-                  {societies.length} {societies.length === 1 ? 'Society' : 'Societies'}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-100 dark:border-white/5">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block">
-                  Primary Unit
-                </span>
-                <span className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5 block truncate">
-                  {uiUser.unitNumber ? `Flat ${uiUser.unitNumber}` : 'Not Assigned'}
-                </span>
-              </div>
-
-              <div className="col-span-2 sm:col-span-1 p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-100 dark:border-white/5">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block">
-                  Member Since
-                </span>
-                <span className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5 block">
-                  {uiUser.createdAt ? new Date(uiUser.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'N/A'}
-                </span>
-              </div>
             </div>
           </div>
 
