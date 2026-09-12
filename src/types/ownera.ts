@@ -354,6 +354,13 @@ export interface ServiceIssue {
   resolution_notes?: string | null;
   created_at?: string;
   updated_at?: string;
+  // Optional joined fields returned by list endpoints for display only.
+  booking?: {
+    flat_number?: string | null;
+    campaign?: { title?: string | null } | null;
+  } | null;
+  provider?: { company_name?: string | null } | null;
+  user_profile?: { name?: string | null; email?: string | null } | null;
 }
 
 export interface ServiceRating {
@@ -366,6 +373,9 @@ export interface ServiceRating {
   rating: number;
   review?: string | null;
   created_at?: string;
+  // Optional joined fields returned by the reviews list endpoint for display only.
+  reviewer_name?: string | null;
+  campaign_title?: string | null;
 }
 
 export interface OwneraNotification {

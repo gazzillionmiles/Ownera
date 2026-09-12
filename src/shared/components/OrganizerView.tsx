@@ -34,6 +34,7 @@ import { CreatePollModal } from './CreatePollModal';
 import { QuoteComparisonModal } from './QuoteComparisonModal';
 import { InviteVendorModal } from './InviteVendorModal';
 import { SecretaryApprovalCard } from './SecretaryApprovalCard';
+import { IssuesManagementPanel } from './IssuesManagementPanel';
 
 interface OrganizerViewProps {
   polls: ServiceCampaign[];
@@ -484,61 +485,70 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
           )}
 
           {activeTab === 'campaigns' ? (
-            campaigns.length === 0 ? (
-              <div className="p-10 text-center rounded-2xl border border-slate-200/80 bg-white shadow-xs space-y-3">
-                <Layers className="w-10 h-10 text-slate-400 mx-auto" />
-                <div className="text-base font-bold text-slate-900">No campaigns created yet</div>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Click &ldquo;Propose Campaign&rdquo; to launch your society&apos;s first collective service deal.
-                </p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {campaigns.map((camp) => (
-                  <div
-                    key={camp.id}
-                    className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all space-y-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 uppercase border border-blue-100/60">
-                        {camp.event_date || 'Upcoming'}
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-slate-500">
-                        {camp.total_votes || camp.poll_votes?.length || camp.confirmed_count || 0} Residents Pledged
-                      </span>
+            <>
+              {campaigns.length === 0 ? (
+                <div className="p-10 text-center rounded-2xl border border-slate-200/80 bg-white shadow-xs space-y-3">
+                  <Layers className="w-10 h-10 text-slate-400 mx-auto" />
+                  <div className="text-base font-bold text-slate-900">No campaigns created yet</div>
+                  <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                    Click &ldquo;Propose Campaign&rdquo; to launch your society&apos;s first collective service deal.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {campaigns.map((camp) => (
+                    <div
+                      key={camp.id}
+                      className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 uppercase border border-blue-100/60">
+                          {camp.event_date || 'Upcoming'}
+                        </span>
+                        <span className="text-xs font-mono font-semibold text-slate-500">
+                          {camp.total_votes || camp.poll_votes?.length || camp.confirmed_count || 0} Residents Pledged
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-base text-slate-900 leading-snug">{camp.title}</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-1">
+                          {camp.selected_provider
+                            ? `Partner: ${camp.selected_provider.company_name} • Quote accepted`
+                            : `${camp.bids?.length || camp.bids_count || 0} Vendor Offers received`}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => setInviteVendorCamp(camp)}
+                          className="flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition flex items-center justify-center cursor-pointer"
+                        >
+                          + Invite Vendor
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCampaignForBids(camp)}
+                          className={`flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                            (camp.bids?.length || camp.bids_count || 0) > 0
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                              : 'bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700'
+                          }`}
+                        >
+                          Review Offers ({camp.bids?.length || camp.bids_count || 0})
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-extrabold text-base text-slate-900 leading-snug">{camp.title}</h3>
-                      <p className="text-xs text-slate-500 font-medium mt-1">
-                        {camp.selected_provider
-                          ? `Partner: ${camp.selected_provider.company_name} • Quote accepted`
-                          : `${camp.bids?.length || camp.bids_count || 0} Vendor Offers received`}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 pt-2 border-t border-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => setInviteVendorCamp(camp)}
-                        className="flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition flex items-center justify-center cursor-pointer"
-                      >
-                        + Invite Vendor
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCampaignForBids(camp)}
-                        className={`flex-1 min-w-[120px] min-h-[40px] py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer ${
-                          (camp.bids?.length || camp.bids_count || 0) > 0
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                            : 'bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700'
-                        }`}
-                      >
-                        Review Offers ({camp.bids?.length || camp.bids_count || 0})
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
+                  ))}
+                </div>
+              )}
+
+              {/* Reported vendor issues for this society */}
+              {activeSociety?.id && (
+                <div className="pt-2">
+                  <IssuesManagementPanel societyId={activeSociety.id} />
+                </div>
+              )}
+            </>
           ) : (
             allBookings.length === 0 ? (
               <div className="p-10 text-center rounded-2xl border border-slate-200/80 bg-white shadow-xs space-y-3">

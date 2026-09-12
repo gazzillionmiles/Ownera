@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { APP_NAME } from '@/src/constants';
+import { AdminVendorIssuesPanel } from '@/src/shared/components/AdminVendorIssuesPanel';
 
 interface SocietyItem {
   id: string;
@@ -121,7 +122,7 @@ export default function AdminDashboardPage() {
 
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [adminRole, setAdminRole] = useState<string>('user');
-  const [activeTab, setActiveTab] = useState<'societies' | 'vendors' | 'admins'>('societies');
+  const [activeTab, setActiveTab] = useState<'societies' | 'vendors' | 'vendor-issues' | 'admins'>('societies');
 
   // Societies State
   const [societies, setSocieties] = useState<SocietyItem[]>([]);
@@ -389,6 +390,18 @@ export default function AdminDashboardPage() {
                   {providerStats.pending}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('vendor-issues')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer relative ${
+                activeTab === 'vendor-issues'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span>Vendor Issues</span>
             </button>
           </div>
 
@@ -795,6 +808,24 @@ export default function AdminDashboardPage() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 3: VENDOR ISSUES (Platform-wide complaint oversight) */}
+        {/* =================================================================== */}
+        {activeTab === 'vendor-issues' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+                <span>Vendor Complaint Oversight</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                All resident-reported issues against service partners, across every society, so you can spot vendors worth de-listing.
+              </p>
+            </div>
+            <AdminVendorIssuesPanel />
           </div>
         )}
 
