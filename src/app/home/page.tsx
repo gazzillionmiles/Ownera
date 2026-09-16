@@ -6,9 +6,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { JoinSocietyModal } from '@/src/shared/components/JoinSocietyModal';
-import { Building2, Plus, ArrowRight, Loader2 } from 'lucide-react';
+import { Building2, Plus, ArrowRight } from 'lucide-react';
 import { Society } from '@/src/types/ownera';
 import { useUserSocieties } from '@/src/shared/hooks/useQueries';
+import { BrandLoadingScreen } from '@/src/shared/components/ui/loading';
 
 export default function HomePage() {
   const router = useRouter();
@@ -76,10 +77,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-          <p className="text-xs font-semibold text-slate-500">Loading your society hub...</p>
-        </div>
+        <BrandLoadingScreen message="Finding your residential society hub..." />
       </ProtectedRoute>
     );
   }

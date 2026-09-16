@@ -86,7 +86,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
     } finally {
       setLoadingReviews(false);
     }
-  }, [providerProfile?.id]);
+  }, [providerProfile]);
 
   const fetchIssues = useCallback(async () => {
     if (!providerProfile?.id) return;
@@ -100,7 +100,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
     } finally {
       setLoadingIssues(false);
     }
-  }, [providerProfile?.id]);
+  }, [providerProfile]);
 
   useEffect(() => {
     fetchReviews();
@@ -204,9 +204,18 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
 
           <div className="flex items-center gap-3">
             {isVerified ? (
-              <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4" />
-                <span>{providerProfile?.rating ? `${providerProfile.rating}★ Rating` : 'Active Verified Partner'}</span>
+              <span className="px-3 py-1 rounded-xl bg-blue-500/20 text-blue-200 border border-blue-500/30 text-xs font-bold flex items-center gap-1.5">
+                {providerProfile?.rating ? (
+                  <>
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <span>{providerProfile.rating}★ Rating</span>
+                  </>
+                ) : (
+                  <>
+                    <Briefcase className="w-4 h-4" />
+                    <span>Service Partner</span>
+                  </>
+                )}
               </span>
             ) : isPendingReview ? (
               <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
@@ -261,7 +270,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
             <div>
               <h3 className="font-extrabold text-sm text-amber-900">Your Business Profile is Under Review</h3>
               <p className="text-xs text-amber-800/80 font-medium mt-0.5 max-w-2xl leading-relaxed">
-                Ownera administrators manually verify every commercial service partner before activating bidding privileges. You will be able to submit volume bids as soon as your account is approved.
+                Ownera administrators review every commercial service partner before activating bidding privileges. You will be able to submit volume bids as soon as your account is approved.
               </p>
             </div>
           </div>
@@ -466,7 +475,7 @@ export const ProviderView: React.FC<ProviderViewProps> = ({
                     </div>
 
                     <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                      {camp.description || 'Standardized service camp looking for verified commercial provider crews.'}
+                      {camp.description || 'Standardized service camp looking for commercial provider crews.'}
                     </p>
 
                     <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 pt-2">

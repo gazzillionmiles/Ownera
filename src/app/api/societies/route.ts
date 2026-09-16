@@ -180,6 +180,25 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createAdminClient();
 
+    // Check if caller is platform admin
+    const isPlatform = await isPlatformAdmin(user.id, serviceSupabase);
+
+    // Lock condition check: If resident has joined a society, they cannot create a society
+    if (!isPlatform) {
+      const { data: existingMemberships } = await serviceSupabase
+        .from('society_members')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (existingMemberships && existingMemberships.length > 0) {
+        return NextResponse.json(
+          { error: 'Residents who have joined a society cannot create a new society.' },
+          { status: 403 }
+        );
+      }
+    }
+
     const json = await request.json();
     const parsed = createSocietySchema.safeParse(json);
 

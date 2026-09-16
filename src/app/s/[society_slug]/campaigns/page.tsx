@@ -7,9 +7,10 @@ import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { HomeView } from '@/src/shared/components/HomeView';
 import { UserRole, Society } from '@/src/types/ownera';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { fetchUserSocieties } from '@/src/shared/lib/api';
+import { BrandLoadingScreen } from '@/src/shared/components/ui/loading';
 
 export default function SocietyCampaignsPage({
   params,
@@ -69,10 +70,7 @@ export default function SocietyCampaignsPage({
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-          <p className="text-xs font-semibold text-slate-500">Loading society campaigns...</p>
-        </div>
+        <BrandLoadingScreen message="Loading society campaigns..." />
       </ProtectedRoute>
     );
   }

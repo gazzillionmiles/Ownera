@@ -221,19 +221,20 @@ export const Header: React.FC<HeaderProps> = ({
                     })}
                   </div>
 
-                  <div className="my-1.5 border-t border-slate-100 dark:border-slate-800" />
-
-                  {onJoinSocietyClick && (
-                    <button
-                      onClick={() => {
-                        setIsSocietyMenuOpen(false);
-                        onJoinSocietyClick();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Join or Create Society</span>
-                    </button>
+                  {userSocieties.length === 0 && onJoinSocietyClick && (
+                    <>
+                      <div className="my-1.5 border-t border-slate-100 dark:border-slate-800" />
+                      <button
+                        onClick={() => {
+                          setIsSocietyMenuOpen(false);
+                          onJoinSocietyClick();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Join Society</span>
+                      </button>
+                    </>
                   )}
                 </div>
               )}
@@ -287,7 +288,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
 
               {isNotifOpen && (
-                <div className="absolute top-12 right-0 w-80 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#141b27] shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
+                <div className="fixed left-3 right-3 sm:left-auto sm:right-0 sm:absolute top-16 sm:top-12 sm:w-80 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#141b27] shadow-xl p-3 z-50 animate-in fade-in zoom-in-95">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
                     <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">Notifications</span>
                     {unreadCount > 0 && (

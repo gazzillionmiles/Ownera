@@ -138,7 +138,7 @@ export const FeaturedDealCard: React.FC<FeaturedDealCardProps> = ({
 
         {campaign.service?.name && (
           <span className="text-xs text-slate-500 font-normal sm:ml-auto">
-            Standard service checklist verified by society
+            Standard service checklist approved by society
           </span>
         )}
       </div>

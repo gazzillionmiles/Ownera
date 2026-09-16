@@ -13,7 +13,7 @@ import { ResidentView } from './ResidentView';
 import { OrganizerView } from './OrganizerView';
 import { ProviderView } from './ProviderView';
 import { JoinSocietyModal } from './JoinSocietyModal';
-import { Loader2 } from 'lucide-react';
+import { DashboardSkeleton } from '@/src/shared/components/ui/loading';
 import { useServices, usePolls, useBookings } from '@/src/shared/hooks/useQueries';
 
 interface HomeViewProps {
@@ -102,12 +102,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const isInitialLoading = !isProvider && !societyId ? false : ((pollsLoading && !pollsData) || bookingsLoading);
 
   if (isInitialLoading) {
-    return (
-      <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
-        <Loader2 className="w-8 h-8 animate-spin text-[#2CB7A5]" />
-        <p className="text-xs text-zinc-400">Loading Ownera hub...</p>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -165,6 +160,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* Join Society Modal */}
       <JoinSocietyModal
         isOpen={isJoinModalOpen}
+        allowCreate={false}
         onClose={() => setIsJoinModalOpen(false)}
         onSuccess={(society) => {
           onSocietyChange(society);

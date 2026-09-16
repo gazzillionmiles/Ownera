@@ -54,7 +54,7 @@ export default function PartnerRegisterPage() {
   const [dailyCapacity, setDailyCapacity] = useState<number>(25);
   const [yearsExperience, setYearsExperience] = useState<number>(3);
   const [bio, setBio] = useState(
-    'Professional verified team with commercial-grade equipment and standardized service checklists.'
+    'Professional team with commercial-grade equipment and standardized service checklists.'
   );
 
   // Field validation and touched states

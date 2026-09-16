@@ -43,7 +43,7 @@ const AUDIENCES = [
     heading: 'Better rates, without chasing vendors',
     points: [
       'Join a service drive your neighbors already started',
-      'One vetted provider does the whole building on one day',
+      'One provider does the whole building on one day',
       'Pick a 90-minute arrival slot, rate the job after',
     ],
     cta: { label: 'Find your society', href: '/login?mode=signup' },
@@ -118,7 +118,7 @@ export default function PublicLandingPage() {
             Your society, buying as one.
           </h1>
           <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed mb-7">
-            {APP_TAGLINE} Neighbors pool demand for AC servicing, cleaning, and repairs — a vetted
+            {APP_TAGLINE} Neighbors pool demand for AC servicing, cleaning, and repairs — a single
             provider does the whole building in one visit, at a bulk rate.
           </p>
         </div>
@@ -146,7 +146,7 @@ export default function PublicLandingPage() {
             Start a society drive
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <p className="text-xs text-slate-400 text-center">You'll be set up as the society's first organizer.</p>
+          <p className="text-xs text-slate-400 text-center">You&apos;ll be set up as the society&apos;s first organizer.</p>
         </div>
 
         {/* Stat row — inline, not boxed */}
@@ -160,7 +160,7 @@ export default function PublicLandingPage() {
             <span className="text-slate-500 dark:text-slate-400"> per building, not per flat</span>
           </div>
           <div>
-            <span className="font-semibold text-slate-900 dark:text-white">Committee-vetted</span>
+            <span className="font-semibold text-slate-900 dark:text-white">Committee-approved</span>
             <span className="text-slate-500 dark:text-slate-400"> providers only</span>
           </div>
         </div>
@@ -185,7 +185,7 @@ export default function PublicLandingPage() {
             <div className="w-[18px] h-[18px] rounded-full bg-blue-600 border-4 border-white dark:border-[#0b0f17] relative z-10 mb-3" />
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Providers bid on the volume</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Vetted partners compete for the whole building. The committee picks one.
+              Service partners compete for the whole building. The committee picks one.
             </p>
           </div>
 

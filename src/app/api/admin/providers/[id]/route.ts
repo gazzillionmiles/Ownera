@@ -104,7 +104,7 @@ export async function PATCH(
 
     const actionVerb =
       targetStatus === 'verified'
-        ? 'approved and verified'
+        ? 'approved'
         : targetStatus === 'banned'
           ? 'banned'
           : targetStatus === 'rejected'

@@ -294,7 +294,11 @@ export async function isCommittee(
   client?: SupabaseClient
 ): Promise<boolean> {
   const membership = await getSocietyMembership(userId, societyId, client);
-  return membership?.role === 'committee' || membership?.role === 'secretary';
+  return (
+    membership?.role === 'committee' ||
+    membership?.role === 'secretary' ||
+    membership?.role === 'organizer'
+  );
 }
 
 /**

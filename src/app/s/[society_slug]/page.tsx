@@ -7,9 +7,10 @@ import { ProtectedRoute } from '@/src/shared/components/ProtectedRoute';
 import { DesktopShell } from '@/src/shared/components/DesktopShell';
 import { HomeView } from '@/src/shared/components/HomeView';
 import { UserRole, Society } from '@/src/types/ownera';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { JoinSocietyModal } from '@/src/shared/components/JoinSocietyModal';
 import { useUserSocieties } from '@/src/shared/hooks/useQueries';
+import { BrandLoadingScreen } from '@/src/shared/components/ui/loading';
 
 function SocietyDashboardPage({
   params,
@@ -88,10 +89,7 @@ function SocietyDashboardPage({
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-          <p className="text-xs font-semibold text-slate-500">Loading society dashboard...</p>
-        </div>
+        <BrandLoadingScreen message="Loading society dashboard..." />
       </ProtectedRoute>
     );
   }
@@ -111,6 +109,7 @@ function SocietyDashboardPage({
           </button>
           <JoinSocietyModal
             isOpen={isJoinModalOpen}
+            allowCreate={false}
             onClose={() => setIsJoinModalOpen(false)}
             onSuccess={(soc) => {
               setSociety(soc);
@@ -155,12 +154,7 @@ export default function SocietyDashboardPageWrapper(props: {
 }) {
   return (
     <Suspense
-      fallback={
-        <div className="min-h-screen bg-slate-50/70 flex flex-col items-center justify-center p-4">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-          <p className="text-xs font-semibold text-slate-500">Loading society dashboard...</p>
-        </div>
-      }
+      fallback={<BrandLoadingScreen message="Loading society dashboard..." />}
     >
       <SocietyDashboardPage {...props} />
     </Suspense>

@@ -69,7 +69,7 @@ export const SecretaryApprovalCard: React.FC<SecretaryApprovalCardProps> = ({
       </div>
 
       <p className="text-xs text-amber-900/80 leading-relaxed font-medium">
-        The following campaigns have gathered resident interest. Authorize them to solicit competitive quotes from verified service partners, or decline if unsuitable.
+        The following campaigns have gathered resident interest. Authorize them to solicit competitive quotes from service partners, or decline if unsuitable.
       </p>
 
       <div className="space-y-3 pt-1">

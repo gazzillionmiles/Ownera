@@ -395,17 +395,30 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
                 'scheduled',
                 'in_progress',
               ];
-              const combined = [...activePolls, ...upcomingServices]
+              const combinedMap = new Map<string, ServiceCampaign>();
+              [...activePolls, ...upcomingServices, ...myPolls].forEach((c) => {
+                if (c?.id) combinedMap.set(c.id, c);
+              });
+
+              const combined = Array.from(combinedMap.values())
                 .sort((a, b) => {
+                  // User's own created campaigns at the top
+                  const aOwn = a.organizer_id === user.id ? 0 : 1;
+                  const bOwn = b.organizer_id === user.id ? 0 : 1;
+                  if (aOwn !== bOwn) return aOwn - bOwn;
+
+                  // Then by actionability
                   const aAction = actionableStatuses.includes(a.status) ? 0 : 1;
                   const bAction = actionableStatuses.includes(b.status) ? 0 : 1;
                   if (aAction !== bAction) return aAction - bAction;
-                  if (a.event_date && b.event_date) {
-                    return a.event_date.localeCompare(b.event_date);
+
+                  // Then newest created first
+                  if (a.created_at && b.created_at) {
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                   }
                   return 0;
                 })
-                .slice(0, 4);
+                .slice(0, 8);
 
               return combined.length === 0 ? (
                 <div className="p-8 text-center rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
@@ -992,15 +1005,17 @@ export const ResidentView: React.FC<ResidentViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={onOpenJoinModal}
-                className="px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition cursor-pointer"
-              >
-                Switch / Join Another Society
-              </button>
-            </div>
+            {!activeSociety && (
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={onOpenJoinModal}
+                  className="px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition cursor-pointer"
+                >
+                  Join Society
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

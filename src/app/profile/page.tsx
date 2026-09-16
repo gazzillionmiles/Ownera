@@ -477,14 +477,16 @@ export default function ProfilePage() {
                 </span>
               </h3>
 
-              <button
-                type="button"
-                onClick={() => setIsJoinModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 text-xs font-bold transition cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Join Society</span>
-              </button>
+              {societies.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsJoinModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 text-xs font-bold transition cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Join Society</span>
+                </button>
+              )}
             </div>
 
             {societies.length === 0 ? (
@@ -552,17 +554,14 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Verified Provider Identity (If applicable) */}
+          {/* Provider Identity (If applicable) */}
           {provider && (
             <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141b27] p-6 space-y-4 shadow-xs">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/5">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Verified Provider Identity</span>
+                  <span>Provider Identity</span>
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 uppercase">
-                  Verified Vendor
-                </span>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-100 dark:border-white/5 space-y-2">
@@ -660,6 +659,7 @@ export default function ProfilePage() {
         {/* Join Society Modal */}
         <JoinSocietyModal
           isOpen={isJoinModalOpen}
+          allowCreate={societies.length === 0}
           onClose={() => setIsJoinModalOpen(false)}
           onSuccess={() => {
             setIsJoinModalOpen(false);

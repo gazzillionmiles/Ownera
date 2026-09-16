@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   X,
   Plus,
+  Minus,
   Trash2,
   Home,
   Building2,
@@ -35,6 +37,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
   services,
   onSuccess,
 }) => {
+  const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
   const [scope, setScope] = useState<PollScope>('society');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
@@ -63,8 +66,35 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
     nextSunday.setDate(nextSunday.getDate() + ((7 - nextSunday.getDay()) % 7 || 7));
     return nextSunday.toISOString().split('T')[0];
   });
-  const [pollDeadlineDays, setPollDeadlineDays] = useState(5);
+  const [pollDeadlineDays, setPollDeadlineDays] = useState<string | number>(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val === '') {
+      setPollDeadlineDays('');
+      return;
+    }
+    const num = parseInt(val, 10);
+    if (!isNaN(num)) {
+      setPollDeadlineDays(Math.min(30, Math.max(1, num)));
+    }
+  };
+
+  const handleDurationBlur = () => {
+    const num = parseInt(String(pollDeadlineDays), 10);
+    if (isNaN(num) || num < 1) {
+      setPollDeadlineDays(5);
+    } else if (num > 30) {
+      setPollDeadlineDays(30);
+    }
+  };
+
+  const adjustDuration = (delta: number) => {
+    const current = parseInt(String(pollDeadlineDays), 10) || 5;
+    const next = Math.min(30, Math.max(1, current + delta));
+    setPollDeadlineDays(next);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -156,6 +186,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
     }
 
     setIsSubmitting(true);
+    const finalDeadlineDays = Math.min(30, Math.max(1, parseInt(String(pollDeadlineDays), 10) || 5));
     try {
       const res = await fetch('/api/polls', {
         method: 'POST',
@@ -171,7 +202,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
           description: description.trim() || undefined,
           pollQuestion: pollQuestion.trim() || 'Who wants this service?',
           pollOptions: pollOptions.length > 0 ? pollOptions : ['Yes', 'No'],
-          pollDeadlineDays,
+          pollDeadlineDays: finalDeadlineDays,
           eventDate,
           minimumCustomers: scope === 'my_house' ? 1 : 10,
           targetCustomers: scope === 'my_house' ? 1 : 30,
@@ -184,6 +215,8 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
       }
 
       toast.success(data.message || 'Poll created successfully!');
+      // Invalidate all polls queries across the entire app immediately
+      queryClient.invalidateQueries({ queryKey: ['polls'] });
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -402,17 +435,58 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1">
-                Poll Duration (Days)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="30"
-                value={pollDeadlineDays}
-                onChange={(e) => setPollDeadlineDays(parseInt(e.target.value, 10) || 5)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-[#181f2e]"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Poll Duration (Days)
+                </label>
+                <div className="flex items-center gap-1">
+                  {[3, 5, 7, 14].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setPollDeadlineDays(d)}
+                      className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
+                        Number(pollDeadlineDays) === d
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative flex items-center">
+                <button
+                  type="button"
+                  onClick={() => adjustDuration(-1)}
+                  className="absolute left-1.5 w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-zinc-200 flex items-center justify-center transition cursor-pointer z-10"
+                  aria-label="Decrease duration"
+                >
+                  <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={pollDeadlineDays}
+                  onChange={handleDurationChange}
+                  onBlur={handleDurationBlur}
+                  placeholder="5"
+                  className="w-full text-center px-10 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.04] text-slate-900 dark:text-white text-base sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-[#181f2e]"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => adjustDuration(1)}
+                  className="absolute right-1.5 w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-zinc-200 flex items-center justify-center transition cursor-pointer z-10"
+                  aria-label="Increase duration"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+              </div>
             </div>
           </div>
 

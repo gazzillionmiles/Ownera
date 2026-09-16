@@ -251,22 +251,22 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setIsInviteModalOpen(true)}
-                className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 border border-slate-200 cursor-pointer"
+                className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 border border-slate-200 cursor-pointer"
               >
-                <Key className="w-4 h-4 text-blue-600" />
+                <Key className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>Invite</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-2 shrink-0 cursor-pointer"
+                className="flex-[2] sm:flex-initial min-h-[44px] px-4 sm:px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-sm flex items-center justify-center gap-2 cursor-pointer text-center"
               >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>Propose Campaign</span>
+                <Plus className="w-4 h-4 stroke-[2.5] shrink-0" />
+                <span className="whitespace-nowrap">Propose Campaign</span>
               </button>
             </div>
           </div>
@@ -490,9 +490,9 @@ export const OrganizerView: React.FC<OrganizerViewProps> = ({
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer shrink-0"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span>Propose Campaign</span>
             </button>
           </div>

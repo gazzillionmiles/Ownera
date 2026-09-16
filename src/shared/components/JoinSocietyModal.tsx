@@ -13,6 +13,7 @@ interface JoinSocietyModalProps {
   onClose: () => void;
   onSuccess: (society: any) => void;
   initialTab?: 'join' | 'create';
+  allowCreate?: boolean;
 }
 
 export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
@@ -20,9 +21,10 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
   onClose,
   onSuccess,
   initialTab = 'join',
+  allowCreate = true,
 }) => {
   const [mounted, setMounted] = useState(false);
-  const [tab, setTab] = useState<'join' | 'create'>(initialTab);
+  const [tab, setTab] = useState<'join' | 'create'>(allowCreate ? initialTab : 'join');
 
   // Create state
   const [societyName, setSocietyName] = useState('');
@@ -106,32 +108,34 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
           </p>
         </div>
 
-        {/* Tab Toggle */}
-        <div className="p-1 rounded-2xl bg-slate-100 border border-slate-200/60 grid grid-cols-2 gap-1">
-          <button
-            type="button"
-            onClick={() => setTab('join')}
-            className={`py-2 px-3 rounded-xl font-bold text-xs transition cursor-pointer ${
-              tab === 'join'
-                ? 'bg-white text-blue-600 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Join Society
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('create')}
-            className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
-              tab === 'create'
-                ? 'bg-white text-blue-600 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Create Society</span>
-          </button>
-        </div>
+        {/* Tab Toggle (Only shown when creation is allowed) */}
+        {allowCreate && (
+          <div className="p-1 rounded-2xl bg-slate-100 border border-slate-200/60 grid grid-cols-2 gap-1">
+            <button
+              type="button"
+              onClick={() => setTab('join')}
+              className={`py-2 px-3 rounded-xl font-bold text-xs transition cursor-pointer ${
+                tab === 'join'
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Join Society
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('create')}
+              className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                tab === 'create'
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Create Society</span>
+            </button>
+          </div>
+        )}
 
         {tab === 'join' ? (
           <div className="space-y-4">
@@ -151,17 +155,19 @@ export const JoinSocietyModal: React.FC<JoinSocietyModalProps> = ({
                 </p>
               </div>
             </div>
-            <p className="text-[11px] text-slate-400 text-center">
-              Don&apos;t have a link yet? Ask your secretary to send one, or{' '}
-              <button
-                type="button"
-                onClick={() => setTab('create')}
-                className="text-blue-600 hover:underline font-bold cursor-pointer"
-              >
-                create a new society
-              </button>{' '}
-              instead.
-            </p>
+            {allowCreate && (
+              <p className="text-[11px] text-slate-400 text-center">
+                Don&apos;t have a link yet? Ask your secretary to send one, or{' '}
+                <button
+                  type="button"
+                  onClick={() => setTab('create')}
+                  className="text-blue-600 hover:underline font-bold cursor-pointer"
+                >
+                  create a new society
+                </button>{' '}
+                instead.
+              </p>
+            )}
           </div>
         ) : (
           <form onSubmit={handleCreateSubmit} className="space-y-3.5">

@@ -71,7 +71,6 @@ export async function GET(request: NextRequest) {
         society:societies(*),
         service:services(*),
         selected_provider:providers(*),
-        selected_bid:provider_bids(*),
         pricing_tiers:campaign_pricing_tiers(*)
       `)
       .order('created_at', { ascending: false });
@@ -260,6 +259,7 @@ export async function GET(request: NextRequest) {
         poll_votes: campVotes,
         bids: campBids,
         bids_count: campBids.length,
+        selected_bid: campBids.find((b: any) => b.id === c.selected_bid_id) || null,
         vendor_invites: campInvites,
         user_vote: userVote,
         user_booking: userBooking,

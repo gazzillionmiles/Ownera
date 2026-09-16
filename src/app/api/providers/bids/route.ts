@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     if (provider.verification_status === 'pending' || provider.verification_status === 'unverified') {
       return NextResponse.json(
-        { error: 'Your vendor profile is currently under review. Bidding will be enabled once your account is verified by an administrator.' },
+        { error: 'Your vendor profile is currently under review. Bidding will be enabled once your account is approved by an administrator.' },
         { status: 403 }
       );
     }

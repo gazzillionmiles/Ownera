@@ -57,7 +57,7 @@ export const SERVICE_CATEGORIES: ServiceCategoryDef[] = [
     name: 'Electrical & Appliances',
     iconName: 'Zap',
     examples: ['Electrician on demand', 'Ceiling fan install', 'Geyser servicing', 'Appliance repair'],
-    description: 'Safety-screened electrical repairs, heavy appliance diagnostics, and power point installs.',
+    description: 'Standard electrical repairs, heavy appliance diagnostics, and power point installs.',
   },
   {
     id: 'car-bike-care',

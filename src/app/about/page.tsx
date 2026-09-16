@@ -30,7 +30,7 @@ export default function AboutPage() {
 
           <h2 className="font-semibold text-2xl tracking-tight mt-8 mb-3 text-white">Contact &amp; Partnerships</h2>
           <p>
-            Want to bring Ownera to your residential society or join as a verified service provider? Reach our team at <a href={`mailto:${SUPPORT_EMAIL}`} className="underline text-[#2CB7A5]">{SUPPORT_EMAIL}</a>.
+            Want to bring Ownera to your residential society or join as a service provider? Reach our team at <a href={`mailto:${SUPPORT_EMAIL}`} className="underline text-[#2CB7A5]">{SUPPORT_EMAIL}</a>.
           </p>
         </div>
       </div>

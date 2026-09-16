@@ -570,7 +570,7 @@ export default function AdminDashboardPage() {
               <div className="p-5 rounded-2xl bg-white border border-emerald-200 bg-emerald-50/40 shadow-sm space-y-1">
                 <div className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Verified &amp; Active</span>
+                  <span>Approved &amp; Active</span>
                 </div>
                 <div className="text-3xl font-black font-mono text-emerald-700">{providerStats.verified}</div>
                 <div className="text-xs text-emerald-900/70 font-semibold">Authorized to bid &amp; service</div>
@@ -593,7 +593,7 @@ export default function AdminDashboardPage() {
                 {[
                   { id: 'all', label: `All (${providerStats.total})` },
                   { id: 'pending', label: `Pending (${providerStats.pending})` },
-                  { id: 'verified', label: `Verified (${providerStats.verified})` },
+                  { id: 'verified', label: `Approved (${providerStats.verified})` },
                   { id: 'banned', label: `Banned (${providerStats.banned})` },
                   { id: 'rejected', label: `Rejected (${providerStats.rejected})` },
                 ].map((tab) => (
@@ -751,7 +751,7 @@ export default function AdminDashboardPage() {
                               className="min-h-[38px] px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                             >
                               <CheckCircle2 className="w-4 h-4" />
-                              <span>Approve &amp; Verify</span>
+                              <span>Approve Partner</span>
                             </button>
                           </>
                         )}
@@ -760,7 +760,7 @@ export default function AdminDashboardPage() {
                           <>
                             <span className="text-xs text-emerald-700 font-semibold mr-auto flex items-center gap-1">
                               <Check className="w-4 h-4 text-emerald-600" />
-                              <span>Active verified service provider</span>
+                              <span>Active approved service provider</span>
                             </span>
                             <button
                               type="button"
